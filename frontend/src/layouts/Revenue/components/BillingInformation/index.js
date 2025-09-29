@@ -20,8 +20,8 @@ import Card from "@mui/material/Card";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 
-// Billing page components
-import Bill from "layouts/billing/components/Bill";
+// Revenue page components
+import Bill from "layouts/Revenue/components/Bill";
 
 function BillingInformation() {
   return (

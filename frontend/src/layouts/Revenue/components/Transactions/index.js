@@ -23,8 +23,7 @@ import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 // import MDButton from "components/MDButton";
 
-// Billing page components
-import Transaction from "layouts/billing/components/Transaction";
+// Revenue page components
 
 function Transactions() {
   return (
