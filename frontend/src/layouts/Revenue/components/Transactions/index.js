@@ -24,6 +24,7 @@ import MDTypography from "components/MDTypography";
 // import MDButton from "components/MDButton";
 
 // Revenue page components
+import Transaction from "layouts/Revenue/components/Transaction";
 
 function Transactions() {
   return (

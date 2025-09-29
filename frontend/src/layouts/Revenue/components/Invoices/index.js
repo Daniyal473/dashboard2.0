@@ -22,6 +22,7 @@ import MDTypography from "components/MDTypography";
 import MDButton from "components/MDButton";
 
 // Revenue page components
+import Invoice from "layouts/Revenue/components/Invoice";
 
 function Invoices() {
   return (
