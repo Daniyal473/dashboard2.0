@@ -1,0 +1,26 @@
+{
+  "status": "success",
+  "result": [
+    {
+      "id": 223494584,
+      "date": "2025-09-30",
+      "isAvailable": 1,
+      "isProcessed": 1,
+      "status": "available",
+      "price": 46,
+      "minimumStay": 1,
+      "maximumStay": 365,
+      "closedOnArrival": null,
+      "closedOnDeparture": null,
+      "note": null,
+      "countAvailableUnits": 1,
+      "availableUnitsToSell": 1,
+      "countPendingUnits": 0,
+      "countBlockingReservations": 0,
+      "countBlockedUnits": 0,
+      "countReservedUnits": 0,
+      "desiredUnitsToSell": null,
+      "reservations": []
+    }
+  ]
+}
