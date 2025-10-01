@@ -1,26 +1,26 @@
 {
-  "lastUpdatedDate": "2025-09-30",
-  "totalRevenue": "183123.8557009748",
+  "lastUpdatedDate": "2025-10-01",
+  "totalRevenue": "115667.1532969804",
   "categoryAvailability": {
     "Studio": {
-      "available": 3,
-      "reserved": 5
+      "available": 5,
+      "reserved": 3
     },
     "1BR": {
-      "available": 6,
-      "reserved": 5
+      "available": 8,
+      "reserved": 3
     },
     "2BR": {
       "available": 15,
       "reserved": 1
     },
     "2BR Premium": {
-      "available": 3,
-      "reserved": 1
+      "available": 4,
+      "reserved": 0
     },
     "3BR": {
-      "available": 2,
-      "reserved": 2
+      "available": 1,
+      "reserved": 3
     }
   }
 }
