@@ -4,9 +4,15 @@
     {
       "id": 223493672,
       "date": "2025-10-01",
+<<<<<<< HEAD
       "isAvailable": 1,
       "isProcessed": 1,
       "status": "available",
+=======
+      "isAvailable": 0,
+      "isProcessed": 1,
+      "status": "reserved",
+>>>>>>> f5c0dff (Revenue page has work)
       "price": 45,
       "minimumStay": 1,
       "maximumStay": 365,
@@ -14,11 +20,19 @@
       "closedOnDeparture": null,
       "note": null,
       "countAvailableUnits": 1,
+<<<<<<< HEAD
       "availableUnitsToSell": 1,
       "countPendingUnits": 0,
       "countBlockingReservations": null,
       "countBlockedUnits": 0,
       "countReservedUnits": null,
+=======
+      "availableUnitsToSell": 0,
+      "countPendingUnits": 0,
+      "countBlockingReservations": 1,
+      "countBlockedUnits": 0,
+      "countReservedUnits": 1,
+>>>>>>> f5c0dff (Revenue page has work)
       "desiredUnitsToSell": null,
       "reservations": []
     }

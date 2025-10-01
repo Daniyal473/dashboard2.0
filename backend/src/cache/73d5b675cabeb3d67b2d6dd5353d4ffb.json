@@ -16,9 +16,15 @@
       "countAvailableUnits": 1,
       "availableUnitsToSell": 1,
       "countPendingUnits": 0,
+<<<<<<< HEAD
       "countBlockingReservations": null,
       "countBlockedUnits": 0,
       "countReservedUnits": null,
+=======
+      "countBlockingReservations": 0,
+      "countBlockedUnits": 0,
+      "countReservedUnits": 0,
+>>>>>>> f5c0dff (Revenue page has work)
       "desiredUnitsToSell": null,
       "reservations": []
     }

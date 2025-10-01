@@ -1,14 +1,14 @@
 {
   "lastUpdatedDate": "2025-10-01",
-  "totalRevenue": "115667.1532969804",
+  "totalRevenue": "187103.15329698037",
   "categoryAvailability": {
     "Studio": {
-      "available": 5,
-      "reserved": 3
+      "available": 4,
+      "reserved": 4
     },
     "1BR": {
-      "available": 8,
-      "reserved": 3
+      "available": 5,
+      "reserved": 6
     },
     "2BR": {
       "available": 15,

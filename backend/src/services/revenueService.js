@@ -20,17 +20,12 @@ async function getRevenueAndOccupancy() {
   const cache = new CacheManager();
 
 
-  // Initialize/retrieve stored properties from file
-  const propertiesFile = 'properties.json';
-  let properties = { lastUpdatedDate: null, totalRevenue: '0', categoryAvailability: {} };
-
-
-  try {
-    const data = await fs.readFile(propertiesFile, 'utf8');
-    properties = JSON.parse(data);
-  } catch (error) {
-    console.log('No properties file found, initializing new one.');
-  }
+  // Initialize properties in memory
+  let properties = { 
+    lastUpdatedDate: null, 
+    totalRevenue: '0', 
+    categoryAvailability: {} 
+  };
 
 
   const today = new Date().toISOString().split('T')[0];
@@ -40,7 +35,6 @@ async function getRevenueAndOccupancy() {
     properties.lastUpdatedDate = today;
     properties.totalRevenue = '0';
     properties.categoryAvailability = {};
-    await fs.writeFile(propertiesFile, JSON.stringify(properties, null, 2));
   }
 
 
@@ -49,6 +43,11 @@ async function getRevenueAndOccupancy() {
   
   // Initialize daily revenue tracking
   let dailyRevenue = 0;
+  
+  // Initialize actual and expected revenue tracking
+  let actualRevenue = 0;
+  let expectedRevenue = 0;
+  let occupancyRate = 0;
 
 
   // Create a flat array of all listing IDs from LISTINGS_DATA
@@ -65,8 +64,8 @@ async function getRevenueAndOccupancy() {
     headers: { Authorization: authToken, 'Content-Type': 'application/json' },
   };
 
-
-  // Process calendar data with parallel requests and better error handling
+  try {
+    // Process calendar data with parallel requests and better error handling
   
   const processListing = async (listingId, category) => {
     const cacheKey = cache.getCacheKey(`calendar_${listingId}` , { date: today });
@@ -156,7 +155,7 @@ async function getRevenueAndOccupancy() {
     totalReserved += reserved;
   });
   const totalRooms = totalAvailable + totalReserved;
-  const occupancyRate = totalRooms > 0 ? ((totalReserved / totalRooms) * 100).toFixed(2) : '0.00';
+  occupancyRate = totalRooms > 0 ? parseFloat(((totalReserved / totalRooms) * 100).toFixed(2)) : 0;
 
 
   // API endpoints - include resources in the response
@@ -404,8 +403,6 @@ async function getRevenueAndOccupancy() {
 
 
       // Separate actual and expected revenue
-      let actualRevenue = 0;
-      let expectedRevenue = 0;
       
       // Re-process reservations to separate actual vs expected
       for (const res of reservations) {
@@ -531,42 +528,91 @@ async function getRevenueAndOccupancy() {
       console.log(`💰 ACTUAL Revenue (guests checked in): ${actualRevenue.toFixed(2)} PKR` );
       console.log(`📅 EXPECTED Revenue (guests not checked in): ${expectedRevenue.toFixed(2)} PKR` );
       console.log(`💵 TOTAL Revenue: ${(actualRevenue + expectedRevenue).toFixed(2)} PKR` );
-      console.log(`=======================================\n` 
-);
+      console.log(`=======================================`);
 
-
-      // Save updated properties
+      // Update properties in memory
       properties.totalRevenue = totalRevenue.toString();
-      properties.categoryAvailability = categoryAvailability;
-      await fs.writeFile(propertiesFile, JSON.stringify(properties, null, 2));
+    }
 
+  } catch (reservationError) {
+    console.error('❌ Error processing reservations:', reservationError);
+    // Set default values in case of error
+    actualRevenue = 0;
+    expectedRevenue = 0;
+    dailyRevenue = 0;
+  }
+
+      // Auto-post to Teable after revenue calculation
+      try {
+        const TeableService = require('./teableService');
+        const teableService = new TeableService();
+        
+        // Format achieved value from total revenue
+        const totalRev = parseFloat(totalRevenue) || 0;
+        let achievedFormatted = "";
+        
+        if (totalRev >= 1000000) {
+          achievedFormatted = `Rs${(totalRev / 1000000).toFixed(1)}M`;
+        } else if (totalRev >= 1000) {
+          achievedFormatted = `Rs${Math.round(totalRev / 1000)}K`;
+        } else {
+          achievedFormatted = `Rs${Math.round(totalRev)}`;
+        }
+        
+        console.log('🚀 Auto-posting to Teable...');
+        
+        // Get Pakistan date and time for logging
+        const now = new Date();
+        const pakistanTime = new Date(now.getTime() + (5 * 60 * 60 * 1000));
+        
+        // Format as DD/MM/YYYY, HH:MM:SS
+        const day = pakistanTime.getUTCDate().toString().padStart(2, '0');
+        const month = (pakistanTime.getUTCMonth() + 1).toString().padStart(2, '0');
+        const year = pakistanTime.getUTCFullYear();
+        const hours = pakistanTime.getUTCHours().toString().padStart(2, '0');
+        const minutes = pakistanTime.getUTCMinutes().toString().padStart(2, '0');
+        const seconds = pakistanTime.getUTCSeconds().toString().padStart(2, '0');
+        
+        const pakistanDateTime = `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`;
+        
+        console.log('🇵🇰 Posting with Pakistan Date & Time:', pakistanDateTime);
+        
+        const postResult = await teableService.postTargetData({
+          actual: "Rs583K", // Fixed value
+          achieved: achievedFormatted // Dynamic value
+        });
+        
+        if (postResult.success) {
+          console.log('✅ Auto-posted to Teable successfully!');
+          console.log(`📊 Posted: Actual=Rs583K, Achieved=${achievedFormatted}`);
+        } else {
+          console.log('⏰ Teable posting skipped:', postResult.error);
+        }
+      } catch (error) {
+        console.log('❌ Auto-posting to Teable failed:', error.message);
+      }
 
       return {
         actualRevenue: actualRevenue.toFixed(2),
         expectedRevenue: expectedRevenue.toFixed(2),
         totalRevenue: totalRevenue.toFixed(2),
-        occupancyRate: parseFloat(occupancyRate),
-        categoryAvailability,
-        totalRooms,
-        totalReserved,
-        totalAvailable
+        occupancyRate: occupancyRate,
+        categoryAvailability: categoryAvailability
       };
-    }
+
   } catch (error) {
-    // Silent error handling with fallback data
+    console.error('❌ Error in main revenue processing:', error);
     return {
-      actualRevenue: totalRevenue.toFixed(2), // Only actual revenue for frontend
-      occupancyRate: parseFloat(occupancyRate),
-      categoryAvailability,
-      totalRooms,
-      totalReserved,
-      totalAvailable,
-      error: 'API temporarily unavailable - showing cached data',
-      lastUpdated: properties.lastUpdatedDate
+      actualRevenue: '0',
+      expectedRevenue: '0', 
+      totalRevenue: '0',
+      occupancyRate: 0,
+      categoryAvailability: {},
+      error: 'API temporarily unavailable',
+      lastUpdated: new Date().toISOString()
     };
   }
 }
-
 
 module.exports = {
   getRevenueAndOccupancy

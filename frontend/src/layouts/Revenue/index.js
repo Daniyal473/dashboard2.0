@@ -232,7 +232,7 @@ function Revenue() {
       },
       {
         title: "TARGET",
-        amount: formatCurrency(targetSum),
+        amount: { type: "custom", actual: "Rs583K", achieved: `Rs${Math.round(targetSum / 1000)}K` },
         progress: 100,
         color: "primary",
         icon: "flag",
@@ -240,16 +240,16 @@ function Revenue() {
       },
       {
         title: "MONTHLY TARGET",
-        amount: "Rs7.0M",
-        progress: Math.min((totalRevenue / 7000000) * 100, 100),
+        amount: "Rs17.5M",
+        progress: Math.min((totalRevenue / 17500000) * 100, 100),
         color: "warning",
         icon: "flag",
         gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
       },
       {
         title: "DAILY TARGET",
-        amount: "Rs230K",
-        progress: Math.min((actualRevenue / 230000) * 100, 100),
+        amount: "Rs583K",
+        progress: Math.min((actualRevenue / 583000) * 100, 100),
         color: "error",
         icon: "flag",
         gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
@@ -404,7 +404,7 @@ function Revenue() {
                 },
               }}
             >
-              <MDBox p={4}>
+              <MDBox p={3}>
                 <MDBox display="flex" justifyContent="space-between" alignItems="flex-start" mb={3}>
                   <MDBox flex={1}>
                     <MDTypography
@@ -417,22 +417,73 @@ function Revenue() {
                         fontSize: "1.125rem",
                         mb: 1,
                         display: "block",
+                        whiteSpace: "pre-line",
                       }}
                     >
                       {item.title}
                     </MDTypography>
-                    <MDTypography
-                      variant="h3"
-                      sx={{
-                        color: "#1e293b",
-                        fontSize: "2rem",
-                        fontWeight: 700,
-                        lineHeight: 1.2,
-                        mb: 2,
-                      }}
-                    >
-                      {item.amount}
-                    </MDTypography>
+                    {typeof item.amount === "object" && item.amount.type === "custom" ? (
+                      <MDBox>
+                        <MDBox
+                          display="grid"
+                          gridTemplateColumns="1fr auto 1fr"
+                          alignItems="center"
+                          textAlign="center"
+                          mb={1}
+                        >
+                          <MDTypography
+                            sx={{ fontSize: "0.9rem", fontWeight: 600, color: "#64748b" }}
+                          >
+                            Actual
+                          </MDTypography>
+                          <MDTypography
+                            sx={{ fontSize: "0.9rem", fontWeight: 600, color: "#64748b" }}
+                          >
+                            |
+                          </MDTypography>
+                          <MDTypography
+                            sx={{ fontSize: "0.9rem", fontWeight: 600, color: "#64748b" }}
+                          >
+                            Achieved
+                          </MDTypography>
+                        </MDBox>
+                        <MDBox
+                          display="grid"
+                          gridTemplateColumns="1fr auto 1fr"
+                          alignItems="center"
+                          textAlign="center"
+                        >
+                          <MDTypography
+                            sx={{ fontSize: "1.0rem", fontWeight: 600, color: "#1e293b" }}
+                          >
+                            {item.amount.actual}
+                          </MDTypography>
+                          <MDTypography
+                            sx={{ fontSize: "1.0rem", fontWeight: 600, color: "#1e293b" }}
+                          >
+                            |
+                          </MDTypography>
+                          <MDTypography
+                            sx={{ fontSize: "1.0rem", fontWeight: 600, color: "#1e293b" }}
+                          >
+                            {item.amount.achieved}
+                          </MDTypography>
+                        </MDBox>
+                      </MDBox>
+                    ) : (
+                      <MDTypography
+                        variant="h5"
+                        sx={{
+                          color: "#1e293b",
+                          fontSize: "1.0rem",
+                          fontWeight: 600,
+                          lineHeight: 1.3,
+                          mb: 2,
+                        }}
+                      >
+                        {item.amount}
+                      </MDTypography>
+                    )}
                   </MDBox>
                   <MDBox
                     display="flex"

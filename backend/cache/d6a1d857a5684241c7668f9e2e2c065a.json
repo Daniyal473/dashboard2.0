@@ -1,0 +1,26 @@
+{
+  "status": "success",
+  "result": [
+    {
+      "id": 226180651,
+      "date": "2025-10-01",
+      "isAvailable": 1,
+      "isProcessed": 1,
+      "status": "available",
+      "price": 53,
+      "minimumStay": 1,
+      "maximumStay": 365,
+      "closedOnArrival": null,
+      "closedOnDeparture": null,
+      "note": null,
+      "countAvailableUnits": 1,
+      "availableUnitsToSell": 1,
+      "countPendingUnits": 0,
+      "countBlockingReservations": null,
+      "countBlockedUnits": 0,
+      "countReservedUnits": null,
+      "desiredUnitsToSell": null,
+      "reservations": []
+    }
+  ]
+}

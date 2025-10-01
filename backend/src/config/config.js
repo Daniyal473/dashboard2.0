@@ -13,6 +13,10 @@ const config = {
   EXCHANGE_RATE_API_KEY: process.env.EXCHANGE_RATE_API_KEY || 'cbb36a5aeba2aa9dbaa251e0',
   EXCHANGE_RATE_BASE_URL: process.env.EXCHANGE_RATE_BASE_URL || 'https://v6.exchangerate-api.com/v6',
   
+  // Teable Database Configuration
+  TEABLE_BASE_URL: process.env.TEABLE_BASE_URL || '',
+  TEABLE_BEARER_TOKEN: process.env.TEABLE_BEARER_TOKEN || '',
+  
   // Cache Configuration
   CACHE_DIR: process.env.CACHE_DIR || './cache',
   CACHE_TTL_MINUTES: parseInt(process.env.CACHE_TTL_MINUTES) || 10,
@@ -67,7 +71,7 @@ const config = {
 };
 
 // Validation
-const requiredEnvVars = ['HOSTAWAY_AUTH_TOKEN'];
+const requiredEnvVars = ['HOSTAWAY_AUTH_TOKEN', 'TEABLE_BASE_URL', 'TEABLE_BEARER_TOKEN'];
 
 const missingEnvVars = requiredEnvVars.filter(envVar => !config[envVar]);
 
@@ -85,6 +89,7 @@ if (config.NODE_ENV === 'development') {
   console.log('Configuration loaded:', {
     ...config,
     HOSTAWAY_AUTH_TOKEN: config.HOSTAWAY_AUTH_TOKEN ? '[HIDDEN]' : '[NOT SET]',
+    TEABLE_BEARER_TOKEN: config.TEABLE_BEARER_TOKEN ? '[HIDDEN]' : '[NOT SET]',
     API_KEY: config.API_KEY ? '[HIDDEN]' : '[NOT SET]'
   });
 }

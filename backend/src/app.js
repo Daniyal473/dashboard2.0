@@ -20,6 +20,10 @@ app.set('trust proxy', true);
 // Import routes
 const userRoutes = require("./routes/userRoutes");
 const revenueRoutes = require("./routes/revenueRoutes");
+const teableRoutes = require("./routes/teableRoutes");
+
+// Import and start scheduler
+const schedulerService = require("./services/schedulerService");
 
 // Root route
 app.get("/", (req, res) => {
@@ -34,7 +38,9 @@ app.get("/", (req, res) => {
       hello: "/api/hello",
       users: "/api/users",
       revenue: "/api/revenue",
-      revenueHealth: "/api/revenue/health"
+      revenueHealth: "/api/revenue/health",
+      teable: "/api/teable",
+      teableStatus: "/api/teable/status"
     }
   });
 });
@@ -42,6 +48,7 @@ app.get("/", (req, res) => {
 // Use routes
 app.use("/api/users", userRoutes);
 app.use("/api/revenue", revenueRoutes);
+app.use("/api/teable", teableRoutes);
 
 // Simple test route
 app.get("/api/hello", (req, res) => {
@@ -84,5 +91,11 @@ app.use((error, req, res, next) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Start the scheduler automatically when the app is loaded
+setTimeout(() => {
+  console.log('🚀 Starting Teable hourly scheduler automatically...');
+  schedulerService.start();
+}, 2000); // Wait 2 seconds after app initialization
 
 module.exports = app;

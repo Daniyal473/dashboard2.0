@@ -1,6 +1,7 @@
 require("dotenv").config({ path: "../.env" });
 const app = require("./app");
 const axios = require("./utils/connectionPool");
+const schedulerService = require("./services/schedulerService");
 
 const PORT = process.env.PORT || 5000;
 
@@ -21,7 +22,11 @@ const gracefulShutdown = (signal) => {
   
   console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
   
-  // Close server first
+  // Stop scheduler first
+  schedulerService.stop();
+  console.log('✅ Scheduler stopped');
+  
+  // Close server
   server.close(() => {
     console.log('✅ HTTP server closed');
     
