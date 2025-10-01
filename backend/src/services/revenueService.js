@@ -14,7 +14,7 @@ const LISTINGS_DATA = {
   '3BR': [288686, 305327, 288676, 389366],
 };
 
-
+//fetch listings dynamically
 async function getRevenueAndOccupancy() {
   const authToken = config.HOSTAWAY_AUTH_TOKEN;
   const cache = new CacheManager();
