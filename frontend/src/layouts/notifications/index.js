@@ -897,6 +897,7 @@ ReservationCard.propTypes = {
     vehicleNo: PropTypes.string,
     security: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     deposit: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    listingName: PropTypes.string,
   }).isRequired,
 };
 

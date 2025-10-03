@@ -24,9 +24,6 @@ async function fetchListingsData() {
       timeout: 30000
     });
 
-<<<<<<< HEAD
-//fetch listings dynamically
-=======
     if (!response.data || !response.data.result) {
       throw new Error('Invalid response from listings API');
     }
@@ -154,7 +151,6 @@ async function refreshListingsCache() {
   return freshListings;
 }
 
->>>>>>> ba9877d (Revenue Functionally update)
 async function getRevenueAndOccupancy() {
   const authToken = config.HOSTAWAY_AUTH_TOKEN;
 
