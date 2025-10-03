@@ -232,7 +232,11 @@ function Revenue() {
       },
       {
         title: "TARGET",
-        amount: { type: "custom", actual: "Rs583K", achieved: `Rs${Math.round(targetSum / 1000)}K` },
+        amount: {
+          type: "custom",
+          actual: "Rs583K",
+          achieved: `Rs${Math.round(targetSum / 1000)}K`,
+        },
         progress: 100,
         color: "primary",
         icon: "flag",
