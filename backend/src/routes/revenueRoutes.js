@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getRevenueAndOccupancy } = require('../services/revenueService');
+const { getRevenueAndOccupancy, refreshListingsCache, fetchListingsData } = require('../services/revenueService');
 const config = require('../config/config');
 
 // Middleware for API key authentication (optional)
@@ -227,6 +227,84 @@ router.get('/health', (req, res) => {
       age: cacheTimestamp ? Math.floor((Date.now() - cacheTimestamp) / 1000) : null
     }
   });
+});
+
+// Route to refresh listings data
+router.post('/refresh-listings', logRequest, async (req, res) => {
+  try {
+    console.log('🔄 Manual listings refresh requested');
+    const freshListings = await refreshListingsCache();
+    
+    res.json({
+      success: true,
+      message: 'Listings data refreshed successfully',
+      data: {
+        categories: Object.keys(freshListings),
+        totalListings: Object.values(freshListings).flat().length,
+        categoryCounts: Object.fromEntries(
+          Object.entries(freshListings).map(([category, listings]) => [category, listings.length])
+        )
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error refreshing listings data:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to refresh listings data',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route to get current listings data
+router.get('/listings', logRequest, async (req, res) => {
+  try {
+    console.log('📋 Listings data requested');
+    const listingsData = await fetchListingsData();
+    
+    res.json({
+      success: true,
+      data: {
+        categories: listingsData,
+        totalListings: Object.values(listingsData).flat().length,
+        categoryCounts: Object.fromEntries(
+          Object.entries(listingsData).map(([category, listings]) => [category, listings.length])
+        )
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error fetching listings data:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch listings data',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route to clear listings data (no cache)
+router.delete('/clear-listings-cache', logRequest, async (req, res) => {
+  try {
+    console.log('🗑️ Clearing in-memory listings data...');
+    
+    res.json({
+      success: true,
+      message: 'In-memory listings data will be refreshed on next request',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error clearing listings data:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear listings data',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 module.exports = router;

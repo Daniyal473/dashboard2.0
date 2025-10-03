@@ -1,24 +1,171 @@
 const fs = require('fs').promises;
 const config = require('../config/config');
-const { makeRequestWithRetry, RateLimiter } = require('../utils/apiHelper');
-const CacheManager = require('../utils/cacheManager');
-const axios = require('../utils/connectionPool');
-const errorHandler = require('../utils/errorHandler');
+const axios = require('axios');
 
+// Dynamic listings data - will be fetched from API
+let LISTINGS_DATA = {};
 
-const LISTINGS_DATA = {
-  Studio: [288682, 288690, 323229, 323261, 336255, 383744, 410263, 413218],
-  '1BR': [307143, 306032, 288691, 305069, 288681, 288726, 288679, 288723, 288678, 323258, 400763],
-  '2BR': [288677, 288684, 288687, 288977, 288685, 288683, 306543, 288724, 378076, 378078, 400779, 400769, 395345, 414090, 421015, 422302],
-  '2BR Premium': [305055, 309909, 323227, 288688],
-  '3BR': [288686, 305327, 288676, 389366],
-};
+/**
+ * Fetch listings from Hostaway API and categorize them
+ * @returns {Promise<Object>} Categorized listings data
+ */
+async function fetchListingsData() {
+  const authToken = config.HOSTAWAY_AUTH_TOKEN;
+  
+  try {
+    console.log('🏠 Fetching listings from Hostaway API...');
+    console.log('🔑 Using auth token:', authToken ? 'Token present' : 'No token');
+    
+    const response = await axios.get('https://api.hostaway.com/v1/listings', {
+      headers: {
+        'Authorization': authToken,
+        'Content-Type': 'application/json'
+      },
+      timeout: 30000
+    });
 
+<<<<<<< HEAD
 //fetch listings dynamically
+=======
+    if (!response.data || !response.data.result) {
+      throw new Error('Invalid response from listings API');
+    }
+
+    const listings = response.data.result;
+    const categorizedListings = {};
+    let totalPakistaniCount = 0;
+    let categorizedCount = 0;
+
+    console.log(`📊 Total listings received from API: ${listings.length}`);
+
+    // Process each listing and categorize by name/title
+    listings.forEach(listing => {
+      if (!listing.id || !listing.name) return;
+
+      // Filter only Pakistani listings
+      if (listing.country !== 'Pakistan') {
+        console.log(`⏭️ Skipping non-Pakistani listing: ${listing.name} (Country: ${listing.country || 'Unknown'})`);
+        return;
+      }
+
+      totalPakistaniCount++;
+      console.log(`🇵🇰 Pakistani listing #${totalPakistaniCount}: ID=${listing.id}, Name="${listing.name}"`);
+
+      const listingName = listing.name.toLowerCase();
+      let category = null; // No default category
+
+      // Categorize based on listing name patterns - Include ALL Pakistani listings
+      if (listingName.includes('studio')) {
+        category = 'Studio';
+      } else if (listingName.includes('1br') || listingName.includes('1 br') || listingName.includes('1 bedroom')) {
+        category = '1BR';
+      } else if (listingName.includes('2br premium') || listingName.includes('2 br premium')) {
+        category = '2BR Premium';
+      } else if (listingName.includes('2br') || listingName.includes('2 br') || listingName.includes('2 bedroom')) {
+        category = '2BR';
+      } else if (listingName.includes('3br') || listingName.includes('3 br') || listingName.includes('3 bedroom')) {
+        category = '3BR';
+      } else {
+        // Enhanced pattern matching for listings that don't match basic patterns
+        if (listingName.includes('2bhk') || listingName.includes('2 bhk')) {
+          category = '2BR';
+        } else if (listingName.includes('1bhk') || listingName.includes('1 bhk')) {
+          category = '1BR';
+        } else if (listingName.includes('3bhk') || listingName.includes('3 bhk')) {
+          category = '3BR';
+        } else if (listingName.includes('premium') && (listingName.includes('2') || listingName.includes('two'))) {
+          category = '2BR Premium';
+        } else if (listingName.includes('mini') && listingName.includes('studio')) {
+          category = 'Studio';
+        } else if (listingName.includes('bedroom')) {
+          // Extract number from bedroom mentions
+          if (listingName.includes('1') || listingName.includes('one')) {
+            category = '1BR';
+          } else if (listingName.includes('2') || listingName.includes('two')) {
+            category = '2BR';
+          } else if (listingName.includes('3') || listingName.includes('three')) {
+            category = '3BR';
+          } else {
+            category = '1BR'; // Default fallback
+          }
+        } else {
+          category = '1BR'; // Default fallback for truly unknown listings
+          console.log(`❓ Unknown listing assigned to 1BR: ID=${listing.id}, Name="${listing.name}"`);
+        }
+        
+        console.log(`🔍 Enhanced pattern match for ID ${listing.id}: "${listing.name}" → ${category}`);
+      }
+
+      categorizedCount++;
+      // Initialize category array if it doesn't exist
+      if (!categorizedListings[category]) {
+        categorizedListings[category] = [];
+      }
+
+      // Add listing ID to the appropriate category
+      categorizedListings[category].push(listing.id);
+      
+      // Log the listing details
+      console.log(`✅ Categorized as ${category}: ID=${listing.id}, Name="${listing.name}"`);
+    });
+
+    console.log('✅ Pakistani listings categorized successfully:');
+    Object.keys(categorizedListings).forEach(category => {
+      const listingIds = categorizedListings[category];
+      console.log(`   ${category}: ${listingIds.length} listings - IDs: [${listingIds.join(', ')}]`);
+    });
+
+    const totalPakistaniListings = Object.values(categorizedListings).flat().length;
+    console.log(`\n📊 SUMMARY:`);
+    console.log(`🇵🇰 Total Pakistani listings found: ${totalPakistaniCount}`);
+    console.log(`✅ Successfully categorized: ${categorizedCount}`);
+    console.log(`❌ Uncategorized (excluded): ${totalPakistaniCount - categorizedCount}`);
+
+    return categorizedListings;
+
+  } catch (error) {
+    console.error('❌ Error fetching listings:', error.message);
+    
+    if (error.response) {
+      console.error('📊 Response status:', error.response.status);
+      console.error('📊 Response data:', error.response.data);
+      
+      if (error.response.status === 403) {
+        console.error('🔒 Authorization failed - check your HOSTAWAY_AUTH_TOKEN');
+        console.error('💡 Make sure the token has permission to access listings');
+      }
+    }
+    
+    // No fallback - return empty data if API fails
+    console.log('❌ API failed - returning empty listings data (no hardcoded fallback)');
+    return {};
+  }
+}
+
+/**
+ * Refresh listings data (no cache)
+ * @returns {Promise<Object>} Fresh listings data
+ */
+async function refreshListingsCache() {
+  console.log('🔄 Refreshing listings data...');
+  const freshListings = await fetchListingsData();
+  LISTINGS_DATA = freshListings;
+  
+  return freshListings;
+}
+
+>>>>>>> ba9877d (Revenue Functionally update)
 async function getRevenueAndOccupancy() {
   const authToken = config.HOSTAWAY_AUTH_TOKEN;
-  const cache = new CacheManager();
 
+  // Always fetch fresh listings data dynamically - NO HARDCODED DATA
+  console.log('🔄 Fetching fresh listings data from API (no hardcode)');
+  LISTINGS_DATA = await fetchListingsData();
+  
+  if (!LISTINGS_DATA || Object.keys(LISTINGS_DATA).length === 0) {
+    console.log('❌ No listings data available - cannot proceed');
+    throw new Error('No listings data available from API');
+  }
 
   // Initialize properties in memory
   let properties = { 
@@ -68,32 +215,23 @@ async function getRevenueAndOccupancy() {
     // Process calendar data with parallel requests and better error handling
   
   const processListing = async (listingId, category) => {
-    const cacheKey = cache.getCacheKey(`calendar_${listingId}` , { date: today });
+    const calendarUrl = `https://api.hostaway.com/v1/listings/${listingId}/calendar?startDate=${today}&endDate=${today}`;
     
-    // Try to get from cache first (10 minute cache for better performance)
-    let calendarData = await cache.get(cacheKey, 10);
-    let fromCache = !!calendarData;
-    
-    if (!calendarData) {
-      const calendarUrl = `https://api.hostaway.com/v1/listings/${listingId}/calendar?startDate=${today}&endDate=${today}` ;
+    let calendarData;
+    try {
+      const response = await axios.get(calendarUrl, {
+        headers: {
+          Authorization: authToken,
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000
+      });
       
-      try {
-        const response = await errorHandler.makeApiCall(calendarUrl, {
-          headers: {
-            Authorization: authToken,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        calendarData = response.data;
-        
-        // Cache the successful response
-        await cache.set(cacheKey, calendarData);
-        
-      } catch (error) {
-        // Create default data structure for failed requests
-        calendarData = { result: [{ status: 'available' }] };
-      }
+      calendarData = response.data;
+      
+    } catch (error) {
+      // Create default data structure for failed requests
+      calendarData = { result: [{ status: 'available' }] };
     }
     
     // Process the calendar data
@@ -102,7 +240,7 @@ async function getRevenueAndOccupancy() {
       status = calendarData.result[0].status;
     }
     
-    return { listingId, category, status, fromCache };
+    return { listingId, category, status };
   };
   
   // Process all listings in parallel with controlled concurrency
@@ -178,7 +316,7 @@ async function getRevenueAndOccupancy() {
   // Get latest USD to PKR exchange rate with error handling
   let usdToPkr = 279;
   try {
-    const exchangeResponse = await errorHandler.makeApiCall(exchangeRateUrl);
+    const exchangeResponse = await axios.get(exchangeRateUrl, { timeout: 30000 });
     const exchangeData = exchangeResponse.data;
     if (exchangeData.conversion_rates && exchangeData.conversion_rates.PKR) {
       usdToPkr = exchangeData.conversion_rates.PKR;
@@ -189,11 +327,12 @@ async function getRevenueAndOccupancy() {
 
 
   try {
-    const response = await errorHandler.makeApiCall(reservationsUrl, {
+    const response = await axios.get(reservationsUrl, {
       headers: {
         Authorization: authToken,
         'Content-Type': 'application/json'
-      }
+      },
+      timeout: 30000
     });
     const data = response.data;
     const breakdown = {};
@@ -273,22 +412,24 @@ async function getRevenueAndOccupancy() {
             
             // First try: Standard reservation endpoint with all includes
             try {
-              updatedResResponse = await errorHandler.makeApiCall(`https://api.hostaway.com/v1/reservations/${res.id}?include=customFields,listing,guest,messages,payments` , {
+              updatedResResponse = await axios.get(`https://api.hostaway.com/v1/reservations/${res.id}?include=customFields,listing,guest,messages,payments`, {
                 headers: {
                   Authorization: authToken,
                   'Content-Type': 'application/json'
-                }
+                },
+                timeout: 30000
               });
               console.log(`✅ Got reservation details with include parameters`);
             } catch (includeError) {
               console.log(`❌ Include parameters failed, trying basic endpoint`);
               
               // Fallback: Basic reservation endpoint
-              updatedResResponse = await errorHandler.makeApiCall(`https://api.hostaway.com/v1/reservations/${res.id}` , {
+              updatedResResponse = await axios.get(`https://api.hostaway.com/v1/reservations/${res.id}`, {
                 headers: {
                   Authorization: authToken,
                   'Content-Type': 'application/json'
-                }
+                },
+                timeout: 30000
               });
             }
             const updatedResData = updatedResResponse.data;
@@ -338,11 +479,13 @@ async function getRevenueAndOccupancy() {
           await new Promise(resolve => setTimeout(resolve, 1000));
           
           // Use enhanced error handler for finance API calls
-          const financeResponse = await errorHandler.makeFinanceCall(
-            financeUrl + updatedRes.id,
-            authToken,
-            updatedRes.id
-          );
+          const financeResponse = await axios.get(financeUrl + updatedRes.id, {
+            headers: {
+              Authorization: authToken,
+              'Content-Type': 'application/json'
+            },
+            timeout: 45000
+          });
           
           const financeData = financeResponse.data;
           if (financeData.status === 'success' && financeData.result) {
@@ -409,11 +552,12 @@ async function getRevenueAndOccupancy() {
         let updatedRes = res;
         if (res.status === 'modified' || res.status === 'new') {
           try {
-            const updatedResResponse = await errorHandler.makeApiCall(`https://api.hostaway.com/v1/reservations/${res.id}?includeResources=1` , {
+            const updatedResResponse = await axios.get(`https://api.hostaway.com/v1/reservations/${res.id}?includeResources=1`, {
               headers: {
                 Authorization: authToken,
                 'Content-Type': 'application/json'
-              }
+              },
+              timeout: 30000
             });
             const updatedResData = updatedResResponse.data;
             if (updatedResData && updatedResData.result) {
@@ -477,11 +621,13 @@ async function getRevenueAndOccupancy() {
 
 
           try {
-            const financeResponse = await errorHandler.makeFinanceCall(
-              financeUrl + updatedRes.id,
-              authToken,
-              updatedRes.id
-            );
+            const financeResponse = await axios.get(financeUrl + updatedRes.id, {
+              headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json'
+              },
+              timeout: 45000
+            });
             
             const financeData = financeResponse.data;
             if (financeData.status === 'success' && financeData.result) {
@@ -615,5 +761,7 @@ async function getRevenueAndOccupancy() {
 }
 
 module.exports = {
-  getRevenueAndOccupancy
+  getRevenueAndOccupancy,
+  refreshListingsCache,
+  fetchListingsData
 };

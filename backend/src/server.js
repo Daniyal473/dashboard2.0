@@ -1,6 +1,5 @@
 require("dotenv").config({ path: "../.env" });
 const app = require("./app");
-const axios = require("./utils/connectionPool");
 const schedulerService = require("./services/schedulerService");
 
 const PORT = process.env.PORT || 5000;
@@ -30,11 +29,7 @@ const gracefulShutdown = (signal) => {
   server.close(() => {
     console.log('✅ HTTP server closed');
     
-    // Clean up axios connections
-    if (axios.cleanup) {
-      axios.cleanup();
-      console.log('✅ HTTP connections closed');
-    }
+    console.log('✅ HTTP connections closed');
     
     console.log('✅ Server shutdown complete');
     process.exit(0);
