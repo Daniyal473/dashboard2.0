@@ -10,6 +10,9 @@
 # production
 /build
 
+# dependencies
+node_modules/
+
 # misc
 .DS_Store
 .env
@@ -17,6 +20,9 @@
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Configuration files (private)
+properties.json
 
 npm-debug.log*
 yarn-debug.log*
