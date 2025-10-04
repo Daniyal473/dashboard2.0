@@ -25,6 +25,7 @@ genezio.yaml
 .npmrc
 .prettierrc.json
 jsconfig.json
+vercel.json
 
 # Documentation files (private)
 CHANGELOG.md
