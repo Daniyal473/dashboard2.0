@@ -54,7 +54,9 @@ yarn.lock
 ehthumbs.db
 Thumbs.db
 
-# Deployment notes (private)
+# Deployment files (private notes only)
+DEPLOYMENT.md
 deployment-notes.md
 .deployment-secrets
+deployment-secrets.txt
 commit.sh
