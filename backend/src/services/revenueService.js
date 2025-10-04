@@ -5,6 +5,11 @@ const axios = require('axios');
 // Dynamic listings data - will be fetched from API
 let LISTINGS_DATA = {};
 
+// Simple in-memory lock to prevent concurrent API calls
+let isProcessing = false;
+let lastProcessTime = 0;
+const PROCESS_COOLDOWN = 30000; // 30 seconds cooldown between requests
+
 /**
  * Fetch listings from Hostaway API and categorize them
  * @returns {Promise<Object>} Categorized listings data
@@ -35,9 +40,18 @@ async function fetchListingsData() {
 
     console.log(`📊 Total listings received from API: ${listings.length}`);
 
+    // Debug: Show all listings first
+    console.log('🔍 DEBUG: All listings from API:');
+    listings.forEach((listing, index) => {
+      console.log(`   ${index + 1}. ID=${listing.id}, Name="${listing.name}", Country="${listing.country || 'Unknown'}"`);
+    });
+
     // Process each listing and categorize by name/title
     listings.forEach(listing => {
-      if (!listing.id || !listing.name) return;
+      if (!listing.id || !listing.name) {
+        console.log(`⚠️ Skipping listing with missing ID or name: ID=${listing.id}, Name="${listing.name}"`);
+        return;
+      }
 
       // Filter only Pakistani listings
       if (listing.country !== 'Pakistan') {
@@ -292,8 +306,8 @@ async function getRevenueAndOccupancy() {
   occupancyRate = totalRooms > 0 ? parseFloat(((totalReserved / totalRooms) * 100).toFixed(2)) : 0;
 
 
-  // API endpoints - include resources in the response
-  const reservationsUrl = 'https://api.hostaway.com/v1/reservations?includeResources=1';
+  // API endpoints - include resources in the response (single request)
+  const baseReservationsUrl = 'https://api.hostaway.com/v1/reservations?includeResources=1';
   const financeUrl = 'https://api.hostaway.com/v1/financeStandardField/reservation/';
   const exchangeRateUrl = 'https://v6.exchangerate-api.com/v6/cbb36a5aeba2aa9dbaa251e0/latest/USD';
 
@@ -322,23 +336,90 @@ async function getRevenueAndOccupancy() {
   }
 
 
+  // Simple circuit breaker state
+  const circuitBreaker = {
+    failures: 0,
+    maxFailures: 5,
+    timeout: 5 * 60 * 1000, // 5 minutes
+    nextAttempt: Date.now(),
+    isOpen: false
+  };
+
+  // Check if circuit breaker is open
+  const isCircuitOpen = () => {
+    if (circuitBreaker.isOpen && Date.now() < circuitBreaker.nextAttempt) {
+      return true;
+    }
+    if (circuitBreaker.isOpen && Date.now() >= circuitBreaker.nextAttempt) {
+      console.log('🔄 Circuit breaker attempting to close...');
+      circuitBreaker.isOpen = false;
+      circuitBreaker.failures = 0;
+    }
+    return false;
+  };
+
+  // Record success/failure for circuit breaker
+  const recordResult = (success) => {
+    if (success) {
+      circuitBreaker.failures = 0;
+      circuitBreaker.isOpen = false;
+    } else {
+      circuitBreaker.failures++;
+      if (circuitBreaker.failures >= circuitBreaker.maxFailures) {
+        circuitBreaker.isOpen = true;
+        circuitBreaker.nextAttempt = Date.now() + circuitBreaker.timeout;
+        console.log(`🚫 Circuit breaker opened due to ${circuitBreaker.failures} failures. Next attempt in ${circuitBreaker.timeout/1000/60} minutes.`);
+      }
+    }
+  };
+
+  // Retry function with exponential backoff
+  const retryRequest = async (url, config, maxRetries = 3) => {
+    // Check circuit breaker
+    if (isCircuitOpen()) {
+      throw new Error('Circuit breaker is open - API calls temporarily disabled');
+    }
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 API attempt ${attempt}/${maxRetries} for reservations...`);
+        const response = await axios.get(url, config);
+        console.log(`✅ API call successful on attempt ${attempt}`);
+        recordResult(true); // Record success
+        return response;
+      } catch (error) {
+        console.log(`❌ API attempt ${attempt} failed:`, error.message);
+        
+        if (attempt === maxRetries) {
+          recordResult(false); // Record failure after all retries
+          throw error;
+        }
+        
+        // Exponential backoff: wait 2^attempt seconds
+        const waitTime = Math.pow(2, attempt) * 1000;
+        console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+    }
+  };
+
   try {
-    const response = await axios.get(reservationsUrl, {
+    console.log('📄 Fetching reservations (single request)...');
+    const response = await retryRequest(baseReservationsUrl, {
       headers: {
         Authorization: authToken,
         'Content-Type': 'application/json'
       },
-      timeout: 30000
+      timeout: 60000 // Increased to 60 seconds
     });
-    const data = response.data;
+    
+    const allReservations = response.data.result || [];
     const breakdown = {};
 
-
-    if (data && data.result) {
+    if (allReservations && allReservations.length > 0) {
       // Filter reservations to include only those with status "new" or "modified" and where today is within the stay period
       let filteredOut = { noDate: 0, wrongStatus: 0, wrongListing: 0, outsideStay: 0, testGuest: 0 };
       
-      const reservations = data.result.filter(res => {
+      const reservations = allReservations.filter(res => {
         // Check missing dates
         if (!res.arrivalDate || !res.departureDate) {
           filteredOut.noDate++;

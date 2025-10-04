@@ -39,7 +39,11 @@ class TeableService {
   async checkIfDataExistsForCurrentHour() {
     try {
       const pakistanDateTime = this.getPakistanDateTime();
-      const currentHour = pakistanDateTime.substring(0, 13); // Get "01/10/2025, 16" part
+      // Extract date and hour properly: "03/10/2025, 11" (ensure we get full hour)
+      const datePart = pakistanDateTime.substring(0, 10); // "03/10/2025"
+      const timePart = pakistanDateTime.substring(12); // "11:36:56"
+      const hourPart = timePart.substring(0, 2); // "11"
+      const currentHour = `${datePart}, ${hourPart}`; // "03/10/2025, 11"
       
       console.log('🔍 Checking for existing data in hour:', currentHour);
       
@@ -59,7 +63,15 @@ class TeableService {
       // Check if any record has the same hour
       const existingRecord = response.data.records.find(record => {
         const recordDateTime = record.fields['Date and Time '];
-        return recordDateTime && recordDateTime.substring(0, 13) === currentHour;
+        if (!recordDateTime) return false;
+        
+        // Extract hour from existing record in same format
+        const recordDatePart = recordDateTime.substring(0, 10); // "03/10/2025"
+        const recordTimePart = recordDateTime.substring(12); // "10:01:10"
+        const recordHourPart = recordTimePart.substring(0, 2); // "10"
+        const recordHour = `${recordDatePart}, ${recordHourPart}`; // "03/10/2025, 10"
+        
+        return recordHour === currentHour;
       });
       
       if (existingRecord) {

@@ -377,6 +377,62 @@ router.post('/post-fixed-actual-dynamic-achieved', async (req, res) => {
 });
 
 /**
+ * GET /api/teable/debug-hour-check
+ * Debug the hour checking logic
+ */
+router.get('/debug-hour-check', async (req, res) => {
+  try {
+    const TeableService = require('../services/teableService');
+    const teableService = new TeableService();
+    
+    const pakistanDateTime = teableService.getPakistanDateTime();
+    
+    // Extract hour using the new logic
+    const datePart = pakistanDateTime.substring(0, 10);
+    const timePart = pakistanDateTime.substring(12);
+    const hourPart = timePart.substring(0, 2);
+    const currentHour = `${datePart}, ${hourPart}`;
+    
+    // Get all records to show comparison
+    const recordsResult = await teableService.getAllRecords();
+    let existingHours = [];
+    
+    if (recordsResult.success && recordsResult.data.records) {
+      existingHours = recordsResult.data.records.map(record => {
+        const recordDateTime = record.fields['Date and Time '];
+        if (!recordDateTime) return 'No DateTime';
+        
+        const recordDatePart = recordDateTime.substring(0, 10);
+        const recordTimePart = recordDateTime.substring(12);
+        const recordHourPart = recordTimePart.substring(0, 2);
+        const recordHour = `${recordDatePart}, ${recordHourPart}`;
+        
+        return {
+          original: recordDateTime,
+          extracted: recordHour,
+          matchesCurrent: recordHour === currentHour
+        };
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        currentPakistanDateTime: pakistanDateTime,
+        extractedCurrentHour: currentHour,
+        existingRecords: existingHours,
+        hasMatchingHour: existingHours.some(h => h.matchesCurrent)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * POST /api/teable/replace-with-specific
  * Delete all existing records and post specific values
  */

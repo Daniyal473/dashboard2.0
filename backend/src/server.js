@@ -1,4 +1,7 @@
-require("dotenv").config({ path: "../.env" });
+// Load environment variables - Vercel handles this automatically in production
+if (process.env.NODE_ENV !== 'production') {
+  require("dotenv").config({ path: "../.env" });
+}
 const app = require("./app");
 const schedulerService = require("./services/schedulerService");
 

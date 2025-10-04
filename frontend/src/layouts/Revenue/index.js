@@ -140,7 +140,11 @@ function Revenue() {
     const fetchRevenueData = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://localhost:5000/api/revenue");
+        // Use Vercel deployment URL if REACT_APP_API_URL is not set
+        const apiUrl =
+          process.env.REACT_APP_API_URL ||
+          "https://backend-ifwooxn6b-rana-talhas-projects.vercel.app";
+        const response = await fetch(`${apiUrl}/api/revenue`);
         const result = await response.json();
 
         if (result.success) {
@@ -234,8 +238,8 @@ function Revenue() {
         title: "TARGET",
         amount: {
           type: "custom",
-          actual: "Rs583K",
-          achieved: `Rs${Math.round(targetSum / 1000)}K`,
+          actual: revenueData?.formattedActualRevenue || formatCurrency(actualRevenue),
+          achieved: revenueData?.formattedExpectedRevenue || formatCurrency(expectedRevenue),
         },
         progress: 100,
         color: "primary",
