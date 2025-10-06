@@ -15,6 +15,8 @@ Coded by www.creative-tim.com
 
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import Table from "react-bootstrap/Table";
+import { Row, Col } from "react-bootstrap";
 
 // @mui material components
 import Grid from "@mui/material/Grid";
@@ -67,68 +69,107 @@ function ReservationCard({ guest }) {
 
       const data = await response.json();
       const reservation = data.result || {};
-      const guestName = reservationDetails?.guestName || guest.guestName || "N/A";
+      const guestName = reservation.guestName || "N/A";
 
       const cnic =
-        reservationDetails?.customFieldValues?.find(
+        reservation.customFieldValues?.find(
           (field) => field.customField?.name === "ID card Number/ Passport number"
         )?.value || "N/A";
 
       const listingMapId = guest.listingName || "N/A";
       const listingType = guest.type || "N/A";
-      const contact = reservationDetails?.phone || "N/A";
-      const duration = reservationDetails?.nights || "N/A";
-      const totalPrice = reservationDetails?.totalPrice || "N/A";
-      const currencyLabel = reservationDetails?.currency || "";
-      const earlyCheckIn = reservationDetails?.earlyCheckinCharges || "N/A";
-      const pricePerNight = reservationDetails?.pricePerNight || "N/A";
-      const channelName = reservationDetails?.channelName || "N/A";
+      const contact = reservation.phone || "N/A";
+      const duration = reservation.nights || "N/A";
+      const totalPrice = reservation.totalPrice || "N/A";
+      const currencyLabel = reservation.currency || "";
+      let earlyCheckIn = "N/A";
+      if (Array.isArray(reservation.customFieldValues)) {
+        const earlyCheckinField = reservation.customFieldValues.find(
+          (field) => field.customField?.id === 75222
+        );
+        if (earlyCheckinField) {
+          earlyCheckIn = earlyCheckinField.value || "N/A";
+        }
+      }
+
+      let pricePerNight = "N/A";
+      if (Array.isArray(reservation.customFieldValues)) {
+        const priceField = reservation.customFieldValues.find(
+          (field) => field.customField?.id === 63430
+        );
+        if (priceField) {
+          pricePerNight = priceField.value || "N/A";
+        }
+      }
+      const channelName = reservation.channelName || "N/A";
 
       const address =
-        reservationDetails?.customFieldValues?.find(
-          (field) => field.customField?.name === "Address"
-        )?.value ||
+        reservation.customFieldValues?.find((field) => field.customField?.name === "Address")
+          ?.value ||
         guest.address ||
         "N/A";
 
-      const email = reservationDetails?.guestEmail || "N/A";
-      const adults = reservationDetails?.numberOfGuests || "N/A";
-      const children = reservationDetails?.children || "N/A";
-      const arrival = reservationDetails?.arrivalDate || "N/A";
-      const checkInTime = reservationDetails?.checkInTime
-        ? formatTime(reservationDetails.checkInTime)
+      const email = reservation.guestEmail || "N/A";
+      const adults = reservation.numberOfGuests || "N/A";
+      const children = reservation.children || "N/A";
+      const arrival = reservation.arrivalDate || "N/A";
+      const checkInTime = reservation.checkInTime
+        ? formatTime(reservation.checkInTime)
         : guest.checkinTime
         ? formatTime(guest.checkinTime)
         : "N/A";
 
-      const departure = reservationDetails?.departureDate || guest.checkoutDate || "N/A";
+      const departure = reservation.departureDate || guest.checkoutDate || "N/A";
 
-      const checkOutTime = reservationDetails?.checkOutTime
-        ? formatTime(reservationDetails.checkOutTime)
+      const checkOutTime = reservation.checkOutTime
+        ? formatTime(reservation.checkOutTime)
         : guest.checkoutTime
         ? formatTime(guest.checkoutTime)
         : "N/A";
 
       const vehicleNumber =
-        reservationDetails?.customFieldValues?.find(
-          (field) => field.customField?.name === "Vehicle Number"
-        )?.value ||
+        reservation.customFieldValues?.find((field) => field.customField?.name === "Vehicle Number")
+          ?.value ||
         guest.vehicleNo ||
         "N/A";
 
-      const securityDepositFee = reservationDetails?.securityDeposit || "N/A";
+      let securityDepositFee = "N/A";
+      if (Array.isArray(reservation.financeField)) {
+        const securityField = reservation.financeField.find(
+          (field) => field.alias === "Security Deposit" && field.isDeleted === 0
+        );
+        if (securityField) {
+          securityDepositFee = securityField.total ?? securityField.value ?? "N/A";
+        }
+      }
 
-      const actualCheckInTime = new Date().toLocaleString("en-US", {
-        month: "2-digit",
-        day: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: true,
-      });
+      let actualCheckInTime = "N/A";
 
-      const reservationId = reservationDetails?.reservationId || "N/A";
+      if (Array.isArray(reservation.customFieldValues)) {
+        const checkInField = reservation.customFieldValues.find(
+          (item) =>
+            item.customField?.name === "Actual Check-in Time" && item.customFieldId === 76281
+        );
+
+        if (checkInField && checkInField.value) {
+          const parsedDate = new Date(checkInField.value);
+          if (!isNaN(parsedDate)) {
+            actualCheckInTime = parsedDate.toLocaleString("en-US", {
+              month: "2-digit",
+              day: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+              hour12: true,
+            });
+          } else {
+            actualCheckInTime = checkInField.value; // fallback if not a date
+          }
+        }
+      }
+
+      const reservationId = reservation.reservationId || "N/A";
 
       const formWindow = window.open("", "_blank");
 
@@ -587,7 +628,7 @@ ul li {
     >
       <MDBox p={2}>
         {/* Reservation ID at top */}
-        <MDTypography variant="subtitle2" color="primary" fontWeight="bold">
+        <MDTypography variant="subtitle2" color="dark" fontWeight="bold">
           Reservation #{guest.reservationId || "N/A"}
         </MDTypography>
 
@@ -609,9 +650,6 @@ ul li {
 
         {/* Stay Duration */}
         <MDBox mt={1} mb={1}>
-          <MDTypography variant="caption" color="textSecondary">
-            Stay Duration
-          </MDTypography>
           <MDTypography variant="body2" fontWeight="medium">
             {guest.stayDuration || "N/A"}
           </MDTypography>
@@ -640,7 +678,7 @@ ul li {
                 sx={{
                   mr: 0.5,
                   mb: 0.5,
-                  bgcolor: "primary.light",
+                  bgcolor: "dark.light",
                   color: "white",
                   fontWeight: "bold",
                 }}
@@ -650,7 +688,7 @@ ul li {
         )}
 
         {/* Preview Button */}
-        <MDBox mt={2} textAlign="right">
+        <MDBox mt={2} display="flex" justifyContent="space-between" alignItems="center">
           <Button
             variant="outlined"
             size="small"
@@ -660,18 +698,18 @@ ul li {
               textTransform: "none",
               fontWeight: "bold",
               boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-              backgroundColor: "#ffffff",
-              color: "primary.main",
-              borderColor: "primary.main",
+              backgroundColor: "#28282B", // ✅ Black background
+              color: "#ffffff", // ✅ White text
+              borderColor: "#28282B", // ✅ Black border
               "&:hover": {
-                backgroundColor: "#f5f5f5",
-                borderColor: "primary.dark",
+                backgroundColor: "#333333", // Slightly lighter black on hover
+                borderColor: "#28282B",
               },
               "&:focus": {
-                backgroundColor: "#ffffff",
+                backgroundColor: "#000000",
               },
               "&:active": {
-                backgroundColor: "#ffffff",
+                backgroundColor: "#222222",
               },
             }}
           >
@@ -690,12 +728,18 @@ ul li {
                   textTransform: "none",
                   fontWeight: "bold",
                   boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                  backgroundColor: "#ffffff",
-                  color: "primary.main",
-                  borderColor: "primary.main",
+                  backgroundColor: "#28282B", // ✅ Black background
+                  color: "#ffffff", // ✅ White text
+                  borderColor: "#28282B", // ✅ Black border
                   "&:hover": {
-                    backgroundColor: "#f5f5f5",
-                    borderColor: "primary.dark",
+                    backgroundColor: "#333333", // Slightly lighter black on hover
+                    borderColor: "#28282B",
+                  },
+                  "&:focus": {
+                    backgroundColor: "#000000",
+                  },
+                  "&:active": {
+                    backgroundColor: "#222222",
                   },
                 }}
               >
@@ -703,16 +747,25 @@ ul li {
               </Button>
             ) : (
               <Button
-                variant="contained"
+                variant="outlined"
                 size="small"
                 sx={{
                   borderRadius: "12px",
                   textTransform: "none",
                   fontWeight: "bold",
-                  backgroundColor: "primary.main",
-                  color: "#fff",
+                  boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+                  backgroundColor: "#28282B", // ✅ Black background
+                  color: "#ffffff", // ✅ White text
+                  borderColor: "#28282B", // ✅ Black border
                   "&:hover": {
-                    backgroundColor: "primary.dark",
+                    backgroundColor: "#333333", // Slightly lighter black on hover
+                    borderColor: "#28282B",
+                  },
+                  "&:focus": {
+                    backgroundColor: "#000000",
+                  },
+                  "&:active": {
+                    backgroundColor: "#222222",
                   },
                 }}
                 onClick={handlePrintCheckIn}
@@ -723,7 +776,7 @@ ul li {
         </MDBox>
       </MDBox>
       {/* Preview Dialog */}
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
         <DialogTitle>Reservation Details</DialogTitle>
         <DialogContent dividers>
           {loadingDetails ? (
@@ -735,109 +788,194 @@ ul li {
               Error: {error}
             </MDTypography>
           ) : (
-            <MDBox>
-              <Grid container spacing={2}>
-                {/* Left Column */}
-                <Grid item xs={12} md={6}>
-                  <MDTypography variant="body2">
-                    <strong>Name:</strong>{" "}
-                    {reservationDetails?.guestName || guest.guestName || "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>CNIC:</strong>{" "}
-                    {reservationDetails?.customFieldValues?.find(
-                      (field) => field.customField?.name === "ID card Number/ Passport number"
-                    )?.value || "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Unit:</strong> {guest.listingName || "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Type:</strong> {guest.type || "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Contact:</strong> {reservationDetails?.phone || "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Total Nights:</strong> {reservationDetails?.nights || "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Total Amount:</strong> {reservationDetails?.totalPrice || "N/A"}{" "}
-                    {reservationDetails?.currency || ""}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Early Check-in:</strong> {reservationDetails.earlyCheckinCharges}{" "}
-                    {reservationDetails?.currency || ""}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Price/Night:</strong> {reservationDetails?.pricePerNight || "N/A"}{" "}
-                    {reservationDetails?.currency || ""}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Channel ID:</strong> {reservationDetails?.channelName || "N/A"}
-                  </MDTypography>
-                </Grid>
+            <Row>
+              {/* Left Column */}
+              <Col md={6}>
+                <Table striped bordered hover size="sm">
+                  <tbody>
+                    <tr>
+                      <td>
+                        <strong>Name</strong>
+                      </td>
+                      <td>{reservationDetails?.guestName || guest.guestName || "N/A"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>CNIC</strong>
+                      </td>
+                      <td>
+                        {reservationDetails?.customFieldValues?.find(
+                          (field) => field.customField?.name === "ID card Number/ Passport number"
+                        )?.value || "N/A"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Unit</strong>
+                      </td>
+                      <td>{guest.listingName || "N/A"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Type</strong>
+                      </td>
+                      <td>{guest.type || "N/A"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Contact</strong>
+                      </td>
+                      <td>{reservationDetails?.phone || "N/A"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Total Nights</strong>
+                      </td>
+                      <td>{reservationDetails?.nights || "N/A"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Total Amount</strong>
+                      </td>
+                      <td>
+                        {reservationDetails?.totalPrice || "N/A"}{" "}
+                        {reservationDetails?.currency || ""}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Early Check-in</strong>
+                      </td>
+                      <td>
+                        {reservationDetails?.earlyCheckinCharges || "N/A"}{" "}
+                        {reservationDetails?.currency || ""}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Price/Night</strong>
+                      </td>
+                      <td>
+                        {reservationDetails?.pricePerNight || "N/A"}{" "}
+                        {reservationDetails?.currency || ""}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Channel ID</strong>
+                      </td>
+                      <td>{reservationDetails?.channelName || "N/A"}</td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </Col>
 
-                {/* Right Column */}
-                <Grid item xs={12} md={6}>
-                  <MDTypography variant="body2">
-                    <strong>Address:</strong>{" "}
-                    {reservationDetails?.customFieldValues?.find(
-                      (field) => field.customField?.name === "Address"
-                    )?.value ||
-                      guest.address ||
-                      "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Email:</strong> {reservationDetails?.guestEmail || "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Adults:</strong> {reservationDetails?.numberOfGuests || "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Children:</strong> {reservationDetails?.children || "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Check-in Date:</strong> {reservationDetails?.arrivalDate || "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Check-in Time:</strong>{" "}
-                    {reservationDetails?.checkInTime
-                      ? formatTime(reservationDetails.checkInTime)
-                      : guest.checkinTime
-                      ? formatTime(guest.checkinTime)
-                      : "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Check-out Date:</strong>{" "}
-                    {reservationDetails?.departureDate || guest.checkoutDate || "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Check-out Time:</strong>{" "}
-                    {reservationDetails?.checkOutTime
-                      ? formatTime(reservationDetails.checkOutTime)
-                      : guest.checkoutTime
-                      ? formatTime(guest.checkoutTime)
-                      : "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Vehicle No:</strong>{" "}
-                    {reservationDetails?.customFieldValues?.find(
-                      (field) => field.customField?.name === "Vehicle Number"
-                    )?.value ||
-                      guest.vehicleNo ||
-                      "N/A"}
-                  </MDTypography>
-                  <MDTypography variant="body2">
-                    <strong>Security Deposit:</strong>{" "}
-                    {reservationDetails?.securityDeposit || "N/A"}{" "}
-                    {reservationDetails?.currency || ""}
-                  </MDTypography>
-                </Grid>
-              </Grid>
-            </MDBox>
+              {/* Right Column */}
+              <Col md={6}>
+                <Table striped bordered hover size="sm">
+                  <tbody>
+                    <tr>
+                      <td>
+                        <strong>Address</strong>
+                      </td>
+                      <td
+                        style={{
+                          whiteSpace: "nowrap",
+                          maxWidth: "250px",
+                          display: "inline-block",
+                          transform: "scale(0.9)", // shrink proportionally
+                          transformOrigin: "left center",
+                        }}
+                      >
+                        {reservationDetails?.customFieldValues?.find(
+                          (field) => field.customField?.name === "Address"
+                        )?.value ||
+                          guest.address ||
+                          "N/A"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Email</strong>
+                      </td>
+                      <td>{reservationDetails?.guestEmail || "N/A"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Adults</strong>
+                      </td>
+                      <td>{reservationDetails?.numberOfGuests || "N/A"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Children</strong>
+                      </td>
+                      <td>{reservationDetails?.children || "N/A"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Check-in Date</strong>
+                      </td>
+                      <td>{reservationDetails?.arrivalDate || "N/A"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Check-in Time</strong>
+                      </td>
+                      <td>
+                        {reservationDetails?.checkInTime
+                          ? formatTime(reservationDetails.checkInTime)
+                          : guest.checkinTime
+                          ? formatTime(guest.checkinTime)
+                          : "N/A"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Check-out Date</strong>
+                      </td>
+                      <td>{reservationDetails?.departureDate || guest.checkoutDate || "N/A"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Check-out Time</strong>
+                      </td>
+                      <td>
+                        {reservationDetails?.checkOutTime
+                          ? formatTime(reservationDetails.checkOutTime)
+                          : guest.checkoutTime
+                          ? formatTime(guest.checkoutTime)
+                          : "N/A"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Vehicle No</strong>
+                      </td>
+                      <td>
+                        {reservationDetails?.customFieldValues?.find(
+                          (field) => field.customField?.name === "Vehicle Number"
+                        )?.value ||
+                          guest.vehicleNo ||
+                          "N/A"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Security Deposit</strong>
+                      </td>
+                      <td>
+                        {reservationDetails?.securityDeposit || "N/A"}{" "}
+                        {reservationDetails?.currency || ""}
+                      </td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </Col>
+            </Row>
           )}
         </DialogContent>
+
         <DialogActions>
           <Button
             onClick={handleClose}
@@ -846,17 +984,13 @@ ul li {
               borderRadius: "12px",
               textTransform: "none",
               fontWeight: "bold",
-              backgroundColor: "#ffffff",
-              color: "primary.main",
-              "&:hover": {
-                backgroundColor: "#f5f5f5",
-              },
-              "&:focus": {
-                backgroundColor: "#ffffff",
-              },
-              "&:active": {
-                backgroundColor: "#ffffff",
-              },
+              boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+              backgroundColor: "#28282B",
+              color: "#ffffff",
+              borderColor: "#28282B",
+              "&:hover": { backgroundColor: "#333333", borderColor: "#28282B" },
+              "&:focus": { backgroundColor: "#000000" },
+              "&:active": { backgroundColor: "#222222" },
             }}
           >
             Close
@@ -1059,7 +1193,7 @@ function KanbanView() {
                 }}
               >
                 {stacks.map((stack) => (
-                  <MDBox key={stack} minWidth={315} mr={2}>
+                  <MDBox key={stack} minWidth={360} mr={2}>
                     <Card
                       sx={{
                         backgroundColor: "#FAF9F6", // light gray background for the stack
@@ -1074,7 +1208,10 @@ function KanbanView() {
                             label={reservations.filter((guest) => guest.stack === stack).length}
                             color="primary"
                             size="small"
-                            sx={{ fontWeight: "bold" }}
+                            sx={{
+                              fontWeight: "bold",
+                              backgroundColor: "#28282B",
+                            }}
                           />
                         </MDBox>
                       </MDBox>
