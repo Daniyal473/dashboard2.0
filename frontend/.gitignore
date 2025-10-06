@@ -24,7 +24,6 @@ genezio.yaml
 .eslintrc.json
 .npmrc
 .prettierrc.json
-jsconfig.json
 vercel.json
 
 # Documentation files (private)
