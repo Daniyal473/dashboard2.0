@@ -140,12 +140,13 @@ function Revenue() {
     const fetchRevenueData = async () => {
       try {
         setLoading(true);
-        // Use Vercel deployment URL if REACT_APP_API_URL is not set
-        const apiUrl =
-          process.env.REACT_APP_API_URL ||
-          "https://backend-ifwooxn6b-rana-talhas-projects.vercel.app";
+        // Use local backend server
+        const apiUrl = "http://localhost:5000";
+        console.log("🔗 Connecting to:", `${apiUrl}/api/revenue`);
         const response = await fetch(`${apiUrl}/api/revenue`);
+        console.log("📡 Response status:", response.status);
         const result = await response.json();
+        console.log("📊 API Result:", result);
 
         if (result.success) {
           setRevenueData(result.data);
@@ -175,29 +176,31 @@ function Revenue() {
       return `Rs ${(numValue / 1000000).toFixed(1)}M`;
     } else if (numValue >= 1000) {
       return `Rs ${(numValue / 1000).toFixed(0)}K`;
+    } else {
+      return `Rs ${numValue.toFixed(0)}`;
     }
-    return `Rs ${numValue.toLocaleString()}`;
   };
 
   // Chart data based on backend response
   const getChartData = () => {
-    // Show default values if no data yet
+    if (!revenueData) {
+      return [
+        { label: "Target Revenue", value: 583000, color: "#3b82f6" },
+        { label: "Actual Revenue", value: 175480.55, color: "#06d6a0" },
+        { label: "Expected Revenue", value: 100406.13, color: "#8b5cf6" },
+        { label: "Daily Target", value: 230000, color: "#ef4444" },
+        { label: "Monthly Target", value: 7000000, color: "#f59e0b" },
+      ];
+    }
+
+    const targetRevenue = 583000; // Rs583K (fixed target)
+    const actualRevenue = parseFloat(revenueData.actualRevenue) || 0; // API Actual Revenue
+    const expectedRevenue = parseFloat(revenueData.expectedRevenue) || 0; // Expected Revenue
+
     return [
-      {
-        label: "Actual Revenue",
-        value: revenueData ? parseFloat(revenueData.actualRevenue) || 0 : 0,
-        color: "#3b82f6",
-      },
-      {
-        label: "Expected Revenue",
-        value: revenueData ? parseFloat(revenueData.expectedRevenue) || 0 : 0,
-        color: "#8b5cf6",
-      },
-      {
-        label: "Target",
-        value: 7000000,
-        color: "#06d6a0",
-      },
+      { label: "Target Revenue", value: targetRevenue, color: "#3b82f6" },
+      { label: "Actual Revenue", value: actualRevenue, color: "#06d6a0" },
+      { label: "Expected Revenue", value: expectedRevenue, color: "#8b5cf6" },
       { label: "Daily Target", value: 230000, color: "#ef4444" },
       { label: "Monthly Target", value: 7000000, color: "#f59e0b" },
     ];
@@ -206,30 +209,38 @@ function Revenue() {
   const chartData = getChartData();
   const maxValue = Math.max(...chartData.map((item) => item.value), 1);
 
-  // Revenue cards data based on backend response
+  // Revenue cards data based on backend response - Updated
   const getRevenueCards = () => {
-    // Show default values if no data yet
-    const actualRevenue = revenueData ? parseFloat(revenueData.actualRevenue) || 0 : 0;
-    const expectedRevenue = revenueData ? parseFloat(revenueData.expectedRevenue) || 0 : 0;
+    // Fixed target revenue - remains unchanged
+    const targetRevenue = 583000; // Rs583K (fixed target)
+    // API actual revenue from backend
+    const actualRevenue = revenueData ? parseFloat(revenueData.actualRevenue) || 0 : 0; // Rs175K (API actual)
+    // Expected revenue from backend
+    const expectedRevenue = revenueData ? parseFloat(revenueData.expectedRevenue) || 0 : 0; // Rs100K (expected)
     const totalRevenue = revenueData ? parseFloat(revenueData.totalRevenue) || 0 : 0;
+    const monthlyAchievedRevenue = revenueData
+      ? parseFloat(revenueData.monthlyAchievedRevenue) || 0
+      : 0;
     const occupancyRate = revenueData ? parseFloat(revenueData.occupancyRate) || 0 : 0;
 
-    // Calculate sum of actual and expected revenue for target
-    const targetSum = actualRevenue + expectedRevenue;
+    // Calculate achievement percentage based on combined actual + expected vs target
+    const combinedAchieved = actualRevenue + expectedRevenue;
+    const achievementProgress =
+      targetRevenue > 0 ? Math.min((combinedAchieved / targetRevenue) * 100, 100) : 0;
 
     return [
       {
         title: "ACTUAL REVENUE",
-        amount: formatCurrency(actualRevenue),
-        progress: Math.min((actualRevenue / 7000000) * 100, 100), // Progress against monthly target
+        amount: formatCurrency(actualRevenue), // API Actual Revenue: 175480.55 PKR
+        progress: achievementProgress, // Achievement progress
         color: "success",
         icon: "trending_up",
         gradient: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
       },
       {
         title: "EXPECTED REVENUE",
-        amount: formatCurrency(expectedRevenue),
-        progress: Math.min((expectedRevenue / 7000000) * 100, 100),
+        amount: formatCurrency(expectedRevenue), // Expected Revenue: 100406.13 PKR
+        progress: achievementProgress, // Same achievement progress
         color: "info",
         icon: "schedule",
         gradient: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
@@ -238,26 +249,30 @@ function Revenue() {
         title: "TARGET",
         amount: {
           type: "custom",
-          actual: revenueData?.formattedActualRevenue || formatCurrency(actualRevenue),
-          achieved: revenueData?.formattedExpectedRevenue || formatCurrency(expectedRevenue),
+          actual: formatCurrency(targetRevenue), // Rs583K (fixed target)
+          achieved: formatCurrency(combinedAchieved), // Combined actual + expected
         },
-        progress: 100,
+        progress: achievementProgress, // Achievement progress
         color: "primary",
         icon: "flag",
         gradient: "linear-gradient(135deg, #06d6a0 0%, #059669 100%)",
       },
       {
         title: "MONTHLY TARGET",
-        amount: "Rs17.5M",
-        progress: Math.min((totalRevenue / 17500000) * 100, 100),
+        amount: {
+          type: "custom",
+          actual: "Rs17.5M", // Monthly target (hardcoded)
+          achieved: formatCurrency(monthlyAchievedRevenue), // Monthly achieved revenue from Teable
+        },
+        progress: Math.min((monthlyAchievedRevenue / 17500000) * 100, 100),
         color: "warning",
         icon: "flag",
         gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
       },
       {
         title: "DAILY TARGET",
-        amount: "Rs583K",
-        progress: Math.min((actualRevenue / 583000) * 100, 100),
+        amount: formatCurrency(targetRevenue), // Rs583K (fixed target)
+        progress: Math.min((combinedAchieved / targetRevenue) * 100, 100),
         color: "error",
         icon: "flag",
         gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",

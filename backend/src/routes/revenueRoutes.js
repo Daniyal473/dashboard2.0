@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getRevenueAndOccupancy, refreshListingsCache, fetchListingsData } = require('../services/revenueService');
+const { getRevenueAndOccupancy, refreshListingsCache, fetchListingsData, testMonthlyTargetPost } = require('../services/revenueService');
 const config = require('../config/config');
 
 // Middleware for API key authentication (optional)
@@ -356,6 +356,46 @@ router.get('/cron', async (req, res) => {
       error: error.message,
       timestamp: new Date().toISOString(),
       status: 'Cron job failed'
+    });
+  }
+});
+
+/**
+ * @route POST /api/revenue/test-monthly-target
+ * @desc Test posting monthly target data at 2pm
+ * @access Public
+ */
+router.post('/test-monthly-target', logRequest, async (req, res) => {
+  try {
+    console.log('🧪 Testing monthly target posting at 2pm...');
+    
+    const result = await testMonthlyTargetPost();
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Monthly target test post successful',
+        data: {
+          revenue: result.revenue,
+          formatted: `Rs${Math.round(result.revenue / 1000)}K`
+        },
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Monthly target test failed:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Monthly target test failed',
+      message: error.message,
+      timestamp: new Date().toISOString()
     });
   }
 });

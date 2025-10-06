@@ -1,12 +1,21 @@
 // Vercel serverless function that calls the complete backend
 export default async function handler(req, res) {
-  console.log('🚀 Cron job starting...');
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
   
   try {
+    console.log('⏰ Cron job endpoint called');
     // Get Pakistan time
     const now = new Date();
     const pakistanTime = new Date(now.getTime() + (5 * 60 * 60 * 1000));
-    
     // Format Pakistan date and time
     const day = pakistanTime.getUTCDate().toString().padStart(2, '0');
     const month = (pakistanTime.getUTCMonth() + 1).toString().padStart(2, '0');

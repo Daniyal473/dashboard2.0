@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const config = require('../config/config');
 const axios = require('axios');
+const MonthlyTargetService = require('./monthlyTargetService');
 
 // Dynamic listings data - will be fetched from API
 let LISTINGS_DATA = {};
@@ -202,7 +203,8 @@ async function getRevenueAndOccupancy() {
   let dailyRevenue = 0;
   
   // Initialize actual and expected revenue tracking
-  let actualRevenue = 0;
+  let actualRevenue = 583000; // Hardcoded to Rs583K as requested
+  let apiActualRevenue = 0; // Track API actual revenue separately
   let expectedRevenue = 0;
   let occupancyRate = 0;
 
@@ -730,8 +732,8 @@ async function getRevenueAndOccupancy() {
               // Classify revenue based on check-in status
               console.log(`Revenue classification for ${guestName}: ${revenueValue.toFixed(2)} PKR` );
               if (hasCheckedIn) {
-                actualRevenue += revenueValue;
-                console.log(`Added to ACTUAL revenue: ${revenueValue.toFixed(2)} PKR` );
+                apiActualRevenue += revenueValue;
+                console.log(`Added to API ACTUAL revenue: ${revenueValue.toFixed(2)} PKR` );
               } else {
                 expectedRevenue += revenueValue;
                 console.log(`Added to EXPECTED revenue: ${revenueValue.toFixed(2)} PKR` );
@@ -746,11 +748,14 @@ async function getRevenueAndOccupancy() {
       totalRevenue = dailyRevenue; // Keep original total for compatibility
 
 
+      // Calculate achieved revenue (API actual + expected)
+      const achievedRevenue = apiActualRevenue + expectedRevenue;
+      
       // Show final revenue totals
       console.log(`\n=== REVENUE CLASSIFICATION RESULTS ===` );
-      console.log(`💰 ACTUAL Revenue (guests checked in): ${actualRevenue.toFixed(2)} PKR` );
-      console.log(`📅 EXPECTED Revenue (guests not checked in): ${expectedRevenue.toFixed(2)} PKR` );
-      console.log(`💵 TOTAL Revenue: ${(actualRevenue + expectedRevenue).toFixed(2)} PKR` );
+      console.log(`📊 API Actual Revenue: ${apiActualRevenue.toFixed(2)} PKR` );
+      console.log(`📅 Expected Revenue: ${expectedRevenue.toFixed(2)} PKR` );
+      console.log(`✅ TOTAL Revenue: ${(apiActualRevenue + expectedRevenue).toFixed(2)} PKR` );
       console.log(`=======================================`);
 
       // Update properties in memory
@@ -815,10 +820,24 @@ async function getRevenueAndOccupancy() {
         console.log('❌ Auto-posting to Teable failed:', error.message);
       }
 
+      // Calculate achieved revenue (API actual + expected)
+      const achievedRevenue = apiActualRevenue + expectedRevenue;
+      
+      // Get monthly achieved revenue
+      let monthlyAchievedRevenue = 0;
+      try {
+        const monthlyTargetService = new MonthlyTargetService();
+        monthlyAchievedRevenue = await monthlyTargetService.getMonthlyAchievedRevenue();
+        console.log(`📊 Monthly achieved revenue: ${monthlyAchievedRevenue.toFixed(2)} PKR`);
+      } catch (error) {
+        console.error('❌ Error getting monthly achieved revenue:', error.message);
+      }
+      
       return {
-        actualRevenue: actualRevenue.toFixed(2),
-        expectedRevenue: expectedRevenue.toFixed(2),
-        totalRevenue: totalRevenue.toFixed(2),
+        actualRevenue: apiActualRevenue.toFixed(2), // API Actual Revenue (dynamic)
+        expectedRevenue: expectedRevenue.toFixed(2), // Expected Revenue (dynamic)
+        totalRevenue: (apiActualRevenue + expectedRevenue).toFixed(2), // Combined total (dynamic)
+        monthlyAchievedRevenue: monthlyAchievedRevenue.toFixed(2), // Monthly achieved revenue
         occupancyRate: occupancyRate,
         categoryAvailability: categoryAvailability
       };
@@ -826,9 +845,10 @@ async function getRevenueAndOccupancy() {
   } catch (error) {
     console.error('❌ Error in main revenue processing:', error);
     return {
-      actualRevenue: '0',
-      expectedRevenue: '0', 
-      totalRevenue: '0',
+      actualRevenue: '0', // API Actual Revenue (error fallback)
+      expectedRevenue: '0', // Expected Revenue (error fallback)
+      totalRevenue: '0', // Combined total (error fallback)
+      monthlyAchievedRevenue: '0', // Monthly achieved revenue (error fallback)
       occupancyRate: 0,
       categoryAvailability: {},
       error: 'API temporarily unavailable',
@@ -837,8 +857,23 @@ async function getRevenueAndOccupancy() {
   }
 }
 
+// Initialize monthly target service and scheduler
+const monthlyTargetService = new MonthlyTargetService();
+
+// Test function for 2pm posting
+async function testMonthlyTargetPost() {
+  return await monthlyTargetService.testPost2pm();
+}
+
+// Initialize scheduler
+function initializeMonthlyTargetScheduler() {
+  monthlyTargetService.scheduleDailyPosting();
+}
+
 module.exports = {
   getRevenueAndOccupancy,
   refreshListingsCache,
-  fetchListingsData
+  fetchListingsData,
+  testMonthlyTargetPost,
+  initializeMonthlyTargetScheduler
 };

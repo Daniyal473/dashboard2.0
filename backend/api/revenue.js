@@ -1,5 +1,16 @@
 // Fixed serverless function that matches local server exactly
 export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
   try {
     console.log('📊 Revenue API endpoint called');
     
@@ -262,6 +273,21 @@ export default async function handler(req, res) {
       console.log('❌ Auto-posting to Teable failed:', error.message);
     }
     
+    // Get monthly achieved revenue
+    let monthlyAchievedRevenue = 0;
+    try {
+      const monthlyResponse = await fetch(`${req.headers.host ? `https://${req.headers.host}` : 'http://localhost:3000'}/api/monthly-achieved`);
+      if (monthlyResponse.ok) {
+        const monthlyData = await monthlyResponse.json();
+        if (monthlyData.success) {
+          monthlyAchievedRevenue = monthlyData.data.monthlyAchievedRevenue || 0;
+          console.log(`📊 Monthly achieved revenue: ${monthlyAchievedRevenue.toFixed(2)} PKR`);
+        }
+      }
+    } catch (error) {
+      console.log('❌ Error getting monthly achieved revenue:', error.message);
+    }
+    
     // Format values
     const formatRevenue = (amount) => {
       if (amount >= 1000000) {
@@ -276,12 +302,14 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       data: {
-        actualRevenue: "583000.00", // Hardcoded as requested
-        expectedRevenue: expectedRevenue.toFixed(2),
-        totalRevenue: totalRevenue.toFixed(2),
-        formattedActualRevenue: "Rs583K", // Hardcoded formatted value
-        formattedExpectedRevenue: formatRevenue(expectedRevenue),
-        formattedTotalRevenue: formatRevenue(totalRevenue),
+        actualRevenue: apiActualRevenue.toFixed(2), // API Actual Revenue (dynamic)
+        expectedRevenue: apiExpectedRevenue.toFixed(2), // API Expected Revenue (dynamic)
+        totalRevenue: (apiActualRevenue + apiExpectedRevenue).toFixed(2), // Combined total (dynamic)
+        monthlyAchievedRevenue: monthlyAchievedRevenue.toFixed(2), // Monthly achieved revenue
+        formattedActualRevenue: formatRevenue(apiActualRevenue),
+        formattedExpectedRevenue: formatRevenue(apiExpectedRevenue),
+        formattedTotalRevenue: formatRevenue(apiActualRevenue + apiExpectedRevenue),
+        formattedMonthlyAchieved: formatRevenue(monthlyAchievedRevenue),
         occupancyRate: 85,
         processedReservations: processedCount,
         totalReservations: allReservations.length,
