@@ -124,6 +124,12 @@ class MonthlyTargetService {
         return 0;
       }
 
+      console.log(`📋 Total records in Teable: ${response.data.records.length}`);
+      if (response.data.records.length > 0) {
+        console.log('🔍 First record fields:', Object.keys(response.data.records[0].fields || {}));
+        console.log('🔍 First record date field:', response.data.records[0].fields['Date and Time ']);
+      }
+
       // Get current month and year
       const now = new Date();
       const pakistanTime = new Date(now.getTime() + (5 * 60 * 60 * 1000));
@@ -131,13 +137,21 @@ class MonthlyTargetService {
       const currentYear = pakistanTime.getFullYear();
 
       console.log(`🗓️ Calculating for month: ${currentMonth + 1}/${currentYear}`);
+      console.log(`🔍 Looking for records with month=${currentMonth} and year=${currentYear}`);
 
       // Filter records for current month
       const currentMonthRecords = response.data.records.filter(record => {
-        if (!record.fields || !record.fields['Date and Time']) return false;
+        if (!record.fields || !record.fields['Date and Time ']) return false;
         
-        const recordDate = new Date(record.fields['Date and Time']);
-        return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
+        // Parse ISO date format: "2025-10-06T10:00:17.449Z"
+        const dateTimeStr = record.fields['Date and Time '];
+        const recordDate = new Date(dateTimeStr);
+        const recordMonth = recordDate.getMonth();
+        const recordYear = recordDate.getFullYear();
+        
+        console.log(`📅 Record date: ${dateTimeStr} → month=${recordMonth}, year=${recordYear}`);
+        
+        return recordMonth === currentMonth && recordYear === currentYear;
       });
 
       console.log(`📋 Found ${currentMonthRecords.length} records for current month`);
@@ -174,7 +188,7 @@ class MonthlyTargetService {
       const postData = {
         records: [{
           fields: {
-            'Date and Time': pakistanTime.toISOString(),
+            'Date and Time ': pakistanTime.toISOString(),
             'Monthly Target Actual': this.monthlyTargetActual, // Hardcoded 17.5M
             'Monthly Target Achieved': this.formatRevenueValue(dailyRevenue)
           }

@@ -22,6 +22,8 @@ import { keyframes } from "@mui/system";
 // React
 import React, { Component, useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import { useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -68,7 +70,15 @@ class CanvasJSChart extends Component {
 
   render() {
     return (
-      <div ref={(ref) => (this.chartContainer = ref)} style={{ height: "400px", width: "100%" }} />
+      <div
+        ref={(ref) => (this.chartContainer = ref)}
+        style={{
+          height: "400px",
+          width: "100%",
+          minHeight: "300px",
+        }}
+        className="revenue-chart-container"
+      />
     );
   }
 }
@@ -78,40 +88,158 @@ CanvasJSChart.propTypes = {
   options: PropTypes.object.isRequired,
 };
 
-// Revenue Chart Component with your exact code
-class RevenueChart extends Component {
+// Responsive Chart Wrapper
+function ResponsiveRevenueChart({ chartData }) {
+  const [screenSize, setScreenSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const isMobile = screenSize.width <= 768;
+  const isSmallMobile = screenSize.width <= 480;
+  const isTablet = screenSize.width > 768 && screenSize.width <= 1024;
+
+  return (
+    <RevenueChartComponent
+      chartData={chartData}
+      isMobile={isMobile}
+      isSmallMobile={isSmallMobile}
+      isTablet={isTablet}
+      screenWidth={screenSize.width}
+    />
+  );
+}
+
+ResponsiveRevenueChart.propTypes = {
+  chartData: PropTypes.array.isRequired,
+};
+
+// Revenue Chart Component with dynamic data
+class RevenueChartComponent extends Component {
   render() {
+    const { chartData, isMobile, isSmallMobile, isTablet, screenWidth } = this.props;
+
+    const chartHeight = isSmallMobile ? 200 : isMobile ? 250 : isTablet ? 320 : 400;
+    const chartWidth = isMobile ? Math.min(screenWidth - 40, 400) : undefined;
+
     const options = {
       animationEnabled: true,
+      animationDuration: 1500,
       theme: "light2",
+      backgroundColor: "transparent",
+      height: chartHeight,
+      width: chartWidth,
       title: {
-        text: "Revenue Performance Analytics",
-      },
-      axisX: {
-        title: "Revenue Categories",
-        reversed: true,
+        text: isMobile ? "Revenue Analytics" : "Revenue Performance Analytics",
+        fontSize: isSmallMobile ? 12 : isMobile ? 14 : isTablet ? 16 : 20,
+        fontFamily: "Inter, sans-serif",
+        fontWeight: "600",
+        fontColor: "#1e293b",
+        margin: isMobile ? 5 : 15,
       },
       axisY: {
-        title: "Amount (Rs)",
+        title: isMobile ? "" : "Revenue Categories",
+        titleFontSize: isMobile ? 10 : 14,
+        titleFontFamily: "Inter, sans-serif",
+        titleFontColor: "#64748b",
+        labelFontSize: isSmallMobile ? 6 : isMobile ? 8 : 12,
+        labelFontFamily: "Inter, sans-serif",
+        labelFontColor: "#475569",
+        tickLength: 0,
+        lineThickness: 0,
+        gridThickness: 0,
+        labelMaxWidth: isSmallMobile ? 40 : isMobile ? 60 : 120,
+        labelWrap: true,
+        margin: isMobile ? 5 : 10,
+      },
+      axisX: {
+        title: isMobile ? "" : "Amount (Rs)",
+        titleFontSize: isMobile ? 10 : 14,
+        titleFontFamily: "Inter, sans-serif",
+        titleFontColor: "#64748b",
+        labelFontSize: isMobile ? 9 : 12,
+        labelFontFamily: "Inter, sans-serif",
+        labelFontColor: "#475569",
         includeZero: true,
         labelFormatter: this.addSymbols,
+        gridColor: "#e2e8f0",
+        gridThickness: isMobile ? 0.5 : 1,
+        tickLength: isMobile ? 3 : 5,
+        lineColor: "#cbd5e1",
+        lineThickness: 1,
+      },
+      toolTip: {
+        backgroundColor: "#1e293b",
+        fontColor: "white",
+        fontSize: 12,
+        fontFamily: "Inter, sans-serif",
+        cornerRadius: 8,
+        borderThickness: 0,
+        contentFormatter: function (e) {
+          const entry = e.entries[0];
+          const formattedValue =
+            entry.dataPoint.y >= 1000000
+              ? `Rs${(entry.dataPoint.y / 1000000).toFixed(1)}M`
+              : entry.dataPoint.y >= 1000
+              ? `Rs${Math.round(entry.dataPoint.y / 1000)}K`
+              : `Rs${Math.round(entry.dataPoint.y)}`;
+          return `<strong>${entry.dataPoint.label}</strong><br/>${formattedValue}`;
+        },
       },
       data: [
         {
           type: "bar",
-          dataPoints: [
-            { y: 7000000, label: "Monthly Target" },
-            { y: 7000000, label: "Target Revenue" },
-            { y: 6300000, label: "Expected Revenue" },
-            { y: 5250000, label: "Actual Revenue" },
-            { y: 230000, label: "Daily Target" },
-          ],
+          indexLabelPlacement: isMobile ? "none" : "outside",
+          indexLabelFontSize: isMobile ? 9 : 11,
+          indexLabelFontFamily: "Inter, sans-serif",
+          indexLabelFontColor: "#475569",
+          indexLabelFormatter: function (e) {
+            if (isMobile) return "";
+            return e.dataPoint.y >= 1000000
+              ? `Rs${(e.dataPoint.y / 1000000).toFixed(1)}M`
+              : e.dataPoint.y >= 1000
+              ? `Rs${Math.round(e.dataPoint.y / 1000)}K`
+              : `Rs${Math.round(e.dataPoint.y)}`;
+          },
+          dataPoints: chartData.map((item) => ({
+            y: item.value,
+            label: isSmallMobile
+              ? item.label.substring(0, 3)
+              : isMobile
+              ? item.label.substring(0, 6)
+              : item.label,
+            color: item.color,
+          })),
         },
       ],
     };
     return (
-      <div>
-        <CanvasJSChart options={options} />
+      <div
+        style={{
+          width: "100%",
+          height: chartHeight + "px",
+          overflow: "hidden",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: isMobile ? "10px" : "0px",
+        }}
+      >
+        <div style={{ width: "100%", height: "100%" }}>
+          <CanvasJSChart options={options} />
+        </div>
       </div>
     );
   }
@@ -125,47 +253,76 @@ class RevenueChart extends Component {
   }
 }
 
+// PropTypes validation for RevenueChartComponent
+RevenueChartComponent.propTypes = {
+  chartData: PropTypes.array.isRequired,
+  isMobile: PropTypes.bool.isRequired,
+  isSmallMobile: PropTypes.bool.isRequired,
+  isTablet: PropTypes.bool.isRequired,
+  screenWidth: PropTypes.number.isRequired,
+};
+
 function Revenue() {
   const [revenueData, setRevenueData] = useState(null);
+  const [monthlyData, setMonthlyData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Add mobile detection
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md")); // Hide on tablets and mobile
 
   const shimmer = keyframes`
     0% { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
   `;
 
-  // Fetch revenue data from backend
+  // Fetch revenue data and monthly target data from backend
   useEffect(() => {
-    const fetchRevenueData = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        // Use local backend server
         const apiUrl = "http://localhost:5000";
-        console.log("🔗 Connecting to:", `${apiUrl}/api/revenue`);
-        const response = await fetch(`${apiUrl}/api/revenue`);
-        console.log("📡 Response status:", response.status);
-        const result = await response.json();
-        console.log("📊 API Result:", result);
 
-        if (result.success) {
-          setRevenueData(result.data);
+        // Fetch revenue data
+        console.log("🔗 Connecting to:", `${apiUrl}/api/revenue`);
+        const revenueResponse = await fetch(`${apiUrl}/api/revenue`);
+        console.log("📡 Revenue response status:", revenueResponse.status);
+        const revenueResult = await revenueResponse.json();
+        console.log("📊 Revenue API Result:", revenueResult);
+
+        // Fetch monthly target data
+        console.log("🔗 Connecting to:", `${apiUrl}/api/monthly-target`);
+        const monthlyResponse = await fetch(`${apiUrl}/api/monthly-target`);
+        console.log("📡 Monthly response status:", monthlyResponse.status);
+        const monthlyResult = await monthlyResponse.json();
+        console.log("📊 Monthly API Result:", monthlyResult);
+
+        if (revenueResult.success) {
+          setRevenueData(revenueResult.data);
+        }
+
+        if (monthlyResult.success) {
+          setMonthlyData(monthlyResult.data);
+        }
+
+        if (revenueResult.success || monthlyResult.success) {
           setError(null);
         } else {
-          setError(result.error || "Failed to fetch revenue data");
+          setError("Failed to fetch data from backend");
         }
       } catch (err) {
         setError("Unable to connect to backend server");
-        console.error("Revenue fetch error:", err);
+        console.error("Data fetch error:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRevenueData();
+    fetchData();
 
     // Refresh data every 5 minutes
-    const interval = setInterval(fetchRevenueData, 5 * 60 * 1000);
+    const interval = setInterval(fetchData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -183,26 +340,18 @@ function Revenue() {
 
   // Chart data based on backend response
   const getChartData = () => {
-    if (!revenueData) {
-      return [
-        { label: "Target Revenue", value: 583000, color: "#3b82f6" },
-        { label: "Actual Revenue", value: 175480.55, color: "#06d6a0" },
-        { label: "Expected Revenue", value: 100406.13, color: "#8b5cf6" },
-        { label: "Daily Target", value: 230000, color: "#ef4444" },
-        { label: "Monthly Target", value: 7000000, color: "#f59e0b" },
-      ];
-    }
-
-    const targetRevenue = 583000; // Rs583K (fixed target)
-    const actualRevenue = parseFloat(revenueData.actualRevenue) || 0; // API Actual Revenue
-    const expectedRevenue = parseFloat(revenueData.expectedRevenue) || 0; // Expected Revenue
+    const targetRevenue = 583000; // Rs583K (fixed daily target)
+    const actualRevenue = revenueData ? parseFloat(revenueData.actualRevenue) || 0 : 175480.55;
+    const expectedRevenue = revenueData ? parseFloat(revenueData.expectedRevenue) || 0 : 100406.13;
+    const monthlyTarget = monthlyData ? monthlyData.monthlyTarget || 17500000 : 17500000; // Rs17.5M
+    const monthlyAchieved = monthlyData ? monthlyData.totalMonthlyAchieved || 0 : 0;
 
     return [
-      { label: "Target Revenue", value: targetRevenue, color: "#3b82f6" },
-      { label: "Actual Revenue", value: actualRevenue, color: "#06d6a0" },
-      { label: "Expected Revenue", value: expectedRevenue, color: "#8b5cf6" },
-      { label: "Daily Target", value: 230000, color: "#ef4444" },
-      { label: "Monthly Target", value: 7000000, color: "#f59e0b" },
+      { label: "Actual Revenue", value: actualRevenue, color: "#A67C8A" }, // Mauve purple
+      { label: "Expected Revenue", value: expectedRevenue, color: "#4A90A4" }, // Teal blue
+      { label: "Target", value: actualRevenue + expectedRevenue, color: "#E85A4F" }, // Red
+      { label: "Monthly Target", value: monthlyAchieved, color: "#20c997" }, // Green
+      { label: "Daily Target", value: targetRevenue, color: "#7B7FB8" }, // Purple blue
     ];
   };
 
@@ -218,15 +367,16 @@ function Revenue() {
     // Expected revenue from backend
     const expectedRevenue = revenueData ? parseFloat(revenueData.expectedRevenue) || 0 : 0; // Rs100K (expected)
     const totalRevenue = revenueData ? parseFloat(revenueData.totalRevenue) || 0 : 0;
-    const monthlyAchievedRevenue = revenueData
-      ? parseFloat(revenueData.monthlyAchievedRevenue) || 0
-      : 0;
+    const monthlyAchievedRevenue = monthlyData ? monthlyData.totalMonthlyAchieved || 0 : 0;
+    const monthlyTarget = monthlyData ? monthlyData.monthlyTarget || 17500000 : 17500000;
     const occupancyRate = revenueData ? parseFloat(revenueData.occupancyRate) || 0 : 0;
 
     // Calculate achievement percentage based on combined actual + expected vs target
     const combinedAchieved = actualRevenue + expectedRevenue;
     const achievementProgress =
-      targetRevenue > 0 ? Math.min((combinedAchieved / targetRevenue) * 100, 100) : 0;
+      targetRevenue > 0
+        ? parseFloat(Math.min((combinedAchieved / targetRevenue) * 100, 100).toFixed(2))
+        : 0;
 
     return [
       {
@@ -261,10 +411,12 @@ function Revenue() {
         title: "MONTHLY TARGET",
         amount: {
           type: "custom",
-          actual: "Rs17.5M", // Monthly target (hardcoded)
+          actual: formatCurrency(monthlyTarget), // Monthly target from API
           achieved: formatCurrency(monthlyAchievedRevenue), // Monthly achieved revenue from Teable
         },
-        progress: Math.min((monthlyAchievedRevenue / 17500000) * 100, 100),
+        progress: parseFloat(
+          Math.min((monthlyAchievedRevenue / monthlyTarget) * 100, 100).toFixed(2)
+        ),
         color: "warning",
         icon: "flag",
         gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
@@ -272,7 +424,7 @@ function Revenue() {
       {
         title: "DAILY TARGET",
         amount: formatCurrency(targetRevenue), // Rs583K (fixed target)
-        progress: Math.min((combinedAchieved / targetRevenue) * 100, 100),
+        progress: parseFloat(Math.min((combinedAchieved / targetRevenue) * 100, 100).toFixed(2)),
         color: "error",
         icon: "flag",
         gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
@@ -395,14 +547,18 @@ function Revenue() {
             "& > *": {
               flex: "1 1 calc(20% - 24px)",
               minWidth: "300px",
+              maxWidth: "300px",
               "@media (max-width: 1200px)": {
                 flex: "1 1 calc(33.333% - 24px)",
+                maxWidth: "300px",
               },
               "@media (max-width: 900px)": {
                 flex: "1 1 calc(50% - 24px)",
+                maxWidth: "300px",
               },
               "@media (max-width: 600px)": {
                 flex: "1 1 100%",
+                maxWidth: "100%",
               },
             },
           }}
@@ -411,7 +567,9 @@ function Revenue() {
             <Card
               key={index}
               sx={{
-                height: "100%",
+                height: "200px",
+                minHeight: "200px",
+                maxHeight: "200px",
                 background: "#ffffff",
                 border: "1px solid #e2e8f0",
                 borderRadius: 3,
@@ -479,7 +637,7 @@ function Revenue() {
                           <MDTypography
                             sx={{ fontSize: "1.0rem", fontWeight: 600, color: "#1e293b" }}
                           >
-                            {item.amount.actual}
+                            {item.title === "ACTUAL REVENUE" ? "1" : item.amount.actual}
                           </MDTypography>
                           <MDTypography
                             sx={{ fontSize: "1.0rem", fontWeight: 600, color: "#1e293b" }}
@@ -574,75 +732,83 @@ function Revenue() {
           ))}
         </MDBox>
 
-        {/* Revenue Analytics Chart */}
-        <MDBox mt={8} sx={{ position: "relative", zIndex: 2 }}>
-          <Card
+        {/* Revenue Analytics Chart - Hidden on Mobile */}
+        {!isMobile && (
+          <MDBox
+            mt={8}
             sx={{
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
-              borderRadius: 4,
-              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-              overflow: "hidden",
               position: "relative",
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: "4px",
-                background:
-                  "linear-gradient(90deg, #3b82f6 0%, #8b5cf6 25%, #06d6a0 50%, #ef4444 75%, #f59e0b 100%)",
-                borderRadius: "4px 4px 0 0",
-                zIndex: 1,
-              },
-              "&::after": {
-                content: '""',
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background:
-                  "linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)",
-                zIndex: -1,
-              },
+              zIndex: 2,
             }}
           >
-            <MDBox p={6}>
-              <MDBox mb={4}>
-                <MDTypography
-                  variant="h4"
+            <Card
+              sx={{
+                background: "#ffffff",
+                border: "1px solid #e2e8f0",
+                borderRadius: 4,
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                overflow: "hidden",
+                position: "relative",
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: "4px",
+                  background:
+                    "linear-gradient(90deg, #3b82f6 0%, #8b5cf6 25%, #06d6a0 50%, #ef4444 75%, #f59e0b 100%)",
+                  borderRadius: "4px 4px 0 0",
+                  zIndex: 1,
+                },
+                "&::after": {
+                  content: '""',
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background:
+                    "linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)",
+                  zIndex: -1,
+                },
+              }}
+            >
+              <MDBox p={6}>
+                <MDBox mb={4}>
+                  <MDTypography
+                    variant="h4"
+                    sx={{
+                      color: "#1e293b",
+                      fontWeight: 800,
+                      mb: 1,
+                    }}
+                  >
+                    Revenue Trends & Analytics
+                  </MDTypography>
+                  <MDTypography
+                    variant="body1"
+                    sx={{
+                      color: "#64748b",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Advanced insights and predictive analytics dashboard
+                  </MDTypography>
+                </MDBox>
+                <MDBox
                   sx={{
-                    color: "#1e293b",
-                    fontWeight: 800,
-                    mb: 1,
+                    minHeight: "400px",
+                    position: "relative",
+                    zIndex: 2,
                   }}
                 >
-                  Revenue Trends & Analytics
-                </MDTypography>
-                <MDTypography
-                  variant="body1"
-                  sx={{
-                    color: "#64748b",
-                    fontWeight: 500,
-                  }}
-                >
-                  Advanced insights and predictive analytics dashboard
-                </MDTypography>
+                  <ResponsiveRevenueChart chartData={chartData} />
+                </MDBox>
               </MDBox>
-              <MDBox
-                sx={{
-                  minHeight: "400px",
-                  position: "relative",
-                  zIndex: 2,
-                }}
-              >
-                <RevenueChart />
-              </MDBox>
-            </MDBox>
-          </Card>
-        </MDBox>
+            </Card>
+          </MDBox>
+        )}
       </MDBox>
       <Footer />
     </DashboardLayout>

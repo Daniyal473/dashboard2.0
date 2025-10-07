@@ -19,6 +19,9 @@ import Grid from "@mui/material/Grid";
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 
+// React hooks
+import { useState, useEffect } from "react";
+
 // Material Dashboard 2 React example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
@@ -37,6 +40,55 @@ import OrdersOverview from "layouts/dashboard/components/OrdersOverview";
 
 function Dashboard() {
   const { sales, tasks } = reportsLineChartData;
+
+  // State for monthly target data
+  const [monthlyData, setMonthlyData] = useState({
+    totalMonthlyAchieved: 0,
+    formattedTotal: "Rs0",
+    monthlyTarget: 17500000,
+    formattedMonthlyTarget: "Rs17.5M",
+    loading: true,
+  });
+
+  // Fetch monthly target data
+  useEffect(() => {
+    const fetchMonthlyData = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/monthly-target", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log("📊 Monthly Target API Response:", result);
+          if (result.success) {
+            console.log("✅ Monthly Target Data:", result.data);
+            setMonthlyData({
+              ...result.data,
+              loading: false,
+            });
+          } else {
+            console.error("❌ Monthly Target API Error:", result.error);
+          }
+        } else {
+          console.error("❌ Monthly Target API Failed:", response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching monthly data:", error);
+        console.error("❌ Network Error - Backend may not be running on port 5000");
+        setMonthlyData((prev) => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchMonthlyData();
+
+    // Refresh data every 5 minutes
+    const interval = setInterval(fetchMonthlyData, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <DashboardLayout>
@@ -76,13 +128,13 @@ function Dashboard() {
             <MDBox mb={1.5}>
               <ComplexStatisticsCard
                 color="success"
-                icon="store"
-                title="Revenue"
-                count="34k"
+                icon="trending_up"
+                title="Monthly Target"
+                count={monthlyData.formattedMonthlyTarget}
                 percentage={{
-                  color: "success",
-                  amount: "+1%",
-                  label: "than yesterday",
+                  color: "info",
+                  amount: "",
+                  label: "Target for this month",
                 }}
               />
             </MDBox>
@@ -91,13 +143,17 @@ function Dashboard() {
             <MDBox mb={1.5}>
               <ComplexStatisticsCard
                 color="primary"
-                icon="person_add"
-                title="Followers"
-                count="+91"
+                icon="account_balance_wallet"
+                title="Monthly Achieved"
+                count={monthlyData.loading ? "Loading..." : monthlyData.formattedTotal}
                 percentage={{
                   color: "success",
-                  amount: "",
-                  label: "Just updated",
+                  amount: monthlyData.loading
+                    ? ""
+                    : `${Math.round(
+                        (monthlyData.totalMonthlyAchieved / monthlyData.monthlyTarget) * 100
+                      )}%`,
+                  label: "of monthly target",
                 }}
               />
             </MDBox>

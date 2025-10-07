@@ -119,16 +119,16 @@ function ReservationCard({ guest }) {
       const checkInTime = reservation.checkInTime
         ? formatTime(reservation.checkInTime)
         : guest.checkinTime
-          ? formatTime(guest.checkinTime)
-          : "N/A";
+        ? formatTime(guest.checkinTime)
+        : "N/A";
 
       const departure = reservation.departureDate || guest.checkoutDate || "N/A";
 
       const checkOutTime = reservation.checkOutTime
         ? formatTime(reservation.checkOutTime)
         : guest.checkoutTime
-          ? formatTime(guest.checkoutTime)
-          : "N/A";
+        ? formatTime(guest.checkoutTime)
+        : "N/A";
 
       const vehicleNumber =
         reservation.customFieldValues?.find((field) => field.customField?.name === "Vehicle Number")
@@ -337,8 +337,9 @@ ul li {
               />
             </div>
             <div class="heading-text" style="margin: 25px 40px 10px 20px">
-              <h2 style="text-align: center; margin: 0; font-size: 16px;"> ${guestName}'s Check-in Form <span style="font-size: 12px; color: #666;">(${guest.reservationId
-        })</span></h2>
+              <h2 style="text-align: center; margin: 0; font-size: 16px;"> ${guestName}'s Check-in Form <span style="font-size: 12px; color: #666;">(${
+        guest.reservationId
+      })</span></h2>
               <p style="text-align: center; font-family: monospace">Actual Check-in Date / Time: ${actualCheckInTime}</p>
             </div>
             </div>
@@ -495,12 +496,8 @@ ul li {
       const currencyLabel = reservation.currency || "";
 
       // ✅ Fetch Finance Fields from API (includes deposit and damage logic)
-      const {
-        lateCheckOutCharges,
-        allTotalCharges,
-        financeFields,
-        CheckOutDamageDeposit,
-      } = await getFinanceFields(guest.reservationId);
+      const { lateCheckOutCharges, allTotalCharges, financeFields, CheckOutDamageDeposit } =
+        await getFinanceFields(guest.reservationId);
 
       const channelName = reservation.channelName || "N/A";
 
@@ -509,8 +506,8 @@ ul li {
       const checkOutTime = reservation.checkOutTime
         ? formatTime(reservation.checkOutTime)
         : guest.checkoutTime
-          ? formatTime(guest.checkoutTime)
-          : "N/A";
+        ? formatTime(guest.checkoutTime)
+        : "N/A";
 
       const vehicleNumber =
         reservation.customFieldValues?.find((field) => field.customField?.name === "Vehicle Number")
@@ -533,8 +530,7 @@ ul li {
       if (Array.isArray(reservation.customFieldValues)) {
         const checkOutField = reservation.customFieldValues.find(
           (item) =>
-            item.customField?.name === "Actual Check-out Time" &&
-            item.customFieldId === 76282
+            item.customField?.name === "Actual Check-out Time" && item.customFieldId === 76282
         );
 
         if (checkOutField && checkOutField.value) {
@@ -554,7 +550,6 @@ ul li {
           }
         }
       }
-
 
       const reservationId = reservation.reservationId || "N/A";
 
@@ -707,32 +702,32 @@ ul li {
           const isEarlyCheckOut =
             earlyCheckOutData && earlyCheckOutData.allowed === true;
 
-          if (isSameDayCheckout) {
-            return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
+    if (isSameDayCheckout) {
+      return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
                 ${guestName}'s Same Day Check-out Form 
                 <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
               </h3>
               <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
                 Actual Check-out Date / Time: ${actualCheckOutTime}
               </p>`;
-          } else if (isEarlyCheckOut) {
-            return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
+    } else if (isEarlyCheckOut) {
+      return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
                 ${guestName}'s Early Check-out Form 
                 <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
               </h3>
               <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
                 Actual Check-out Date / Time: ${actualCheckOutTime}
               </p>`;
-          } else {
-            return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
+    } else {
+      return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
                 ${guestName}'s Check-out Form 
                 <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
               </h3>
               <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
                 Actual Check-out Date / Time: ${actualCheckOutTime}
               </p>`;
-          }
-        })()}
+    }
+  })()}
    </div>
 </div>
 
@@ -752,8 +747,7 @@ ul li {
   <div class="info-fields">
   <div class="field-group">
     <span class="field-label">Vehicle Number:</span>
-    <span class="field-value" style="text-transform: uppercase;">${vehicleNumber || "N/A"
-        }</span>
+    <span class="field-value" style="text-transform: uppercase;">${vehicleNumber || "N/A"}</span>
   </div>
 
   <div class="field-group">
@@ -860,30 +854,35 @@ ul li {
     <p>📍 30-A, Block L, Gulberg 3, Lahore</p>
   </div>
 
-  ${allTotalCharges > 0
-          ? `
+  ${
+    allTotalCharges > 0
+      ? `
     <div class="charges-breakdown">
       <h6 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Charges Breakdown:</h6>
-      ${financeFields.baseRate > 0
-            ? `<p>• <strong>Base Rate:</strong> ${financeFields.baseRate.toFixed(
+      ${
+        financeFields.baseRate > 0
+          ? `<p>• <strong>Base Rate:</strong> ${financeFields.baseRate.toFixed(
               2
             )} ${currencyLabel}</p>`
-            : ""
-          }
-      ${financeFields.cleaningFeeValue > 0
-            ? `<p>• <strong>Cleaning Fee:</strong> ${financeFields.cleaningFeeValue.toFixed(
+          : ""
+      }
+      ${
+        financeFields.cleaningFeeValue > 0
+          ? `<p>• <strong>Cleaning Fee:</strong> ${financeFields.cleaningFeeValue.toFixed(
               2
             )} ${currencyLabel}</p>`
-            : ""
-          }
-      ${financeFields.additionalCleaningFee > 0
-            ? `<p>• <strong>Cleaning Fee:</strong> ${financeFields.additionalCleaningFee.toFixed(
+          : ""
+      }
+      ${
+        financeFields.additionalCleaningFee > 0
+          ? `<p>• <strong>Cleaning Fee:</strong> ${financeFields.additionalCleaningFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-            : ""
-          }
-      ${financeFields.midstayCleaningFee > 0
-            ? `<p>• <strong>Midstay Cleaning Fee:</strong> ${financeFields.midstayCleaningFee.toFixed(
+          : ""
+      }
+      ${
+        financeFields.midstayCleaningFee > 0
+          ? `<p>• <strong>Midstay Cleaning Fee:</strong> ${financeFields.midstayCleaningFee.toFixed(
               2
             )} ${currencyLabel}</p>`
             : ""
@@ -900,60 +899,68 @@ ${CheckOutSecurityDeposit !== "0"
             ? `<p>• <strong>Sales Tax:</strong> ${financeFields.salesTax.toFixed(
               2
             )} ${currencyLabel}</p>`
-            : ""
-          }
-      ${financeFields.earlyCheckinFee > 0
-            ? `<p>• <strong>Early Check-in Fee:</strong> ${financeFields.earlyCheckinFee.toFixed(
+          : ""
+      }
+      ${
+        financeFields.earlyCheckinFee > 0
+          ? `<p>• <strong>Early Check-in Fee:</strong> ${financeFields.earlyCheckinFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-            : ""
-          }
-      ${financeFields.bedLinenFee > 0
-            ? `<p>• <strong>Bed Linen Fee:</strong> ${financeFields.bedLinenFee.toFixed(
+          : ""
+      }
+      ${
+        financeFields.bedLinenFee > 0
+          ? `<p>• <strong>Bed Linen Fee:</strong> ${financeFields.bedLinenFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-            : ""
-          }
-      ${financeFields.extraBedsFee > 0
-            ? `<p>• <strong>Extra Beds Fee:</strong> ${financeFields.extraBedsFee.toFixed(
+          : ""
+      }
+      ${
+        financeFields.extraBedsFee > 0
+          ? `<p>• <strong>Extra Beds Fee:</strong> ${financeFields.extraBedsFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-            : ""
-          }
-      ${financeFields.lateCheckoutFee > 0
-            ? `<p>• <strong>Late Checkout Fee:</strong> ${financeFields.lateCheckoutFee.toFixed(
+          : ""
+      }
+      ${
+        financeFields.lateCheckoutFee > 0
+          ? `<p>• <strong>Late Checkout Fee:</strong> ${financeFields.lateCheckoutFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-            : ""
-          }
-      ${financeFields.damageDeposit > 0
-            ? `<p>• <strong>Damage Deposit:</strong> ${financeFields.damageDeposit.toFixed(
+          : ""
+      }
+      ${
+        financeFields.damageDeposit > 0
+          ? `<p>• <strong>Damage Deposit:</strong> ${financeFields.damageDeposit.toFixed(
               2
             )} ${currencyLabel}</p>`
-            : ""
-          }
-      ${financeFields.parkingFee > 0
-            ? `<p>• <strong>Parking Fee:</strong> ${financeFields.parkingFee.toFixed(
+          : ""
+      }
+      ${
+        financeFields.parkingFee > 0
+          ? `<p>• <strong>Parking Fee:</strong> ${financeFields.parkingFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-            : ""
-          }
-      ${financeFields.serviceFee > 0
-            ? `<p>• <strong>Service Fee:</strong> ${financeFields.serviceFee.toFixed(
+          : ""
+      }
+      ${
+        financeFields.serviceFee > 0
+          ? `<p>• <strong>Service Fee:</strong> ${financeFields.serviceFee.toFixed(
               2
             )}  ${currencyLabel}</p>`
-            : ""
-          }
-      ${financeFields.towelChangeFee > 0
-            ? `<p>• <strong>Towel Change Fee:</strong> ${financeFields.towelChangeFee.toFixed(
+          : ""
+      }
+      ${
+        financeFields.towelChangeFee > 0
+          ? `<p>• <strong>Towel Change Fee:</strong> ${financeFields.towelChangeFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-            : ""
-          }
+          : ""
+      }
     </div>
     `
-          : ""
-        }
+      : ""
+  }
 </div>
 <div>
 <span style="margin-left: -19px;"> ✂----------------------------------------------------------------------------------------------------------
@@ -964,8 +971,7 @@ ${CheckOutSecurityDeposit !== "0"
 <div style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
   <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
     <div style="flex: 1;">
-      <p style="margin: 5px 0;"><strong>Guest Name:</strong> <br> ${guestName || "N/A"
-        }</p>
+      <p style="margin: 5px 0;"><strong>Guest Name:</strong> <br> ${guestName || "N/A"}</p>
     </div>
     <div style="flex: 1;">
       <p style="margin: 5px 0;">
@@ -980,12 +986,12 @@ ${CheckOutSecurityDeposit !== "0"
   <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
     
     <div style="flex: 1;">
-      <p style="margin: 5px 0;"><strong>Apartment:</strong> <br> ${listingMapId || "N/A"
-        }</p>
+      <p style="margin: 5px 0;"><strong>Apartment:</strong> <br> ${listingMapId || "N/A"}</p>
     </div>
     <div style="flex: 1;">
-      <p style="margin: 5px 0;"><strong>Departure Date and Time:</strong> <br> ${actualCheckOutTime || "N/A"
-        }</p>
+      <p style="margin: 5px 0;"><strong>Departure Date and Time:</strong> <br> ${
+        actualCheckOutTime || "N/A"
+      }</p>
     </div>
   </div>
   
@@ -1279,9 +1285,7 @@ ${CheckOutSecurityDeposit !== "0"
       let CheckOutDamageDeposit = 0;
 
       // ✅ Find "Damage Fee" entry
-      const damageDepositEntry = financeFieldArray.find(
-        (item) => item.alias === "Damage Fee"
-      );
+      const damageDepositEntry = financeFieldArray.find((item) => item.alias === "Damage Fee");
       if (damageDepositEntry) {
         if (damageDepositEntry.isDeleted === 1) {
           CheckOutDamageDeposit = 0;
@@ -1336,9 +1340,7 @@ ${CheckOutSecurityDeposit !== "0"
           const convertedFields = { ...financeFields };
           Object.keys(convertedFields).forEach((key) => {
             if (typeof convertedFields[key] === "number") {
-              convertedFields[key] = Number(
-                (convertedFields[key] * usdToPkrRate).toFixed(2)
-              );
+              convertedFields[key] = Number((convertedFields[key] * usdToPkrRate).toFixed(2));
             }
           });
 
@@ -1375,8 +1377,6 @@ ${CheckOutSecurityDeposit !== "0"
     }
   }
 
-
-
   const handleClose = () => setOpen(false);
 
   return (
@@ -1405,7 +1405,7 @@ ${CheckOutSecurityDeposit !== "0"
         {/* Apartment Status */}
         <MDBox display="flex" alignItems="center" mb={1}>
           <ApartmentIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
-          <MDTypography variant="body2" color="textSecondary">
+          <MDTypography variant="body2" color="text">
             {guest.aptStatus || "N/A"}
           </MDTypography>
         </MDBox>
@@ -1765,8 +1765,8 @@ ${CheckOutSecurityDeposit !== "0"
                         {reservationDetails?.checkInTime
                           ? formatTime(reservationDetails.checkInTime)
                           : guest.checkinTime
-                            ? formatTime(guest.checkinTime)
-                            : "N/A"}
+                          ? formatTime(guest.checkinTime)
+                          : "N/A"}
                       </td>
                     </tr>
                     <tr>
@@ -1783,8 +1783,8 @@ ${CheckOutSecurityDeposit !== "0"
                         {reservationDetails?.checkOutTime
                           ? formatTime(reservationDetails.checkOutTime)
                           : guest.checkoutTime
-                            ? formatTime(guest.checkoutTime)
-                            : "N/A"}
+                          ? formatTime(guest.checkoutTime)
+                          : "N/A"}
                       </td>
                     </tr>
                     <tr>
@@ -1833,7 +1833,7 @@ ReservationCard.propTypes = {
   guest: PropTypes.shape({
     id: PropTypes.string.isRequired,
     guestName: PropTypes.string,
-    reservationId: PropTypes.string,
+    reservationId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     aptStatus: PropTypes.string,
     stayDuration: PropTypes.string,
     actualCheckin: PropTypes.string,
