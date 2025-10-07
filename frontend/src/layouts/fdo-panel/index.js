@@ -52,6 +52,7 @@ function ReservationCard({ guest }) {
   const [reservationDetails, setReservationDetails] = useState({});
   const [error, setError] = useState(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [isCheckedOut, setIsCheckedOut] = useState(false);
 
   const HOSTAWAY_API = "https://api.hostaway.com/v1/reservations";
   const HOSTAWAY_TOKEN =
@@ -116,16 +117,16 @@ function ReservationCard({ guest }) {
       const checkInTime = reservation.checkInTime
         ? formatTime(reservation.checkInTime)
         : guest.checkinTime
-        ? formatTime(guest.checkinTime)
-        : "N/A";
+          ? formatTime(guest.checkinTime)
+          : "N/A";
 
       const departure = reservation.departureDate || guest.checkoutDate || "N/A";
 
       const checkOutTime = reservation.checkOutTime
         ? formatTime(reservation.checkOutTime)
         : guest.checkoutTime
-        ? formatTime(guest.checkoutTime)
-        : "N/A";
+          ? formatTime(guest.checkoutTime)
+          : "N/A";
 
       const vehicleNumber =
         reservation.customFieldValues?.find((field) => field.customField?.name === "Vehicle Number")
@@ -334,9 +335,8 @@ ul li {
               />
             </div>
             <div class="heading-text" style="margin: 25px 40px 10px 20px">
-              <h2 style="text-align: center; margin: 0; font-size: 16px;"> ${guestName}'s Check-in Form <span style="font-size: 12px; color: #666;">(${
-        guest.reservationId
-      })</span></h2>
+              <h2 style="text-align: center; margin: 0; font-size: 16px;"> ${guestName}'s Check-in Form <span style="font-size: 12px; color: #666;">(${guest.reservationId
+        })</span></h2>
               <p style="text-align: center; font-family: monospace">Actual Check-in Date / Time: ${actualCheckInTime}</p>
             </div>
             </div>
@@ -473,6 +473,553 @@ ul li {
     }
   };
 
+  const handlePrintCheckOut = async () => {
+    try {
+      // ✅ Fetch latest reservation from API
+      const response = await fetch(`${HOSTAWAY_API}/${guest.reservationId}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${HOSTAWAY_TOKEN}` },
+      });
+
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
+
+      let damageCharges = "";
+
+      const data = await response.json();
+      const reservation = data.result || {};
+      const guestName = reservation.guestName || "N/A";
+
+      const listingMapId = guest.listingName || "N/A";
+      const currencyLabel = reservation.currency || "";
+
+      // ✅ Fetch Finance Fields from API (includes deposit and damage logic)
+      const {
+        lateCheckOutCharges,
+        allTotalCharges,
+        financeFields,
+        CheckOutDamageDeposit,
+      } = await getFinanceFields(guest.reservationId);
+
+      const channelName = reservation.channelName || "N/A";
+
+      const departure = reservation.departureDate || guest.checkoutDate || "N/A";
+
+      const checkOutTime = reservation.checkOutTime
+        ? formatTime(reservation.checkOutTime)
+        : guest.checkoutTime
+          ? formatTime(guest.checkoutTime)
+          : "N/A";
+
+      const vehicleNumber =
+        reservation.customFieldValues?.find((field) => field.customField?.name === "Vehicle Number")
+          ?.value ||
+        guest.vehicleNo ||
+        "N/A";
+
+      let CheckOutSecurityDeposit  = "N/A";
+      if (Array.isArray(reservation.financeField)) {
+        const securityField = reservation.financeField.find(
+          (field) => field.alias === "Security Deposit" && field.isDeleted === 0
+        );
+        if (securityField) {
+          CheckOutSecurityDeposit  = securityField.total ?? securityField.value ?? "N/A";
+        }
+      }
+
+      let actualCheckOutTime = "N/A";
+
+      if (Array.isArray(reservation.customFieldValues)) {
+        const checkOutField = reservation.customFieldValues.find(
+          (item) =>
+            item.customField?.name === "Actual Check-out Time" &&
+            item.customFieldId === 76282
+        );
+
+        if (checkOutField && checkOutField.value) {
+          const parsedDate = new Date(checkOutField.value);
+          if (!isNaN(parsedDate)) {
+            actualCheckOutTime = parsedDate.toLocaleString("en-US", {
+              month: "2-digit",
+              day: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+              hour12: true,
+            });
+          } else {
+            actualCheckOutTime = checkOutField.value; // fallback if not a date
+          }
+        }
+      }
+
+
+      const reservationId = reservation.reservationId || "N/A";
+
+      const formWindow = window.open("", "_blank");
+
+      // Fill guest details dynamically
+      const htmlContent = `
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 80vh;
+      background-color: #F0F0F0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #333;
+    }
+    .form {
+      width: 150mm;
+      height: auto;
+      min-height: 240mm;
+      padding: 20px;
+      margin: auto;
+      background-color: white;
+      border-radius: 5px;
+      border: 1px solid lightblue;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .logo-img {
+      display: flex;
+      justify-content: center;
+      height: 60px;
+      margin: 10px 0px 20px 0px;
+    }
+    .logo-img img {
+      height: 100%;
+      width: auto;
+      object-fit: contain;
+    }
+    h2 {
+      text-align: center;
+      font-size: 20px;
+      margin: 10px 0;
+    }
+    p {
+      line-height: 1.5;
+      font-size: 17px;
+    }
+    ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 10px 0;
+    }
+    ul li {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 13px;
+      line-height: 1.2;
+      margin-bottom: 2px;
+    }
+  
+    .signature-section {
+      margin-top: 35px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .signature-block {
+      width: 45%;
+      text-align: center;
+    }
+    .signature-line {
+      border-bottom: 1px solid #333;
+      margin: 30px auto 10px;
+      width: 80%;
+    }
+    .footer {
+      font-size: 12px;
+      color: #666;
+      display: inline-block;
+      vertical-align: top;
+      width: 50%;
+      margin-top: -15px;
+    }
+    
+    .charges-breakdown {
+    margin: -15px 23px 0px 0px;
+      padding: 15px;
+      display: inline-block;
+      vertical-align: top;
+    }
+    .charges-breakdown p {
+      margin: 5px 0;
+      font-size: 12px;
+      color: #333;
+      line-height: 1.3;
+    }
+    .charges-breakdown h6 {
+      margin: 5px 0;
+      font-size: 16px;
+      color: #333;
+      line-height: 1.3;
+      font-family: math;
+    }
+    
+    /* Container to hold both elements */
+    .footer-container {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: -19px;
+    }
+}
+
+    .charges-breakdown p:first-child {
+      font-weight: bold !important;
+      color: #2c3e50;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form">
+    <div style="position: absolute; top: 5px; right: 5px; z-index: 1000;">
+  <button onclick="downloadForm()" class="download-btn">
+    Download
+  </button>
+</div>
+<div style="display: flex; flex-direction: row;">
+    <div class="logo-img">
+      <img src="img/booknrent-logo.png" alt="Booknrent Logo">
+    </div>
+    <div class="heading-text" style="margin: 20px 0px 0px 40px !important">
+  ${(() => {
+          const sameDayData = JSON.parse(
+            localStorage.getItem(`sameDayCheckOut_${reservationId}`) || "{}"
+          );
+          const earlyCheckOutData = JSON.parse(
+            localStorage.getItem(`earlyCheckOut_${reservationId}`) || "{}"
+          );
+          const isSameDayCheckout = sameDayData && sameDayData.value === "Yes";
+          const isEarlyCheckOut =
+            earlyCheckOutData && earlyCheckOutData.allowed === true;
+
+          if (isSameDayCheckout) {
+            return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
+                ${guestName}'s Same Day Check-out Form 
+                <span style="font-size: 12px; color: #666;">(${reservationId})</span>
+              </h3>
+              <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
+                Actual Check-out Date / Time: ${actualCheckOutTime}
+              </p>`;
+          } else if (isEarlyCheckOut) {
+            return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
+                ${guestName}'s Early Check-out Form 
+                <span style="font-size: 12px; color: #666;">(${reservationId})</span>
+              </h3>
+              <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
+                Actual Check-out Date / Time: ${actualCheckOutTime}
+              </p>`;
+          } else {
+            return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
+                ${guestName}'s Check-out Form 
+                <span style="font-size: 12px; color: #666;">(${reservationId})</span>
+              </h3>
+              <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
+                Actual Check-out Date / Time: ${actualCheckOutTime}
+              </p>`;
+          }
+        })()}
+   </div>
+</div>
+
+    <p style="text-align: center; font-size: 18px;">
+      I, <strong>${guestName}</strong>, have checked out of the apartment <strong>${listingMapId}</strong> on <strong>${departure}</strong>. 
+      I have checked the apartment for any personal belongings, including but not limited to:
+    </p>
+
+    <div class="single-line-layout">
+  <div class="items-list">
+    <div class="list-item">• Clothes</div>
+    <div class="list-item">• Jewelry</div>
+    <div class="list-item">• Cash</div>
+    <div class="list-item">• Electronics</div>
+    <div class="list-item">• Other valuables</div>
+  </div>
+  <div class="info-fields">
+  <div class="field-group">
+    <span class="field-label">Vehicle Number:</span>
+    <span class="field-value" style="text-transform: uppercase;">${vehicleNumber || "N/A"
+        }</span>
+  </div>
+
+  <div class="field-group">
+    <span class="field-label">Standard Check Out Date & Time:</span>
+    <span class="field-value">${departure} & ${checkOutTime} pm</span>
+  </div>
+
+  <div class="field-group">
+  <span class="field-label">Late Check out Charges (if applicable):</span>
+  <span class="field-value">
+    ${lateCheckOutCharges || "0"}
+    ${channelName === "direct" ? currencyLabel : "Pkr"}
+  </span>
+</div>
+
+<div class="field-group">
+  <span class="field-label">Any other Charges (if applicable):</span>
+  <span class="field-value">
+   ${allTotalCharges ? Math.round(allTotalCharges) : "0"}
+    ${channelName === "direct" ? currencyLabel : "Pkr"}
+  </span>
+</div>
+
+<div class="field-group">
+  <span class="field-label">Security Deposit Amount Returned:</span>
+  <span class="field-value">
+    ${CheckOutSecurityDeposit || "0"}
+    ${channelName === "direct" ? currencyLabel : "Pkr"}
+    <span style="font-weight: normal;">☐ Cash / ☐ IBFT</span>
+  </span>
+</div>
+
+</div>
+
+
+</div>
+
+<style>
+  .single-line-layout {
+    display: flex;
+    gap: 20px;
+    margin: 45px 0;
+  }
+
+  .items-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .list-item {
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .info-fields {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 1px solid black;
+    padding: 10px 5px 10px 15px;
+    margin: -8px 0px 10px 0px;
+  }
+
+  .field-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .field-label {
+    font-size: 13px;
+    white-space: nowrap;
+    min-width: 200px;
+  }
+
+  .field-value {
+    font-size: 13px;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+</style>
+
+    <p style="font-size: 17px; text-align: center; margin-top: -15px;">
+      I have found all of my belongings and have taken them with me. <br>
+      I understand that the Apartment management/host is not responsible for any valuables that are left behind.
+    </p>
+
+    <div class="signature-section">
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <p>Management Team</p>
+      </div>
+      <div class="signature-block">
+        <div class="signature-line"></div>
+        <p>Guest Signature</p>
+      </div>
+    </div>
+<div class="footer-container">
+  <div class="footer">
+    <p>📞 0300-0454711</p>
+    <p>📍 30-A, Block L, Gulberg 3, Lahore</p>
+  </div>
+
+  ${allTotalCharges > 0
+          ? `
+    <div class="charges-breakdown">
+      <h6 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Charges Breakdown:</h6>
+      ${financeFields.baseRate > 0
+            ? `<p>• <strong>Base Rate:</strong> ${financeFields.baseRate.toFixed(
+              2
+            )} ${currencyLabel}</p>`
+            : ""
+          }
+      ${financeFields.cleaningFeeValue > 0
+            ? `<p>• <strong>Cleaning Fee:</strong> ${financeFields.cleaningFeeValue.toFixed(
+              2
+            )} ${currencyLabel}</p>`
+            : ""
+          }
+      ${financeFields.additionalCleaningFee > 0
+            ? `<p>• <strong>Cleaning Fee:</strong> ${financeFields.additionalCleaningFee.toFixed(
+              2
+            )} ${currencyLabel}</p>`
+            : ""
+          }
+      ${financeFields.midstayCleaningFee > 0
+            ? `<p>• <strong>Midstay Cleaning Fee:</strong> ${financeFields.midstayCleaningFee.toFixed(
+              2
+            )} ${currencyLabel}</p>`
+            : ""
+          }
+     ${CheckOutDamageDeposit !== "0"
+            ? `<p>• <strong>Damage Deposit:</strong> ${CheckOutDamageDeposit} ${currencyLabel}</p>`
+            : ""
+          }
+${CheckOutSecurityDeposit !== "0"
+            ? `<p>• <strong>Security Deposit:</strong> ${CheckOutSecurityDeposit} ${currencyLabel}</p>`
+            : ""
+          }
+      ${financeFields.salesTax > 0
+            ? `<p>• <strong>Sales Tax:</strong> ${financeFields.salesTax.toFixed(
+              2
+            )} ${currencyLabel}</p>`
+            : ""
+          }
+      ${financeFields.earlyCheckinFee > 0
+            ? `<p>• <strong>Early Check-in Fee:</strong> ${financeFields.earlyCheckinFee.toFixed(
+              2
+            )} ${currencyLabel}</p>`
+            : ""
+          }
+      ${financeFields.bedLinenFee > 0
+            ? `<p>• <strong>Bed Linen Fee:</strong> ${financeFields.bedLinenFee.toFixed(
+              2
+            )} ${currencyLabel}</p>`
+            : ""
+          }
+      ${financeFields.extraBedsFee > 0
+            ? `<p>• <strong>Extra Beds Fee:</strong> ${financeFields.extraBedsFee.toFixed(
+              2
+            )} ${currencyLabel}</p>`
+            : ""
+          }
+      ${financeFields.lateCheckoutFee > 0
+            ? `<p>• <strong>Late Checkout Fee:</strong> ${financeFields.lateCheckoutFee.toFixed(
+              2
+            )} ${currencyLabel}</p>`
+            : ""
+          }
+      ${financeFields.damageDeposit > 0
+            ? `<p>• <strong>Damage Deposit:</strong> ${financeFields.damageDeposit.toFixed(
+              2
+            )} ${currencyLabel}</p>`
+            : ""
+          }
+      ${financeFields.parkingFee > 0
+            ? `<p>• <strong>Parking Fee:</strong> ${financeFields.parkingFee.toFixed(
+              2
+            )} ${currencyLabel}</p>`
+            : ""
+          }
+      ${financeFields.serviceFee > 0
+            ? `<p>• <strong>Service Fee:</strong> ${financeFields.serviceFee.toFixed(
+              2
+            )}  ${currencyLabel}</p>`
+            : ""
+          }
+      ${financeFields.towelChangeFee > 0
+            ? `<p>• <strong>Towel Change Fee:</strong> ${financeFields.towelChangeFee.toFixed(
+              2
+            )} ${currencyLabel}</p>`
+            : ""
+          }
+    </div>
+    `
+          : ""
+        }
+</div>
+<div>
+<span style="margin-left: -19px;"> ✂----------------------------------------------------------------------------------------------------------
+</span>
+</div>
+<div>
+<div>
+<div style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+  <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+    <div style="flex: 1;">
+      <p style="margin: 5px 0;"><strong>Guest Name:</strong> <br> ${guestName || "N/A"
+        }</p>
+    </div>
+    <div style="flex: 1;">
+      <p style="margin: 5px 0;">
+  <strong>Vehicle Number:</strong> <br>
+  <span style="text-transform: uppercase;">
+    ${vehicleNumber || "N/A"}
+  </span>
+</p>
+
+    </div>
+  </div>
+  <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+    
+    <div style="flex: 1;">
+      <p style="margin: 5px 0;"><strong>Apartment:</strong> <br> ${listingMapId || "N/A"
+        }</p>
+    </div>
+    <div style="flex: 1;">
+      <p style="margin: 5px 0;"><strong>Departure Date and Time:</strong> <br> ${actualCheckOutTime || "N/A"
+        }</p>
+    </div>
+  </div>
+  
+    </div>
+</div>
+<p style="text-align: center; margin: -2px 0px -6px 0px;">Thank you for staying with <img src="img/booknrent-logo2.png" alt="Booknrent Logo" style="width: 95px; object-fit: contain; margin-bottom: -2px;">, Good Bye!</p>
+</div>
+
+  <script>
+  async function downloadForm() {
+    const formElement = document.querySelector('.form');
+    const canvas = await html2canvas(formElement, {
+      scale: 2,
+      logging: false,
+      useCORS: true
+    });
+    
+    const link = document.createElement('a');
+    link.download = \`${guestName}'s Checkout-form ${reservationId}.png\`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+</script>
+</body>
+</html>
+  `;
+
+      formWindow.document.open();
+      formWindow.document.write(htmlContent);
+      formWindow.document.close();
+    } catch (err) {
+      console.error("Error preparing check-in form:", err);
+      alert("Could not load reservation for printing.");
+    }
+  };
+
   // ✅ New function for Mark Check In
   const handleMarkCheckIn = async () => {
     try {
@@ -534,6 +1081,70 @@ ul li {
       setIsCheckedIn(true); // ✅ switch button
     } catch (err) {
       console.error("❌ Error in handleMarkCheckIn:", err);
+    }
+  };
+
+  // ✅ New function for Mark Check Out
+  const handleMarkCheckOut = async () => {
+    try {
+      const getResUrl = `${HOSTAWAY_API}/${guest.reservationId}`;
+
+      const res = await fetch(getResUrl, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${HOSTAWAY_TOKEN}`,
+        },
+      });
+      if (!res.ok) throw new Error("Failed to fetch reservation");
+
+      const resData = await res.json();
+
+      const existingField = resData.result?.customFieldValues?.find(
+        (field) => field.customFieldId === 76282 && field.value && field.value.trim() !== ""
+      );
+
+      if (existingField) {
+        console.log(`🛑 Check-Out already recorded: ${existingField.value}`);
+        setIsCheckedOut(true); // ✅ already checked-out
+        return;
+      }
+
+      const now = new Date();
+      const formattedDateTime = now.toLocaleString("en-US", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      });
+
+      const apiUrl = `${HOSTAWAY_API}/${guest.reservationId}?forceOverbooking=1`;
+
+      const updateRes = await fetch(apiUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${HOSTAWAY_TOKEN}`,
+        },
+        body: JSON.stringify({
+          guestName: resData.result?.guestName || guest.guestName || "Guest Name",
+          customFieldValues: [
+            {
+              customFieldId: 76282,
+              value: formattedDateTime,
+            },
+          ],
+        }),
+      });
+
+      if (!updateRes.ok) throw new Error("Failed to update reservation");
+
+      console.log(`✅ Check-out time saved: ${formattedDateTime}`);
+      setIsCheckedOut(true); // ✅ switch button
+    } catch (err) {
+      console.error("❌ Error in handleMarkCheckOut:", err);
     }
   };
 
@@ -614,6 +1225,136 @@ ul li {
       setLoadingDetails(false);
     }
   };
+
+  // ✅ Helper Function: Fetch Finance Fields for a Reservation
+  async function getFinanceFields(reservationId) {
+    try {
+      const response = await fetch(
+        `https://api.hostaway.com/v1/financeStandardField/reservation/${reservationId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${HOSTAWAY_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        console.error("Failed to fetch reservation finance fields");
+        return {
+          securityDepositFee: "",
+          lateCheckOutCharges: "",
+          allTotalCharges: "",
+          financeFields: {},
+          CheckOutSecurityDeposit: 0,
+          CheckOutDamageDeposit: 0,
+        };
+      }
+
+      const data = await response.json();
+      const reservation = data.result || {};
+      const financeFieldArray = data.result?.financeField || [];
+
+      let CheckOutDamageDeposit = 0;
+
+      // ✅ Find "Damage Fee" entry
+      const damageDepositEntry = financeFieldArray.find(
+        (item) => item.alias === "Damage Fee"
+      );
+      if (damageDepositEntry) {
+        if (damageDepositEntry.isDeleted === 1) {
+          CheckOutDamageDeposit = 0;
+        } else {
+          CheckOutDamageDeposit = damageDepositEntry.total ?? damageDepositEntry.value ?? 0;
+        }
+      }
+
+      // ✅ Compute standard finance fields
+      const financeFields = {
+        baseRate: reservation.baseRate || 0,
+        cleaningFeeValue: reservation.cleaningFeeValue || 0,
+        additionalCleaningFee: reservation.additionalCleaningFee || 0,
+        midstayCleaningFee: reservation.midstayCleaningFee || 0,
+        otherFees: reservation.otherFees || 0,
+        salesTax: reservation.salesTax || 0,
+        earlyCheckinFee: reservation.earlyCheckinFee || 0,
+        bedLinenFee: reservation.bedLinenFee || 0,
+        extraBedsFee: reservation.extraBedsFee || 0,
+        lateCheckoutFee: reservation.lateCheckoutFee || 0,
+        damageDeposit: reservation.damageDeposit || 0,
+        parkingFee: reservation.parkingFee || 0,
+        serviceFee: reservation.serviceFee || 0,
+        towelChangeFee: reservation.towelChangeFee || 0,
+        allTotalCharges:
+          (reservation.baseRate || 0) +
+          (reservation.cleaningFeeValue || 0) +
+          (reservation.additionalCleaningFee || 0) +
+          (reservation.midstayCleaningFee || 0) +
+          (reservation.otherFees || 0) +
+          (reservation.salesTax || 0) +
+          (reservation.earlyCheckinFee || 0) +
+          (reservation.bedLinenFee || 0) +
+          (reservation.extraBedsFee || 0) +
+          (reservation.lateCheckoutFee || 0) +
+          (reservation.damageDeposit || 0) +
+          (reservation.parkingFee || 0) +
+          (reservation.serviceFee || 0) +
+          (reservation.towelChangeFee || 0),
+        channelId: reservation.channelId,
+      };
+
+      // ✅ Convert USD → PKR for specific channels
+      if (financeFields.channelId === 2018 || financeFields.channelId === 2013) {
+        try {
+          const exchangeResponse = await fetch(
+            "https://v6.exchangerate-api.com/v6/e528361fb75219dbc48899b1/latest/USD"
+          );
+          const exchangeData = await exchangeResponse.json();
+          const usdToPkrRate = exchangeData.conversion_rates.PKR;
+
+          const convertedFields = { ...financeFields };
+          Object.keys(convertedFields).forEach((key) => {
+            if (typeof convertedFields[key] === "number") {
+              convertedFields[key] = Number(
+                (convertedFields[key] * usdToPkrRate).toFixed(2)
+              );
+            }
+          });
+
+          return {
+            securityDepositFee: convertedFields.otherFees || "",
+            lateCheckOutCharges: convertedFields.lateCheckoutFee || "",
+            allTotalCharges: convertedFields.allTotalCharges || "",
+            financeFields: convertedFields,
+            CheckOutDamageDeposit,
+          };
+        } catch (exchangeError) {
+          console.error("Error fetching exchange rate:", exchangeError);
+        }
+      }
+
+      // ✅ Default return (no conversion)
+      return {
+        securityDepositFee: financeFields.otherFees || "",
+        lateCheckOutCharges: financeFields.lateCheckoutFee || "",
+        allTotalCharges: financeFields.allTotalCharges || "",
+        financeFields,
+        CheckOutDamageDeposit,
+      };
+    } catch (error) {
+      console.error("Error fetching finance fields:", error);
+      return {
+        securityDepositFee: "",
+        lateCheckOutCharges: "",
+        allTotalCharges: "",
+        financeFields: {},
+        CheckOutSecurityDeposit: 0,
+        CheckOutDamageDeposit: 0,
+      };
+    }
+  }
+
+
 
   const handleClose = () => setOpen(false);
 
@@ -773,6 +1514,64 @@ ul li {
                 Print Check In
               </Button>
             ))}
+
+          {/* Mark Check Out Button - show in all stacks apart from Upcoming Stay */}
+          {guest.stack !== "Upcoming Stay" &&
+            (!isCheckedOut ? (
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleMarkCheckOut}
+                sx={{
+                  borderRadius: "12px",
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+                  backgroundColor: "#28282B", // ✅ Black background
+                  color: "#ffffff", // ✅ White text
+                  borderColor: "#28282B", // ✅ Black border
+                  "&:hover": {
+                    backgroundColor: "#333333", // Slightly lighter black on hover
+                    borderColor: "#28282B",
+                  },
+                  "&:focus": {
+                    backgroundColor: "#000000",
+                  },
+                  "&:active": {
+                    backgroundColor: "#222222",
+                  },
+                }}
+              >
+                Mark Check Out
+              </Button>
+            ) : (
+              <Button
+                variant="outlined"
+                size="small"
+                sx={{
+                  borderRadius: "12px",
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+                  backgroundColor: "#28282B", // ✅ Black background
+                  color: "#ffffff", // ✅ White text
+                  borderColor: "#28282B", // ✅ Black border
+                  "&:hover": {
+                    backgroundColor: "#333333", // Slightly lighter black on hover
+                    borderColor: "#28282B",
+                  },
+                  "&:focus": {
+                    backgroundColor: "#000000",
+                  },
+                  "&:active": {
+                    backgroundColor: "#222222",
+                  },
+                }}
+                onClick={handlePrintCheckOut}
+              >
+                Print Check Out
+              </Button>
+            ))}
         </MDBox>
       </MDBox>
       {/* Preview Dialog */}
@@ -926,8 +1725,8 @@ ul li {
                         {reservationDetails?.checkInTime
                           ? formatTime(reservationDetails.checkInTime)
                           : guest.checkinTime
-                          ? formatTime(guest.checkinTime)
-                          : "N/A"}
+                            ? formatTime(guest.checkinTime)
+                            : "N/A"}
                       </td>
                     </tr>
                     <tr>
@@ -944,8 +1743,8 @@ ul li {
                         {reservationDetails?.checkOutTime
                           ? formatTime(reservationDetails.checkOutTime)
                           : guest.checkoutTime
-                          ? formatTime(guest.checkoutTime)
-                          : "N/A"}
+                            ? formatTime(guest.checkoutTime)
+                            : "N/A"}
                       </td>
                     </tr>
                     <tr>
