@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const config = require('../config/config');
 const axios = require('axios');
 const MonthlyTargetService = require('./monthlyTargetService');
+const QuarterlyTargetService = require('./quarterlyTargetService');
 
 // Dynamic listings data - will be fetched from API
 let LISTINGS_DATA = {};
@@ -206,7 +207,17 @@ async function getRevenueAndOccupancy() {
   let actualRevenue = 583000; // Hardcoded to Rs583K as requested
   let apiActualRevenue = 0; // Track API actual revenue separately
   let expectedRevenue = 0;
+  let finalExpectedRevenue = 0; // Initialize finalExpectedRevenue for all code paths
+  let anyGuestCheckedIn = false; // Initialize check-in tracking
   let occupancyRate = 0;
+  
+  // Initialize category-wise revenue tracking
+  let categoryRevenue = {
+    'Studio': 0,
+    '1BR': 0,
+    '2BR': 0,
+    '3BR': 0
+  };
 
 
   // Create a flat array of all listing IDs from LISTINGS_DATA
@@ -626,6 +637,9 @@ async function getRevenueAndOccupancy() {
 
       // Separate actual and expected revenue
       
+      // Reset check-in tracking for this processing cycle
+      anyGuestCheckedIn = false;
+      
       // Re-process reservations to separate actual vs expected
       for (const res of reservations) {
         let updatedRes = res;
@@ -697,6 +711,11 @@ async function getRevenueAndOccupancy() {
             });
             
           console.log(`Guest ${guestName} has checked in: ${hasCheckedIn}` );
+          
+          // Track if ANY guest has checked in today
+          if (hasCheckedIn) {
+            anyGuestCheckedIn = true;
+          }
 
 
           try {
@@ -729,14 +748,30 @@ async function getRevenueAndOccupancy() {
                 revenueValue *= usdToPkr;
               }
               
+              // Find listing category for this reservation
+              let listingCategory = 'Unknown';
+              const listingId = Number(updatedRes.listingMapId);
+              for (const [category, listings] of Object.entries(LISTINGS_DATA)) {
+                if (listings.includes(listingId)) {
+                  listingCategory = category;
+                  break;
+                }
+              }
+              
               // Classify revenue based on check-in status
-              console.log(`Revenue classification for ${guestName}: ${revenueValue.toFixed(2)} PKR` );
+              console.log(`Revenue classification for ${guestName}: ${revenueValue.toFixed(2)} PKR (Category: ${listingCategory})` );
               if (hasCheckedIn) {
                 apiActualRevenue += revenueValue;
                 console.log(`Added to API ACTUAL revenue: ${revenueValue.toFixed(2)} PKR` );
               } else {
                 expectedRevenue += revenueValue;
                 console.log(`Added to EXPECTED revenue: ${revenueValue.toFixed(2)} PKR` );
+              }
+              
+              // Track category-wise revenue (combine actual + expected for each category)
+              if (categoryRevenue[listingCategory] !== undefined) {
+                categoryRevenue[listingCategory] += revenueValue;
+                console.log(`Added ${revenueValue.toFixed(2)} PKR to ${listingCategory} category revenue`);
               }
             }
           } catch (financeError) {
@@ -748,14 +783,29 @@ async function getRevenueAndOccupancy() {
       totalRevenue = dailyRevenue; // Keep original total for compatibility
 
 
+      // NEW LOGIC: If any guest has checked in, show ALL revenue as expected revenue
+      // Keep actual revenue logic the same
+      finalExpectedRevenue = expectedRevenue; // Set default value
+      if (anyGuestCheckedIn) {
+        finalExpectedRevenue = apiActualRevenue + expectedRevenue; // Show ALL revenue as expected
+        console.log(`🔄 ANY guest checked in detected - Expected revenue now shows ALL revenue`);
+      }
+      
       // Calculate achieved revenue (API actual + expected)
       const achievedRevenue = apiActualRevenue + expectedRevenue;
       
       // Show final revenue totals
       console.log(`\n=== REVENUE CLASSIFICATION RESULTS ===` );
       console.log(`📊 API Actual Revenue: ${apiActualRevenue.toFixed(2)} PKR` );
-      console.log(`📅 Expected Revenue: ${expectedRevenue.toFixed(2)} PKR` );
+      console.log(`📅 Expected Revenue (Original): ${expectedRevenue.toFixed(2)} PKR` );
+      console.log(`📅 Expected Revenue (Final): ${finalExpectedRevenue.toFixed(2)} PKR` );
+      console.log(`🔍 Any Guest Checked In: ${anyGuestCheckedIn}` );
       console.log(`✅ TOTAL Revenue: ${(apiActualRevenue + expectedRevenue).toFixed(2)} PKR` );
+      console.log(`\n=== CATEGORY-WISE REVENUE ===`);
+      console.log(`🏠 Studio: ${categoryRevenue['Studio'].toFixed(2)} PKR`);
+      console.log(`🏠 1BR: ${categoryRevenue['1BR'].toFixed(2)} PKR`);
+      console.log(`🏠 2BR: ${categoryRevenue['2BR'].toFixed(2)} PKR`);
+      console.log(`🏠 3BR: ${categoryRevenue['3BR'].toFixed(2)} PKR`);
       console.log(`=======================================`);
 
       // Update properties in memory
@@ -767,6 +817,7 @@ async function getRevenueAndOccupancy() {
     // Set default values in case of error
     actualRevenue = 0;
     expectedRevenue = 0;
+    finalExpectedRevenue = 0;
     dailyRevenue = 0;
   }
 
@@ -832,14 +883,26 @@ async function getRevenueAndOccupancy() {
       } catch (error) {
         console.error('❌ Error getting monthly achieved revenue:', error.message);
       }
+
+      // Get quarterly achieved revenue
+      let quarterlyAchievedRevenue = 0;
+      try {
+        const quarterlyTargetService = new QuarterlyTargetService();
+        quarterlyAchievedRevenue = await quarterlyTargetService.getQuarterlyAchievedRevenue();
+        console.log(`📊 Quarterly achieved revenue: ${quarterlyAchievedRevenue.toFixed(2)} PKR`);
+      } catch (error) {
+        console.error('❌ Error getting quarterly achieved revenue:', error.message);
+      }
       
       return {
-        actualRevenue: apiActualRevenue.toFixed(2), // API Actual Revenue (dynamic)
-        expectedRevenue: expectedRevenue.toFixed(2), // Expected Revenue (dynamic)
+        actualRevenue: apiActualRevenue.toFixed(2), // API Actual Revenue (dynamic) - UNCHANGED
+        expectedRevenue: finalExpectedRevenue.toFixed(2), // Expected Revenue (NEW LOGIC: shows ALL if any guest checked in)
         totalRevenue: (apiActualRevenue + expectedRevenue).toFixed(2), // Combined total (dynamic)
         monthlyAchievedRevenue: monthlyAchievedRevenue.toFixed(2), // Monthly achieved revenue
+        quarterlyAchievedRevenue: quarterlyAchievedRevenue.toFixed(2), // Quarterly achieved revenue
         occupancyRate: occupancyRate,
-        categoryAvailability: categoryAvailability
+        categoryAvailability: categoryAvailability,
+        categoryRevenue: categoryRevenue // Category-wise revenue breakdown
       };
 
   } catch (error) {
@@ -849,8 +912,10 @@ async function getRevenueAndOccupancy() {
       expectedRevenue: '0', // Expected Revenue (error fallback)
       totalRevenue: '0', // Combined total (error fallback)
       monthlyAchievedRevenue: '0', // Monthly achieved revenue (error fallback)
+      quarterlyAchievedRevenue: '0', // Quarterly achieved revenue (error fallback)
       occupancyRate: 0,
       categoryAvailability: {},
+      categoryRevenue: { 'Studio': 0, '1BR': 0, '2BR': 0, '3BR': 0 }, // Category revenue fallback
       error: 'API temporarily unavailable',
       lastUpdated: new Date().toISOString()
     };

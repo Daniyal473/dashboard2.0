@@ -126,130 +126,602 @@ ResponsiveRevenueChart.propTypes = {
   chartData: PropTypes.array.isRequired,
 };
 
-// Revenue Chart Component with dynamic data
+// Custom Horizontal Bar Chart Component
 class RevenueChartComponent extends Component {
-  render() {
-    const { chartData, isMobile, isSmallMobile, isTablet, screenWidth } = this.props;
-
-    const chartHeight = isSmallMobile ? 200 : isMobile ? 250 : isTablet ? 320 : 400;
-    const chartWidth = isMobile ? Math.min(screenWidth - 40, 400) : undefined;
-
-    const options = {
-      animationEnabled: true,
-      animationDuration: 1500,
-      theme: "light2",
-      backgroundColor: "transparent",
-      height: chartHeight,
-      width: chartWidth,
-      title: {
-        text: isMobile ? "Revenue Analytics" : "Revenue Performance Analytics",
-        fontSize: isSmallMobile ? 12 : isMobile ? 14 : isTablet ? 16 : 20,
-        fontFamily: "Inter, sans-serif",
-        fontWeight: "600",
-        fontColor: "#1e293b",
-        margin: isMobile ? 5 : 15,
-      },
-      axisY: {
-        title: isMobile ? "" : "Revenue Categories",
-        titleFontSize: isMobile ? 10 : 14,
-        titleFontFamily: "Inter, sans-serif",
-        titleFontColor: "#64748b",
-        labelFontSize: isSmallMobile ? 6 : isMobile ? 8 : 12,
-        labelFontFamily: "Inter, sans-serif",
-        labelFontColor: "#475569",
-        tickLength: 0,
-        lineThickness: 0,
-        gridThickness: 0,
-        labelMaxWidth: isSmallMobile ? 40 : isMobile ? 60 : 120,
-        labelWrap: true,
-        margin: isMobile ? 5 : 10,
-      },
-      axisX: {
-        title: isMobile ? "" : "Amount (Rs)",
-        titleFontSize: isMobile ? 10 : 14,
-        titleFontFamily: "Inter, sans-serif",
-        titleFontColor: "#64748b",
-        labelFontSize: isMobile ? 9 : 12,
-        labelFontFamily: "Inter, sans-serif",
-        labelFontColor: "#475569",
-        includeZero: true,
-        labelFormatter: this.addSymbols,
-        gridColor: "#e2e8f0",
-        gridThickness: isMobile ? 0.5 : 1,
-        tickLength: isMobile ? 3 : 5,
-        lineColor: "#cbd5e1",
-        lineThickness: 1,
-      },
-      toolTip: {
-        backgroundColor: "#1e293b",
-        fontColor: "white",
-        fontSize: 12,
-        fontFamily: "Inter, sans-serif",
-        cornerRadius: 8,
-        borderThickness: 0,
-        contentFormatter: function (e) {
-          const entry = e.entries[0];
-          const formattedValue =
-            entry.dataPoint.y >= 1000000
-              ? `Rs${(entry.dataPoint.y / 1000000).toFixed(1)}M`
-              : entry.dataPoint.y >= 1000
-              ? `Rs${Math.round(entry.dataPoint.y / 1000)}K`
-              : `Rs${Math.round(entry.dataPoint.y)}`;
-          return `<strong>${entry.dataPoint.label}</strong><br/>${formattedValue}`;
-        },
-      },
-      data: [
-        {
-          type: "bar",
-          indexLabelPlacement: isMobile ? "none" : "outside",
-          indexLabelFontSize: isMobile ? 9 : 11,
-          indexLabelFontFamily: "Inter, sans-serif",
-          indexLabelFontColor: "#475569",
-          indexLabelFormatter: function (e) {
-            if (isMobile) return "";
-            return e.dataPoint.y >= 1000000
-              ? `Rs${(e.dataPoint.y / 1000000).toFixed(1)}M`
-              : e.dataPoint.y >= 1000
-              ? `Rs${Math.round(e.dataPoint.y / 1000)}K`
-              : `Rs${Math.round(e.dataPoint.y)}`;
-          },
-          dataPoints: chartData.map((item) => ({
-            y: item.value,
-            label: isSmallMobile
-              ? item.label.substring(0, 3)
-              : isMobile
-              ? item.label.substring(0, 6)
-              : item.label,
-            color: item.color,
-          })),
-        },
-      ],
+  constructor(props) {
+    super(props);
+    this.state = {
+      selectedBar: null,
+      showDetails: false,
+      hoveredBar: null,
+      showTooltip: false,
+      tooltipPosition: { x: 0, y: 0 },
     };
+  }
+
+  formatValue = (value) => {
+    if (value >= 1000000) {
+      return `Rs${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `Rs${Math.round(value / 1000)}K`;
+    } else {
+      return `Rs${Math.round(value)}`;
+    }
+  };
+
+  handleBarClick = (item, index) => {
+    console.log("Bar clicked:", item.label, item.value);
+    this.setState(
+      {
+        selectedBar: { ...item, index },
+        showDetails: true,
+      },
+      () => {
+        console.log("State updated:", this.state.showDetails, this.state.selectedBar);
+      }
+    );
+  };
+
+  closeDetails = () => {
+    this.setState({
+      selectedBar: null,
+      showDetails: false,
+    });
+  };
+
+  handleBarHover = (item, index, event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const { isMobile } = this.props;
+
+    this.setState({
+      hoveredBar: { ...item, index },
+      showTooltip: true,
+      tooltipPosition: {
+        x: rect.left + rect.width / 2,
+        y: isMobile ? rect.top - 10 : rect.top - 10,
+      },
+    });
+  };
+
+  handleBarLeave = () => {
+    this.setState({
+      hoveredBar: null,
+      showTooltip: false,
+    });
+  };
+
+  getBarDetails = (item) => {
+    const details = {
+      "Actual Revenue": {
+        description: "Current actual revenue generated from all sources",
+        breakdown: ["Property bookings", "Service charges", "Additional fees"],
+        trend: "+12.5% from last month",
+        target: "Rs 583K",
+      },
+      "Expected Revenue": {
+        description: "Projected revenue based on current bookings and trends",
+        breakdown: ["Confirmed bookings", "Pending confirmations", "Estimated walk-ins"],
+        trend: "+8.3% from last month",
+        target: "Rs 219K",
+      },
+      "Achieve Target": {
+        description: "Combined achievement towards daily revenue target",
+        breakdown: ["Actual + Expected revenue", "Target completion rate", "Performance metrics"],
+        trend: "64.28% target achieved",
+        target: "Rs 583K",
+      },
+      "Monthly Achieved": {
+        description: "Total revenue achieved for the current month",
+        breakdown: ["Daily revenue accumulation", "Monthly performance", "Growth metrics"],
+        trend: "+15.2% from last month",
+        target: "Rs 17.5M",
+      },
+      "Quarterly Achieved": {
+        description: "Total revenue achieved for the current quarter",
+        breakdown: ["Q1 performance", "Quarterly targets", "Year-over-year growth"],
+        trend: "+22.1% from last quarter",
+        target: "Rs 70M",
+      },
+    };
+    return details[item.label] || {};
+  };
+
+  render() {
+    const { chartData, isMobile, isSmallMobile, isTablet } = this.props;
+    const maxValue = Math.max(...chartData.map((item) => item.value), 1);
+
     return (
       <div
         style={{
           width: "100%",
-          height: chartHeight + "px",
-          overflow: "hidden",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: isMobile ? "10px" : "0px",
+          padding: isMobile ? "16px" : "24px",
+          backgroundColor: "#ffffff",
+          borderRadius: "12px",
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+          border: "1px solid #e2e8f0",
         }}
       >
-        <div style={{ width: "100%", height: "100%" }}>
-          <CanvasJSChart options={options} />
+        {/* Chart Title */}
+        <div
+          style={{
+            textAlign: "center",
+            marginBottom: isMobile ? "24px" : "32px",
+            paddingBottom: isMobile ? "12px" : "16px",
+            borderBottom: "2px solid #f1f5f9",
+          }}
+        >
+          <h3
+            style={{
+              fontSize: isSmallMobile ? "16px" : isMobile ? "18px" : isTablet ? "20px" : "22px",
+              fontFamily: "Inter, sans-serif",
+              fontWeight: "700",
+              color: "#1e293b",
+              margin: 0,
+              letterSpacing: "-0.025em",
+            }}
+          >
+            {isMobile ? "Revenue Analytics" : "Revenue Performance Analytics"}
+          </h3>
+          <p
+            style={{
+              fontSize: isMobile ? "11px" : "13px",
+              fontFamily: "Inter, sans-serif",
+              color: "#64748b",
+              margin: "4px 0 0 0",
+              fontWeight: "400",
+            }}
+          >
+            Real-time revenue performance metrics
+          </p>
         </div>
+
+        {/* Custom Horizontal Bar Chart */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: isMobile ? "16px" : "20px",
+          }}
+        >
+          {chartData.map((item, index) => (
+            <div
+              key={index}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: isMobile ? "12px" : "16px",
+                padding: isMobile ? "8px" : "10px",
+                borderRadius: "8px",
+                backgroundColor: "#fafbfc",
+                border: "1px solid #f1f5f9",
+                transition: "all 0.3s ease",
+                cursor: "pointer",
+              }}
+              onClick={() => this.handleBarClick(item, index)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#f8fafc";
+                e.currentTarget.style.borderColor = "#e2e8f0";
+                e.currentTarget.style.transform = "translateX(2px)";
+                this.handleBarHover(item, index, e);
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#fafbfc";
+                e.currentTarget.style.borderColor = "#f1f5f9";
+                e.currentTarget.style.transform = "translateX(0px)";
+                this.handleBarLeave();
+              }}
+            >
+              {/* Category Label */}
+              <div
+                style={{
+                  minWidth: isMobile ? "90px" : "130px",
+                  fontSize: isMobile ? "11px" : "13px",
+                  fontFamily: "Inter, sans-serif",
+                  fontWeight: "600",
+                  color: "#374151",
+                  textAlign: "right",
+                  lineHeight: "1.3",
+                }}
+              >
+                {item.label}
+              </div>
+
+              {/* Bar Container */}
+              <div
+                style={{
+                  flex: 1,
+                  height: isMobile ? "28px" : "36px",
+                  backgroundColor: "#f1f5f9",
+                  borderRadius: "6px",
+                  position: "relative",
+                  overflow: "hidden",
+                  boxShadow: "inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)",
+                }}
+              >
+                {/* Animated Bar */}
+                <div
+                  style={{
+                    height: "100%",
+                    background: `linear-gradient(135deg, ${item.color} 0%, ${item.color}dd 100%)`,
+                    width: `${(item.value / maxValue) * 100}%`,
+                    borderRadius: "6px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                    paddingRight: "12px",
+                    transition: "all 1.5s cubic-bezier(0.4, 0, 0.2, 1)",
+                    animation: `slideIn-${index} 1.5s cubic-bezier(0.4, 0, 0.2, 1)`,
+                    boxShadow: "0 2px 4px 0 rgba(0, 0, 0, 0.1)",
+                    position: "relative",
+                  }}
+                >
+                  {/* Shine Effect */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: "50%",
+                      background:
+                        "linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, transparent 100%)",
+                      borderRadius: "6px 6px 0 0",
+                    }}
+                  />
+
+                  {/* Value Label Inside Bar */}
+                  <span
+                    style={{
+                      fontSize: isMobile ? "10px" : "12px",
+                      fontFamily: "Inter, sans-serif",
+                      fontWeight: "700",
+                      color: "#ffffff",
+                      textShadow: "0 1px 3px rgba(0,0,0,0.4)",
+                      zIndex: 1,
+                      position: "relative",
+                    }}
+                  >
+                    {this.formatValue(item.value)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* X-axis Label */}
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: isMobile ? "20px" : "24px",
+            paddingTop: isMobile ? "12px" : "16px",
+            borderTop: "1px solid #f1f5f9",
+          }}
+        >
+          <span
+            style={{
+              fontSize: isMobile ? "11px" : "13px",
+              fontFamily: "Inter, sans-serif",
+              color: "#64748b",
+              fontWeight: "500",
+              letterSpacing: "0.025em",
+            }}
+          >
+            {!isMobile && "Amount (Rs)"}
+          </span>
+        </div>
+
+        {/* Hover Tooltip */}
+        {this.state.showTooltip && this.state.hoveredBar && (
+          <div
+            style={{
+              position: "fixed",
+              left: `${this.state.tooltipPosition.x}px`,
+              top: `${this.state.tooltipPosition.y - 70}px`,
+              backgroundColor: "#1e293b",
+              color: "#ffffff",
+              padding: "10px 14px",
+              borderRadius: "6px",
+              boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+              zIndex: 10000,
+              fontSize: "13px",
+              fontFamily: "Inter, sans-serif",
+              pointerEvents: "none",
+              whiteSpace: "nowrap",
+              transform: "translateX(-50%)",
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                fontWeight: "600",
+                marginBottom: "4px",
+                color: this.state.hoveredBar.color,
+              }}
+            >
+              {this.state.hoveredBar.label}
+            </div>
+            <div style={{ fontWeight: "700", fontSize: "14px" }}>
+              {this.formatValue(this.state.hoveredBar.value)}
+            </div>
+          </div>
+        )}
+
+        {/* Details Modal */}
+        {this.state.showDetails && this.state.selectedBar && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.7)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+              padding: "20px",
+            }}
+            onClick={this.closeDetails}
+          >
+            <div
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: "12px",
+                padding: isMobile ? "20px" : "30px",
+                maxWidth: isMobile ? "90%" : "500px",
+                width: "100%",
+                maxHeight: "80vh",
+                overflowY: "auto",
+                boxShadow:
+                  "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                position: "relative",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={this.closeDetails}
+                style={{
+                  position: "absolute",
+                  top: "15px",
+                  right: "15px",
+                  background: "none",
+                  border: "none",
+                  fontSize: "24px",
+                  cursor: "pointer",
+                  color: "#64748b",
+                  padding: "5px",
+                  borderRadius: "4px",
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = "#f1f5f9";
+                  e.target.style.color = "#374151";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = "transparent";
+                  e.target.style.color = "#64748b";
+                }}
+              >
+                ×
+              </button>
+
+              {/* Modal Header */}
+              <div style={{ marginBottom: "20px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    marginBottom: "8px",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      backgroundColor: this.state.selectedBar.color,
+                      borderRadius: "4px",
+                    }}
+                  />
+                  <h3
+                    style={{
+                      fontSize: isMobile ? "18px" : "20px",
+                      fontFamily: "Inter, sans-serif",
+                      fontWeight: "700",
+                      color: "#1e293b",
+                      margin: 0,
+                    }}
+                  >
+                    {this.state.selectedBar.label}
+                  </h3>
+                </div>
+                <div
+                  style={{
+                    fontSize: isMobile ? "24px" : "28px",
+                    fontFamily: "Inter, sans-serif",
+                    fontWeight: "800",
+                    color: this.state.selectedBar.color,
+                    marginBottom: "8px",
+                  }}
+                >
+                  {this.formatValue(this.state.selectedBar.value)}
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              {(() => {
+                const details = this.getBarDetails(this.state.selectedBar);
+                return (
+                  <div>
+                    <p
+                      style={{
+                        fontSize: isMobile ? "14px" : "16px",
+                        fontFamily: "Inter, sans-serif",
+                        color: "#64748b",
+                        lineHeight: "1.5",
+                        marginBottom: "20px",
+                      }}
+                    >
+                      {details.description}
+                    </p>
+
+                    {/* Breakdown */}
+                    <div style={{ marginBottom: "20px" }}>
+                      <h4
+                        style={{
+                          fontSize: isMobile ? "14px" : "16px",
+                          fontFamily: "Inter, sans-serif",
+                          fontWeight: "600",
+                          color: "#374151",
+                          marginBottom: "10px",
+                        }}
+                      >
+                        Breakdown:
+                      </h4>
+                      <ul
+                        style={{
+                          listStyle: "none",
+                          padding: 0,
+                          margin: 0,
+                        }}
+                      >
+                        {details.breakdown?.map((item, idx) => (
+                          <li
+                            key={idx}
+                            style={{
+                              fontSize: isMobile ? "13px" : "14px",
+                              fontFamily: "Inter, sans-serif",
+                              color: "#64748b",
+                              marginBottom: "6px",
+                              paddingLeft: "16px",
+                              position: "relative",
+                            }}
+                          >
+                            <span
+                              style={{
+                                position: "absolute",
+                                left: "0",
+                                color: this.state.selectedBar.color,
+                                fontWeight: "bold",
+                              }}
+                            >
+                              •
+                            </span>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Stats */}
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "20px",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div
+                        style={{
+                          flex: 1,
+                          minWidth: "120px",
+                          padding: "12px",
+                          backgroundColor: "#f8fafc",
+                          borderRadius: "8px",
+                          border: "1px solid #e2e8f0",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: isMobile ? "11px" : "12px",
+                            fontFamily: "Inter, sans-serif",
+                            color: "#64748b",
+                            fontWeight: "500",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          Trend
+                        </div>
+                        <div
+                          style={{
+                            fontSize: isMobile ? "13px" : "14px",
+                            fontFamily: "Inter, sans-serif",
+                            color: "#059669",
+                            fontWeight: "600",
+                          }}
+                        >
+                          {details.trend}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          flex: 1,
+                          minWidth: "120px",
+                          padding: "12px",
+                          backgroundColor: "#f8fafc",
+                          borderRadius: "8px",
+                          border: "1px solid #e2e8f0",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: isMobile ? "11px" : "12px",
+                            fontFamily: "Inter, sans-serif",
+                            color: "#64748b",
+                            fontWeight: "500",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          Target
+                        </div>
+                        <div
+                          style={{
+                            fontSize: isMobile ? "13px" : "14px",
+                            fontFamily: "Inter, sans-serif",
+                            color: "#374151",
+                            fontWeight: "600",
+                          }}
+                        >
+                          {details.target}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+
+        {/* Enhanced Animation Keyframes */}
+        <style>
+          {`
+            ${chartData
+              .map(
+                (item, index) => `
+              @keyframes slideIn-${index} {
+                0% {
+                  width: 0%;
+                  opacity: 0.7;
+                }
+                50% {
+                  opacity: 0.9;
+                }
+                100% {
+                  width: ${(item.value / maxValue) * 100}%;
+                  opacity: 1;
+                }
+              }
+            `
+              )
+              .join("")}
+          `}
+        </style>
       </div>
     );
-  }
-
-  addSymbols(e) {
-    var suffixes = ["", "K", "M", "B"];
-    var order = Math.max(Math.floor(Math.log(Math.abs(e.value)) / Math.log(1000)), 0);
-    if (order > suffixes.length - 1) order = suffixes.length - 1;
-    var suffix = suffixes[order];
-    return window.CanvasJS.formatNumber(e.value / Math.pow(1000, order)) + suffix;
   }
 }
 
@@ -340,18 +812,26 @@ function Revenue() {
 
   // Chart data based on backend response
   const getChartData = () => {
-    const targetRevenue = 583000; // Rs583K (fixed daily target)
+    const targetRevenue = 583000; // Rs583K (fixed daily target - base for quarterly calculation)
     const actualRevenue = revenueData ? parseFloat(revenueData.actualRevenue) || 0 : 175480.55;
     const expectedRevenue = revenueData ? parseFloat(revenueData.expectedRevenue) || 0 : 100406.13;
     const monthlyTarget = monthlyData ? monthlyData.monthlyTarget || 17500000 : 17500000; // Rs17.5M
     const monthlyAchieved = monthlyData ? monthlyData.totalMonthlyAchieved || 0 : 0;
 
+    // Get quarterly achieved revenue - same as used in the cards
+    const quarterlyAchievedRevenue = revenueData
+      ? parseFloat(revenueData.quarterlyAchievedRevenue) || 0
+      : 0;
+
+    // Quarterly target (70M as shown in cards)
+    const quarterlyTarget = 70000000; // Rs 70M
+
     return [
-      { label: "Actual Revenue", value: actualRevenue, color: "#A67C8A" }, // Mauve purple
-      { label: "Expected Revenue", value: expectedRevenue, color: "#4A90A4" }, // Teal blue
-      { label: "Target", value: actualRevenue + expectedRevenue, color: "#E85A4F" }, // Red
-      { label: "Monthly Target", value: monthlyAchieved, color: "#20c997" }, // Green
-      { label: "Daily Target", value: targetRevenue, color: "#7B7FB8" }, // Purple blue
+      { label: "Actual Revenue", value: actualRevenue, color: "#A67C8A" }, // 1 Purple
+      { label: "Expected Revenue", value: expectedRevenue, color: "#45B7D1" }, // 2 Blue-green
+      { label: "Achieve Target", value: expectedRevenue, color: "#E85A4F" }, // 3 Red - same as expected revenue
+      { label: "Monthly Achieved", value: monthlyAchieved, color: "#4ECDC4" }, // 4 Green
+      { label: "Quarterly Achieved", value: quarterlyAchievedRevenue, color: "#6B73B8" }, // 5 Blue
     ];
   };
 
@@ -361,7 +841,8 @@ function Revenue() {
   // Revenue cards data based on backend response - Updated
   const getRevenueCards = () => {
     // Fixed target revenue - remains unchanged
-    const targetRevenue = 583000; // Rs583K (fixed target)
+    const targetRevenue = 583000; // Rs583K (fixed daily target)
+    const quarterlyTarget = targetRevenue * 90; // Rs52.47M (90 days quarterly target)
     // API actual revenue from backend
     const actualRevenue = revenueData ? parseFloat(revenueData.actualRevenue) || 0 : 0; // Rs175K (API actual)
     // Expected revenue from backend
@@ -369,6 +850,9 @@ function Revenue() {
     const totalRevenue = revenueData ? parseFloat(revenueData.totalRevenue) || 0 : 0;
     const monthlyAchievedRevenue = monthlyData ? monthlyData.totalMonthlyAchieved || 0 : 0;
     const monthlyTarget = monthlyData ? monthlyData.monthlyTarget || 17500000 : 17500000;
+    const quarterlyAchievedRevenue = revenueData
+      ? parseFloat(revenueData.quarterlyAchievedRevenue) || 0
+      : 0;
     const occupancyRate = revenueData ? parseFloat(revenueData.occupancyRate) || 0 : 0;
 
     // Calculate achievement percentage based on combined actual + expected vs target
@@ -389,18 +873,29 @@ function Revenue() {
       },
       {
         title: "EXPECTED REVENUE",
-        amount: formatCurrency(expectedRevenue), // Expected Revenue: 100406.13 PKR
+        amount: formatCurrency(expectedRevenue), // Dynamic Expected Revenue from backend
         progress: achievementProgress, // Same achievement progress
         color: "info",
         icon: "schedule",
         gradient: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
       },
       {
+        title: "LISTING REVENUE",
+        amount: {
+          type: "category",
+          categories: revenueData?.categoryRevenue || { Studio: 0, "1BR": 0, "2BR": 0, "3BR": 0 },
+        },
+        progress: parseFloat(Math.min((expectedRevenue / targetRevenue) * 100, 100).toFixed(2)),
+        color: "dark",
+        icon: "home",
+        gradient: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+      },
+      {
         title: "TARGET",
         amount: {
           type: "custom",
           actual: formatCurrency(targetRevenue), // Rs583K (fixed target)
-          achieved: formatCurrency(combinedAchieved), // Combined actual + expected
+          achieved: formatCurrency(expectedRevenue), // Same as Expected Revenue (dynamic)
         },
         progress: achievementProgress, // Achievement progress
         color: "primary",
@@ -422,9 +917,13 @@ function Revenue() {
         gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
       },
       {
-        title: "DAILY TARGET",
-        amount: formatCurrency(targetRevenue), // Rs583K (fixed target)
-        progress: parseFloat(Math.min((combinedAchieved / targetRevenue) * 100, 100).toFixed(2)),
+        title: "QUARTERLY TARGET",
+        amount: {
+          type: "custom",
+          actual: "Rs 70M", // Quarterly Target Actual
+          achieved: formatCurrency(quarterlyAchievedRevenue), // Dynamic quarterly achieved revenue from Teable
+        },
+        progress: parseFloat(Math.min((quarterlyAchievedRevenue / 70000000) * 100, 100).toFixed(2)),
         color: "error",
         icon: "flag",
         gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
@@ -544,20 +1043,38 @@ function Revenue() {
           sx={{
             position: "relative",
             zIndex: 2,
+            width: "100%",
+
+            // Default layout for all screens: 3 cards per row
             "& > *": {
-              flex: "1 1 calc(20% - 24px)",
-              minWidth: "300px",
-              maxWidth: "300px",
-              "@media (max-width: 1200px)": {
-                flex: "1 1 calc(33.333% - 24px)",
-                maxWidth: "300px",
+              flex: "1 1 calc(33.333% - 24px)",
+              minWidth: "280px",
+              maxWidth: "calc(33.333% - 24px)",
+            },
+
+            // Desktop view (1920px and up): Show all 6 cards in one row
+            "@media (min-width: 1920px)": {
+              "& > *": {
+                flex: "1 1 calc(16.666% - 24px)",
+                minWidth: "280px",
+                maxWidth: "calc(16.666% - 24px)",
               },
-              "@media (max-width: 900px)": {
+            },
+
+            // Tablet adjustments
+            "@media (max-width: 1200px)": {
+              "& > *": {
                 flex: "1 1 calc(50% - 24px)",
-                maxWidth: "300px",
+                minWidth: "300px",
+                maxWidth: "calc(50% - 24px)",
               },
-              "@media (max-width: 600px)": {
+            },
+
+            // Mobile adjustments
+            "@media (max-width: 768px)": {
+              "& > *": {
                 flex: "1 1 100%",
+                minWidth: "280px",
                 maxWidth: "100%",
               },
             },
@@ -567,9 +1084,9 @@ function Revenue() {
             <Card
               key={index}
               sx={{
-                height: "200px",
-                minHeight: "200px",
-                maxHeight: "200px",
+                height: "300px",
+                minHeight: "300px",
+                maxHeight: "300px",
                 background: "#ffffff",
                 border: "1px solid #e2e8f0",
                 borderRadius: 3,
@@ -605,50 +1122,494 @@ function Revenue() {
                     </MDTypography>
                     {typeof item.amount === "object" && item.amount.type === "custom" ? (
                       <MDBox>
-                        <MDBox
-                          display="grid"
-                          gridTemplateColumns="1fr auto 1fr"
-                          alignItems="center"
-                          textAlign="center"
-                          mb={1}
-                        >
-                          <MDTypography
-                            sx={{ fontSize: "0.9rem", fontWeight: 600, color: "#64748b" }}
+                        <MDBox mb={2}>
+                          <MDBox
+                            display="grid"
+                            gridTemplateColumns="1fr auto 1fr"
+                            alignItems="center"
+                            textAlign="center"
+                            mb={1}
                           >
-                            Actual
-                          </MDTypography>
-                          <MDTypography
-                            sx={{ fontSize: "0.9rem", fontWeight: 600, color: "#64748b" }}
+                            <MDTypography
+                              sx={{
+                                fontSize: "0.9rem",
+                                fontWeight: 600,
+                                color: "#64748b",
+                              }}
+                            >
+                              Actual
+                            </MDTypography>
+                            <MDTypography
+                              sx={{
+                                fontSize: "0.9rem",
+                                fontWeight: 600,
+                                color: "#64748b",
+                                mx: 2,
+                              }}
+                            >
+                              |
+                            </MDTypography>
+                            <MDTypography
+                              sx={{
+                                fontSize: "0.9rem",
+                                fontWeight: 600,
+                                color: "#64748b",
+                              }}
+                            >
+                              Achieved
+                            </MDTypography>
+                          </MDBox>
+
+                          <MDBox
+                            display="grid"
+                            gridTemplateColumns="1fr auto 1fr"
+                            alignItems="center"
+                            textAlign="center"
                           >
-                            |
-                          </MDTypography>
-                          <MDTypography
-                            sx={{ fontSize: "0.9rem", fontWeight: 600, color: "#64748b" }}
-                          >
-                            Achieved
-                          </MDTypography>
+                            <MDTypography
+                              sx={{
+                                fontSize: "1.1rem",
+                                fontWeight: 700,
+                                color: "#1e293b",
+                              }}
+                            >
+                              {item.title === "ACTUAL REVENUE"
+                                ? "Actual Revenue"
+                                : item.amount.actual}
+                            </MDTypography>
+                            <MDTypography
+                              sx={{
+                                fontSize: "0.9rem",
+                                fontWeight: 600,
+                                color: "#64748b",
+                                mx: 2,
+                              }}
+                            >
+                              |
+                            </MDTypography>
+                            <MDTypography
+                              sx={{
+                                fontSize: "1.1rem",
+                                fontWeight: 700,
+                                color: "#1e293b",
+                              }}
+                            >
+                              {item.amount.achieved}
+                            </MDTypography>
+                          </MDBox>
                         </MDBox>
-                        <MDBox
-                          display="grid"
-                          gridTemplateColumns="1fr auto 1fr"
-                          alignItems="center"
-                          textAlign="center"
-                        >
-                          <MDTypography
-                            sx={{ fontSize: "1.0rem", fontWeight: 600, color: "#1e293b" }}
-                          >
-                            {item.title === "ACTUAL REVENUE" ? "1" : item.amount.actual}
-                          </MDTypography>
-                          <MDTypography
-                            sx={{ fontSize: "1.0rem", fontWeight: 600, color: "#1e293b" }}
-                          >
-                            |
-                          </MDTypography>
-                          <MDTypography
-                            sx={{ fontSize: "1.0rem", fontWeight: 600, color: "#1e293b" }}
-                          >
-                            {item.amount.achieved}
-                          </MDTypography>
+                      </MDBox>
+                    ) : typeof item.amount === "object" && item.amount.type === "category" ? (
+                      <MDBox>
+                        {/* 2x2 Grid Layout */}
+                        <MDBox display="grid" gridTemplateColumns="1fr 1fr" gap={1} mb={0.5}>
+                          {/* Studio */}
+                          {(() => {
+                            const revenue = item.amount.categories.Studio || 0;
+                            const categoryTarget = 50000;
+                            const categoryProgress = Math.min(
+                              (parseFloat(revenue) / categoryTarget) * 100,
+                              100
+                            );
+                            const color = "#3b82f6";
+
+                            return (
+                              <MDBox
+                                p={0.8}
+                                sx={{
+                                  background: `linear-gradient(135deg, ${color}15 0%, ${color}08 100%)`,
+                                  borderRadius: 2,
+                                  border: `2px solid ${color}30`,
+                                  boxShadow: `0 4px 12px ${color}20`,
+                                  transition: "all 0.3s ease-in-out",
+                                  position: "relative",
+                                  overflow: "hidden",
+                                  "&:hover": {
+                                    transform: "translateY(-2px)",
+                                    boxShadow: `0 8px 20px ${color}30`,
+                                    border: `2px solid ${color}50`,
+                                  },
+                                  "&::before": {
+                                    content: '""',
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: "2px",
+                                    background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+                                    borderRadius: "2px 2px 0 0",
+                                  },
+                                }}
+                              >
+                                <MDBox textAlign="center" mb={0.5}>
+                                  <MDTypography
+                                    sx={{
+                                      fontSize: "0.7rem",
+                                      fontWeight: 700,
+                                      color: "#1e293b",
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.3px",
+                                      mb: 0.3,
+                                    }}
+                                  >
+                                    Studio
+                                  </MDTypography>
+                                  <MDTypography
+                                    sx={{
+                                      fontSize: "0.85rem",
+                                      fontWeight: 800,
+                                      color: color,
+                                      textShadow: `0 2px 4px ${color}30`,
+                                    }}
+                                  >
+                                    {formatCurrency(parseFloat(revenue) || 0)}
+                                  </MDTypography>
+                                </MDBox>
+                                <MDBox
+                                  sx={{
+                                    height: 4,
+                                    borderRadius: 2,
+                                    background: "#e2e8f0",
+                                    overflow: "hidden",
+                                    mb: 0.5,
+                                    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.1)",
+                                  }}
+                                >
+                                  <MDBox
+                                    sx={{
+                                      height: "100%",
+                                      width: `${categoryProgress}%`,
+                                      background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+                                      borderRadius: 2,
+                                      transition: "width 2s ease-in-out",
+                                      boxShadow: `0 0 6px ${color}50`,
+                                    }}
+                                  />
+                                </MDBox>
+                                <MDBox textAlign="center">
+                                  <MDTypography
+                                    sx={{
+                                      fontSize: "0.6rem",
+                                      fontWeight: 700,
+                                      color: color,
+                                      background: `${color}15`,
+                                      padding: "1px 6px",
+                                      borderRadius: 1,
+                                      display: "inline-block",
+                                    }}
+                                  >
+                                    {categoryProgress.toFixed(1)}%
+                                  </MDTypography>
+                                </MDBox>
+                              </MDBox>
+                            );
+                          })()}
+
+                          {/* 2BR */}
+                          {(() => {
+                            const revenue = item.amount.categories["2BR"] || 0;
+                            const categoryTarget = 50000;
+                            const categoryProgress = Math.min(
+                              (parseFloat(revenue) / categoryTarget) * 100,
+                              100
+                            );
+                            const color = "#06d6a0";
+
+                            return (
+                              <MDBox
+                                p={0.8}
+                                sx={{
+                                  background: `linear-gradient(135deg, ${color}15 0%, ${color}08 100%)`,
+                                  borderRadius: 2,
+                                  border: `2px solid ${color}30`,
+                                  boxShadow: `0 4px 12px ${color}20`,
+                                  transition: "all 0.3s ease-in-out",
+                                  position: "relative",
+                                  overflow: "hidden",
+                                  "&:hover": {
+                                    transform: "translateY(-2px)",
+                                    boxShadow: `0 8px 20px ${color}30`,
+                                    border: `2px solid ${color}50`,
+                                  },
+                                  "&::before": {
+                                    content: '""',
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: "2px",
+                                    background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+                                    borderRadius: "2px 2px 0 0",
+                                  },
+                                }}
+                              >
+                                <MDBox textAlign="center" mb={0.5}>
+                                  <MDTypography
+                                    sx={{
+                                      fontSize: "0.7rem",
+                                      fontWeight: 700,
+                                      color: "#1e293b",
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.3px",
+                                      mb: 0.3,
+                                    }}
+                                  >
+                                    2BR
+                                  </MDTypography>
+                                  <MDTypography
+                                    sx={{
+                                      fontSize: "0.85rem",
+                                      fontWeight: 800,
+                                      color: color,
+                                      textShadow: `0 2px 4px ${color}30`,
+                                    }}
+                                  >
+                                    {formatCurrency(parseFloat(revenue) || 0)}
+                                  </MDTypography>
+                                </MDBox>
+                                <MDBox
+                                  sx={{
+                                    height: 4,
+                                    borderRadius: 2,
+                                    background: "#e2e8f0",
+                                    overflow: "hidden",
+                                    mb: 0.5,
+                                    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.1)",
+                                  }}
+                                >
+                                  <MDBox
+                                    sx={{
+                                      height: "100%",
+                                      width: `${categoryProgress}%`,
+                                      background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+                                      borderRadius: 2,
+                                      transition: "width 2s ease-in-out",
+                                      boxShadow: `0 0 6px ${color}50`,
+                                    }}
+                                  />
+                                </MDBox>
+                                <MDBox textAlign="center">
+                                  <MDTypography
+                                    sx={{
+                                      fontSize: "0.6rem",
+                                      fontWeight: 700,
+                                      color: color,
+                                      background: `${color}15`,
+                                      padding: "1px 6px",
+                                      borderRadius: 1,
+                                      display: "inline-block",
+                                    }}
+                                  >
+                                    {categoryProgress.toFixed(1)}%
+                                  </MDTypography>
+                                </MDBox>
+                              </MDBox>
+                            );
+                          })()}
+
+                          {/* 1BR */}
+                          {(() => {
+                            const revenue = item.amount.categories["1BR"] || 0;
+                            const categoryTarget = 50000;
+                            const categoryProgress = Math.min(
+                              (parseFloat(revenue) / categoryTarget) * 100,
+                              100
+                            );
+                            const color = "#8b5cf6";
+
+                            return (
+                              <MDBox
+                                p={0.8}
+                                sx={{
+                                  background: `linear-gradient(135deg, ${color}15 0%, ${color}08 100%)`,
+                                  borderRadius: 2,
+                                  border: `2px solid ${color}30`,
+                                  boxShadow: `0 4px 12px ${color}20`,
+                                  transition: "all 0.3s ease-in-out",
+                                  position: "relative",
+                                  overflow: "hidden",
+                                  "&:hover": {
+                                    transform: "translateY(-2px)",
+                                    boxShadow: `0 8px 20px ${color}30`,
+                                    border: `2px solid ${color}50`,
+                                  },
+                                  "&::before": {
+                                    content: '""',
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: "2px",
+                                    background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+                                    borderRadius: "2px 2px 0 0",
+                                  },
+                                }}
+                              >
+                                <MDBox textAlign="center" mb={0.5}>
+                                  <MDTypography
+                                    sx={{
+                                      fontSize: "0.7rem",
+                                      fontWeight: 700,
+                                      color: "#1e293b",
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.3px",
+                                      mb: 0.3,
+                                    }}
+                                  >
+                                    1BR
+                                  </MDTypography>
+                                  <MDTypography
+                                    sx={{
+                                      fontSize: "0.85rem",
+                                      fontWeight: 800,
+                                      color: color,
+                                      textShadow: `0 2px 4px ${color}30`,
+                                    }}
+                                  >
+                                    {formatCurrency(parseFloat(revenue) || 0)}
+                                  </MDTypography>
+                                </MDBox>
+                                <MDBox
+                                  sx={{
+                                    height: 4,
+                                    borderRadius: 2,
+                                    background: "#e2e8f0",
+                                    overflow: "hidden",
+                                    mb: 0.5,
+                                    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.1)",
+                                  }}
+                                >
+                                  <MDBox
+                                    sx={{
+                                      height: "100%",
+                                      width: `${categoryProgress}%`,
+                                      background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+                                      borderRadius: 2,
+                                      transition: "width 2s ease-in-out",
+                                      boxShadow: `0 0 6px ${color}50`,
+                                    }}
+                                  />
+                                </MDBox>
+                                <MDBox textAlign="center">
+                                  <MDTypography
+                                    sx={{
+                                      fontSize: "0.6rem",
+                                      fontWeight: 700,
+                                      color: color,
+                                      background: `${color}15`,
+                                      padding: "1px 6px",
+                                      borderRadius: 1,
+                                      display: "inline-block",
+                                    }}
+                                  >
+                                    {categoryProgress.toFixed(1)}%
+                                  </MDTypography>
+                                </MDBox>
+                              </MDBox>
+                            );
+                          })()}
+
+                          {/* 3BR */}
+                          {(() => {
+                            const revenue = item.amount.categories["3BR"] || 0;
+                            const categoryTarget = 50000;
+                            const categoryProgress = Math.min(
+                              (parseFloat(revenue) / categoryTarget) * 100,
+                              100
+                            );
+                            const color = "#ef4444";
+
+                            return (
+                              <MDBox
+                                p={0.8}
+                                sx={{
+                                  background: `linear-gradient(135deg, ${color}15 0%, ${color}08 100%)`,
+                                  borderRadius: 2,
+                                  border: `2px solid ${color}30`,
+                                  boxShadow: `0 4px 12px ${color}20`,
+                                  transition: "all 0.3s ease-in-out",
+                                  position: "relative",
+                                  overflow: "hidden",
+                                  "&:hover": {
+                                    transform: "translateY(-2px)",
+                                    boxShadow: `0 8px 20px ${color}30`,
+                                    border: `2px solid ${color}50`,
+                                  },
+                                  "&::before": {
+                                    content: '""',
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: "2px",
+                                    background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+                                    borderRadius: "2px 2px 0 0",
+                                  },
+                                }}
+                              >
+                                <MDBox textAlign="center" mb={0.5}>
+                                  <MDTypography
+                                    sx={{
+                                      fontSize: "0.7rem",
+                                      fontWeight: 700,
+                                      color: "#1e293b",
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.3px",
+                                      mb: 0.3,
+                                    }}
+                                  >
+                                    3BR
+                                  </MDTypography>
+                                  <MDTypography
+                                    sx={{
+                                      fontSize: "0.85rem",
+                                      fontWeight: 800,
+                                      color: color,
+                                      textShadow: `0 2px 4px ${color}30`,
+                                    }}
+                                  >
+                                    {formatCurrency(parseFloat(revenue) || 0)}
+                                  </MDTypography>
+                                </MDBox>
+                                <MDBox
+                                  sx={{
+                                    height: 4,
+                                    borderRadius: 2,
+                                    background: "#e2e8f0",
+                                    overflow: "hidden",
+                                    mb: 0.5,
+                                    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.1)",
+                                  }}
+                                >
+                                  <MDBox
+                                    sx={{
+                                      height: "100%",
+                                      width: `${categoryProgress}%`,
+                                      background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+                                      borderRadius: 2,
+                                      transition: "width 2s ease-in-out",
+                                      boxShadow: `0 0 6px ${color}50`,
+                                    }}
+                                  />
+                                </MDBox>
+                                <MDBox textAlign="center">
+                                  <MDTypography
+                                    sx={{
+                                      fontSize: "0.6rem",
+                                      fontWeight: 700,
+                                      color: color,
+                                      background: `${color}15`,
+                                      padding: "1px 6px",
+                                      borderRadius: 1,
+                                      display: "inline-block",
+                                    }}
+                                  >
+                                    {categoryProgress.toFixed(1)}%
+                                  </MDTypography>
+                                </MDBox>
+                              </MDBox>
+                            );
+                          })()}
                         </MDBox>
                       </MDBox>
                     ) : (
@@ -683,50 +1644,53 @@ function Revenue() {
                   </MDBox>
                 </MDBox>
 
-                <MDBox>
-                  <MDBox
-                    sx={{
-                      height: 6,
-                      borderRadius: 3,
-                      background: "#f1f5f9",
-                      overflow: "hidden",
-                      position: "relative",
-                    }}
-                  >
+                {/* Achievement Progress - Show for all cards except Listing Revenue */}
+                {item.title !== "LISTING REVENUE" && (
+                  <MDBox>
                     <MDBox
                       sx={{
-                        height: "100%",
-                        width: `${item.progress}%`,
-                        background: item.gradient,
+                        height: 6,
                         borderRadius: 3,
-                        transition: "width 1.5s ease-in-out",
+                        background: "#f1f5f9",
+                        overflow: "hidden",
                         position: "relative",
                       }}
-                    />
-                  </MDBox>
-                  <MDBox display="flex" justifyContent="space-between" alignItems="center" mt={2}>
-                    <MDTypography
-                      variant="body2"
-                      sx={{
-                        color: "#64748b",
-                        fontWeight: 500,
-                        fontSize: "0.875rem",
-                      }}
                     >
-                      Achievement Progress
-                    </MDTypography>
-                    <MDTypography
-                      variant="body2"
-                      sx={{
-                        color: "#1e293b",
-                        fontWeight: 600,
-                        fontSize: "0.875rem",
-                      }}
-                    >
-                      {item.progress}%
-                    </MDTypography>
+                      <MDBox
+                        sx={{
+                          height: "100%",
+                          width: `${item.progress}%`,
+                          background: item.gradient,
+                          borderRadius: 3,
+                          transition: "width 1.5s ease-in-out",
+                          position: "relative",
+                        }}
+                      />
+                    </MDBox>
+                    <MDBox display="flex" justifyContent="space-between" alignItems="center" mt={2}>
+                      <MDTypography
+                        variant="body2"
+                        sx={{
+                          color: "#64748b",
+                          fontWeight: 500,
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        Achievement Progress
+                      </MDTypography>
+                      <MDTypography
+                        variant="body2"
+                        sx={{
+                          color: "#1e293b",
+                          fontWeight: 600,
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        {item.progress}%
+                      </MDTypography>
+                    </MDBox>
                   </MDBox>
-                </MDBox>
+                )}
               </MDBox>
             </Card>
           ))}

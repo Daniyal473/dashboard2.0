@@ -1991,10 +1991,44 @@ function KanbanView() {
                 pb={2}
                 sx={{
                   "& > *:last-child": { mr: 0 },
+                  // Desktop view (xl and up): Keep original layout
+                  "@media (min-width: 1536px)": {
+                    flexDirection: "row",
+                    flexWrap: "nowrap",
+                  },
+                  // Laptop/Tablet view (lg and down): Single row layout
+                  "@media (max-width: 1535px)": {
+                    flexDirection: "row",
+                    flexWrap: "nowrap",
+                    gap: 1,
+                    "& > div": {
+                      minWidth: "280px !important",
+                      maxWidth: "280px",
+                      flex: "0 0 280px",
+                    },
+                  },
                 }}
               >
                 {stacks.map((stack) => (
-                  <MDBox key={stack} minWidth={360} mr={2}>
+                  <MDBox
+                    key={stack}
+                    minWidth={360}
+                    mr={2}
+                    sx={{
+                      // Desktop view: Keep original width
+                      "@media (min-width: 1536px)": {
+                        minWidth: 360,
+                        marginRight: 2,
+                      },
+                      // Laptop/Tablet view: Smaller width for single row
+                      "@media (max-width: 1535px)": {
+                        minWidth: "280px !important",
+                        maxWidth: "280px",
+                        marginRight: 1,
+                        flex: "0 0 280px",
+                      },
+                    }}
+                  >
                     <Card
                       sx={{
                         backgroundColor: "#FAF9F6", // light gray background for the stack

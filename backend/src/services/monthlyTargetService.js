@@ -130,16 +130,18 @@ class MonthlyTargetService {
         console.log('🔍 First record date field:', response.data.records[0].fields['Date and Time ']);
       }
 
-      // Get current month and year
+      // Get current month, year, and today's date
       const now = new Date();
       const pakistanTime = new Date(now.getTime() + (5 * 60 * 60 * 1000));
       const currentMonth = pakistanTime.getMonth();
       const currentYear = pakistanTime.getFullYear();
+      const today = pakistanTime.getDate(); // Get current day of month
 
       console.log(`🗓️ Calculating for month: ${currentMonth + 1}/${currentYear}`);
-      console.log(`🔍 Looking for records with month=${currentMonth} and year=${currentYear}`);
+      console.log(`📅 Today's date: ${today}/${currentMonth + 1}/${currentYear}`);
+      console.log(`🔍 Looking for records from 1st to ${today}th of current month`);
 
-      // Filter records for current month
+      // Filter records for current month up to today only
       const currentMonthRecords = response.data.records.filter(record => {
         if (!record.fields || !record.fields['Date and Time ']) return false;
         
@@ -148,24 +150,38 @@ class MonthlyTargetService {
         const recordDate = new Date(dateTimeStr);
         const recordMonth = recordDate.getMonth();
         const recordYear = recordDate.getFullYear();
+        const recordDay = recordDate.getDate();
         
-        console.log(`📅 Record date: ${dateTimeStr} → month=${recordMonth}, year=${recordYear}`);
+        console.log(`📅 Record date: ${dateTimeStr} → day=${recordDay}, month=${recordMonth}, year=${recordYear}`);
         
-        return recordMonth === currentMonth && recordYear === currentYear;
+        // Only include records from current month, current year, and up to today's date
+        const isCurrentMonth = recordMonth === currentMonth && recordYear === currentYear;
+        const isUpToToday = recordDay <= today;
+        
+        if (isCurrentMonth && isUpToToday) {
+          console.log(`✅ Including record from day ${recordDay} (within range 1-${today})`);
+        } else if (isCurrentMonth && !isUpToToday) {
+          console.log(`❌ Excluding record from day ${recordDay} (future date, beyond today ${today})`);
+        }
+        
+        return isCurrentMonth && isUpToToday;
       });
 
-      console.log(`📋 Found ${currentMonthRecords.length} records for current month`);
+      console.log(`📋 Found ${currentMonthRecords.length} records from 1st to ${today}th of current month`);
 
-      // Sum all achieved values for the month
+      // Sum all achieved values from month start to today
       let monthlyTotal = 0;
       currentMonthRecords.forEach(record => {
         const achievedValue = record.fields['Monthly Target Achieved'] || '0';
         const numValue = this.parseRevenueValue(achievedValue);
         monthlyTotal += numValue;
-        console.log(`➕ Adding daily revenue: ${achievedValue} (${numValue})`);
+        
+        const recordDate = new Date(record.fields['Date and Time ']);
+        const recordDay = recordDate.getDate();
+        console.log(`➕ Adding day ${recordDay} revenue: ${achievedValue} (${numValue})`);
       });
 
-      console.log(`✅ Monthly achieved total: ${this.formatRevenueValue(monthlyTotal)}`);
+      console.log(`✅ Monthly achieved total (1st to ${today}th): ${this.formatRevenueValue(monthlyTotal)}`);
       return monthlyTotal;
 
     } catch (error) {
