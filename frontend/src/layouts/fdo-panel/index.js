@@ -53,6 +53,7 @@ function ReservationCard({ guest }) {
   const [error, setError] = useState(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isCheckedOut, setIsCheckedOut] = useState(false);
+  
 
   const HOSTAWAY_API = "https://api.hostaway.com/v1/reservations";
   const HOSTAWAY_TOKEN =
@@ -84,12 +85,13 @@ function ReservationCard({ guest }) {
       const totalPrice = reservation.totalPrice || "N/A";
       const currencyLabel = reservation.currency || "";
       let earlyCheckIn = "N/A";
-      if (Array.isArray(reservation.customFieldValues)) {
-        const earlyCheckinField = reservation.customFieldValues.find(
-          (field) => field.customField?.id === 75222
+      if (Array.isArray(reservation.financeField)) {
+        // 🔹 Early Check-in Fee
+        const earlyCheckinField = reservation.financeField.find(
+          (field) => field.alias === "Early Checkin Charges per hour" && field.isDeleted === 0
         );
         if (earlyCheckinField) {
-          earlyCheckIn = earlyCheckinField.value || "N/A";
+          earlyCheckIn = earlyCheckinField.total ?? earlyCheckinField.value ?? "N/A";
         }
       }
 
@@ -690,19 +692,20 @@ ul li {
     </div>
     <div class="heading-text" style="margin: 20px 0px 0px 40px !important">
   ${(() => {
-    const sameDayData = JSON.parse(
-      localStorage.getItem(`sameDayCheckOut_${reservationId}`) || "{}"
-    );
-    const earlyCheckOutData = JSON.parse(
-      localStorage.getItem(`earlyCheckOut_${reservationId}`) || "{}"
-    );
-    const isSameDayCheckout = sameDayData && sameDayData.value === "Yes";
-    const isEarlyCheckOut = earlyCheckOutData && earlyCheckOutData.allowed === true;
+          const sameDayData = JSON.parse(
+            localStorage.getItem(`sameDayCheckOut_${guest.reservationId}`) || "{}"
+          );
+          const earlyCheckOutData = JSON.parse(
+            localStorage.getItem(`earlyCheckOut_${guest.reservationId}`) || "{}"
+          );
+          const isSameDayCheckout = sameDayData && sameDayData.value === "Yes";
+          const isEarlyCheckOut =
+            earlyCheckOutData && earlyCheckOutData.allowed === true;
 
     if (isSameDayCheckout) {
       return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
                 ${guestName}'s Same Day Check-out Form 
-                <span style="font-size: 12px; color: #666;">(${reservationId})</span>
+                <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
               </h3>
               <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
                 Actual Check-out Date / Time: ${actualCheckOutTime}
@@ -710,7 +713,7 @@ ul li {
     } else if (isEarlyCheckOut) {
       return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
                 ${guestName}'s Early Check-out Form 
-                <span style="font-size: 12px; color: #666;">(${reservationId})</span>
+                <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
               </h3>
               <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
                 Actual Check-out Date / Time: ${actualCheckOutTime}
@@ -718,7 +721,7 @@ ul li {
     } else {
       return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
                 ${guestName}'s Check-out Form 
-                <span style="font-size: 12px; color: #666;">(${reservationId})</span>
+                <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
               </h3>
               <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
                 Actual Check-out Date / Time: ${actualCheckOutTime}
@@ -882,21 +885,18 @@ ul li {
           ? `<p>• <strong>Midstay Cleaning Fee:</strong> ${financeFields.midstayCleaningFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-          : ""
-      }
-     ${
-       CheckOutDamageDeposit !== "0"
-         ? `<p>• <strong>Damage Deposit:</strong> ${CheckOutDamageDeposit} ${currencyLabel}</p>`
-         : ""
-     }
-${
-  CheckOutSecurityDeposit !== "0"
-    ? `<p>• <strong>Security Deposit:</strong> ${CheckOutSecurityDeposit} ${currencyLabel}</p>`
-    : ""
-}
-      ${
-        financeFields.salesTax > 0
-          ? `<p>• <strong>Sales Tax:</strong> ${financeFields.salesTax.toFixed(
+            : ""
+          }
+     ${CheckOutDamageDeposit !== 0
+            ? `<p>• <strong>Damage Deposit:</strong> ${CheckOutDamageDeposit} ${currencyLabel}</p>`
+            : ""
+          }
+${CheckOutSecurityDeposit !== "0"
+            ? `<p>• <strong>Security Deposit:</strong> ${CheckOutSecurityDeposit} ${currencyLabel}</p>`
+            : ""
+          }
+      ${financeFields.salesTax > 0
+            ? `<p>• <strong>Sales Tax:</strong> ${financeFields.salesTax.toFixed(
               2
             )} ${currencyLabel}</p>`
           : ""
@@ -1010,7 +1010,7 @@ ${
     });
     
     const link = document.createElement('a');
-    link.download = \`${guestName}'s Checkout-form ${reservationId}.png\`;
+    link.download = \`${guestName}'s Checkout-form ${guest.reservationId}.png\`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   }
@@ -1206,12 +1206,12 @@ ${
 
       // Extract Early Checkin Charges custom field
       let earlyCheckinCharges = "N/A";
-      if (Array.isArray(result.customFieldValues)) {
-        const earlyCheckinField = result.customFieldValues.find(
-          (field) => field.customField?.id === 75222
+      if (Array.isArray(result.financeField)) {
+        const earlyCheckinField = result.financeField.find(
+          (field) => field.alias === "Early Checkin Charges per hour" && field.isDeleted === 0
         );
         if (earlyCheckinField) {
-          earlyCheckinCharges = earlyCheckinField.value || "N/A";
+          earlyCheckinCharges = earlyCheckinField.total ?? earlyCheckinField.value ?? "N/A";
         }
       }
 
@@ -1226,7 +1226,26 @@ ${
         }
       }
 
-      setReservationDetails({ ...result, pricePerNight, earlyCheckinCharges, securityDeposit });
+      // 🔹 Calculate Remaining Balance
+      let totalPaid = 0;
+      let remainingBalance = "N/A";
+      const totalPrice = result.totalPrice || 0;
+
+      if (Array.isArray(result.financeField)) {
+        const totalPaidField = result.financeField.find(
+          (field) => field.name === "totalPaid" && field.isDeleted === 0
+        );
+        if (totalPaidField) {
+          totalPaid = totalPaidField.total ?? totalPaidField.value ?? 0;
+        }
+      }
+
+      if (totalPrice && totalPaid >= 0) {
+        const balance = totalPrice - totalPaid;
+        remainingBalance = balance > 0 ? balance.toFixed(2) : "0";
+      }
+
+      setReservationDetails({ ...result, pricePerNight, earlyCheckinCharges, securityDeposit, remainingBalance });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -1618,12 +1637,6 @@ ${
                     </tr>
                     <tr>
                       <td>
-                        <strong>Type</strong>
-                      </td>
-                      <td>{guest.type || "N/A"}</td>
-                    </tr>
-                    <tr>
-                      <td>
                         <strong>Contact</strong>
                       </td>
                       <td>{reservationDetails?.phone || "N/A"}</td>
@@ -1640,6 +1653,15 @@ ${
                       </td>
                       <td>
                         {reservationDetails?.totalPrice || "N/A"}{" "}
+                        {reservationDetails?.currency || ""}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Remaining Balance</strong>
+                      </td>
+                      <td>
+                        {reservationDetails?.remainingBalance || "N/A"}{" "}
                         {reservationDetails?.currency || ""}
                       </td>
                     </tr>
@@ -1663,6 +1685,18 @@ ${
                     </tr>
                     <tr>
                       <td>
+                        <strong>Vehicle No</strong>
+                      </td>
+                      <td>
+                        {reservationDetails?.customFieldValues?.find(
+                          (field) => field.customField?.name === "Vehicle Number"
+                        )?.value ||
+                          guest.vehicleNo ||
+                          "N/A"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
                         <strong>Channel ID</strong>
                       </td>
                       <td>{reservationDetails?.channelName || "N/A"}</td>
@@ -1677,17 +1711,15 @@ ${
                   <tbody>
                     <tr>
                       <td>
+                        <strong>Reservation ID</strong>
+                      </td>
+                      <td>{guest.reservationId || "N/A"}</td>
+                    </tr>
+                    <tr>
+                      <td>
                         <strong>Address</strong>
                       </td>
-                      <td
-                        style={{
-                          whiteSpace: "nowrap",
-                          maxWidth: "250px",
-                          display: "inline-block",
-                          transform: "scale(0.9)", // shrink proportionally
-                          transformOrigin: "left center",
-                        }}
-                      >
+                      <td>
                         {reservationDetails?.customFieldValues?.find(
                           (field) => field.customField?.name === "Address"
                         )?.value ||
@@ -1712,6 +1744,12 @@ ${
                         <strong>Children</strong>
                       </td>
                       <td>{reservationDetails?.children || "N/A"}</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>Payment Status</strong>
+                      </td>
+                      <td>{reservationDetails?.paymentStatus || "N/A"}</td>
                     </tr>
                     <tr>
                       <td>
@@ -1747,18 +1785,6 @@ ${
                           : guest.checkoutTime
                           ? formatTime(guest.checkoutTime)
                           : "N/A"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Vehicle No</strong>
-                      </td>
-                      <td>
-                        {reservationDetails?.customFieldValues?.find(
-                          (field) => field.customField?.name === "Vehicle Number"
-                        )?.value ||
-                          guest.vehicleNo ||
-                          "N/A"}
                       </td>
                     </tr>
                     <tr>
@@ -1927,11 +1953,22 @@ function KanbanView() {
             tags,
             stack: stacks.includes(stack) ? stack : "Unknown", // Ensure valid stack
             listingName: fields[FIELD_MAP.listingName]
-              ? fields[FIELD_MAP.listingName].split("(")[0].trim()
+              ? fields[FIELD_MAP.listingName]
               : "N/A",
             type: fields[FIELD_MAP.listingName]
-              ? fields[FIELD_MAP.listingName].match(/\(([^)]+)\)/)?.[1] || "N/A"
+              ? (() => {
+                const rawType =
+                  fields[FIELD_MAP.listingName].match(/\(([^)]+)\)/)?.[1] || "N/A";
+                const typeMap = {
+                  "1B": "1 Bedroom",
+                  "2B": "2 Bedroom",
+                  "3B": "3 Bedroom",
+                  "S": "Studio",
+                };
+                return typeMap[rawType] || rawType;
+              })()
               : "N/A",
+
           };
 
           return reservation;
@@ -1973,16 +2010,70 @@ function KanbanView() {
       </DashboardLayout>
     );
   }
+  
+  
+  const handleSync = async () => {
+    try {
+      console.log("🔄 Sync started...");
+
+      const response = await fetch("https://n8n.namuve.com/webhook/68542fac-bcac-4458-be3c-bff32534caf9", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          timestamp: new Date().toISOString(),
+          triggeredBy: "FDO Panel",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Webhook failed: ${response.statusText}`);
+      }
+
+      const data = await response.text();
+      console.log("✅ Sync successful:", data);
+    } catch (error) {
+      console.error("❌ Sync failed:", error);
+    }
+  };
+
 
   return (
     <DashboardLayout>
       <DashboardNavbar />
-      <MDBox mt={6} mb={3}>
+      <MDBox mt={4} mb={2}>
         <Grid container spacing={3} justifyContent="center">
           <Grid item xs={12}>
             <Card>
               <MDBox p={2}>
                 <MDTypography variant="h5">Kanban View</MDTypography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleSync}
+                  sx={{
+                    borderRadius: "12px",
+                    textTransform: "none",
+                    fontWeight: "bold",
+                    boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+                    backgroundColor: "#28282B", // ✅ Black background
+                    color: "#ffffff", // ✅ White text
+                    borderColor: "#28282B", // ✅ Black border
+                    "&:hover": {
+                      backgroundColor: "#333333", // Slightly lighter black on hover
+                      borderColor: "#28282B",
+                    },
+                    "&:focus": {
+                      backgroundColor: "#000000",
+                    },
+                    "&:active": {
+                      backgroundColor: "#222222",
+                    },
+                  }}
+                >
+                  Sync
+                </Button>
               </MDBox>
               <MDBox
                 display="flex"
@@ -2051,7 +2142,13 @@ function KanbanView() {
                         </MDBox>
                       </MDBox>
 
-                      <MDBox px={2} pb={2}>
+                      <MDBox px={2} pb={2}
+                        sx={{
+                          flex: 1,
+                          overflowY: "auto",
+                          overflowX: "hidden",
+                          maxHeight: "calc(100vh - 350px)", // adjust if needed
+                        }}>
                         {reservations
                           .filter((guest) => guest.stack === stack)
                           .map((guest) => (
