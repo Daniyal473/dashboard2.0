@@ -1384,7 +1384,7 @@ ${CheckOutSecurityDeposit !== "0"
         {/* Apartment Status */}
         <MDBox display="flex" alignItems="center" mb={1}>
           <ApartmentIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
-          <MDTypography variant="body2" color="textSecondary">
+          <MDTypography variant="body2" color="text">
             {guest.aptStatus || "N/A"}
           </MDTypography>
         </MDBox>
@@ -1805,7 +1805,7 @@ ReservationCard.propTypes = {
   guest: PropTypes.shape({
     id: PropTypes.string.isRequired,
     guestName: PropTypes.string,
-    reservationId: PropTypes.string,
+    reservationId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     aptStatus: PropTypes.string,
     stayDuration: PropTypes.string,
     actualCheckin: PropTypes.string,

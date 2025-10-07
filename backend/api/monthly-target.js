@@ -1,5 +1,5 @@
 // Serverless function for monthly target testing (2pm test)
-export default async function handler(req, res) {
+async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -12,16 +12,52 @@ export default async function handler(req, res) {
   }
   
   try {
+    const teableToken = 'teable_accSkoTP5GM9CQvPm4u_csIKhbkyBkfGhWK+6GsEqCbzRDpxu/kJJAorC0dxkhE=';
+    const targetTableUrl = 'https://teable.namuve.com/api/table/tblnT8tc6g1kuN9bKld/record';
+    
+    // Handle GET request - Use MonthlyTargetService logic
+    if (req.method === 'GET') {
+      console.log('📊 Calculating monthly achieved revenue using MonthlyTargetService...');
+      
+      // Import and use the working MonthlyTargetService
+      const MonthlyTargetService = require('../src/services/monthlyTargetService');
+      const monthlyTargetService = new MonthlyTargetService();
+      
+      const monthlyAchievedRevenue = await monthlyTargetService.getMonthlyAchievedRevenue();
+      
+      // Format the total value
+      const formatValue = (value) => {
+        if (value >= 1000000) {
+          return `Rs${(value / 1000000).toFixed(1)}M`;
+        } else if (value >= 1000) {
+          return `Rs${Math.round(value / 1000)}K`;
+        } else {
+          return `Rs${Math.round(value)}`;
+        }
+      };
+      
+      console.log(`✅ Monthly Target Achieved Sum: ${formatValue(monthlyAchievedRevenue)} (${monthlyAchievedRevenue} PKR)`);
+      
+      return res.status(200).json({
+        success: true,
+        data: {
+          totalMonthlyAchieved: monthlyAchievedRevenue,
+          formattedTotal: formatValue(monthlyAchievedRevenue),
+          monthlyTarget: 17500000,
+          formattedMonthlyTarget: 'Rs17.5M'
+        },
+        timestamp: new Date().toISOString()
+      });
+    }
+    
     console.log('🧪 Monthly Target Test API called');
     
-    // Only allow POST requests
+    // Only allow POST requests for the existing functionality
     if (req.method !== 'POST') {
       return res.status(405).json({ success: false, error: 'Method not allowed' });
     }
     
-    const teableToken = 'teable_accSkoTP5GM9CQvPm4u_csIKhbkyBkfGhWK+6GsEqCbzRDpxu/kJJAorC0dxkhE=';
     const sourceTableUrl = 'https://teable.namuve.com/api/table/tblq9gnsTEbz2IqQQLK/record';
-    const targetTableUrl = 'https://teable.namuve.com/api/table/tblnT8tc6g1kuN9bKld/record';
     
     // Step 1: Get today's revenue from the main revenue API instead of source table
     console.log('📊 Fetching today\'s revenue from main revenue API...');
@@ -169,3 +205,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
+module.exports = handler;

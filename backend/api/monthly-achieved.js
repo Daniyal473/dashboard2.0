@@ -88,9 +88,10 @@ export default async function handler(req, res) {
     
     // Filter records for current month
     const currentMonthRecords = data.records.filter(record => {
-      if (!record.fields || !record.fields['Date']) return false;
+      if (!record.fields || !record.fields['Date and Time ']) return false;
       
-      const recordDate = new Date(record.fields['Date']);
+      // Parse ISO date format: "2025-10-06T10:00:17.449Z"
+      const recordDate = new Date(record.fields['Date and Time ']);
       return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
     });
     
@@ -99,7 +100,7 @@ export default async function handler(req, res) {
     // Sum all achieved values for the month
     let monthlyTotal = 0;
     currentMonthRecords.forEach(record => {
-      const achievedValue = record.fields['Achieved'] || '0';
+      const achievedValue = record.fields['Monthly Target Achieved'] || '0';
       const numValue = parseRevenueValue(achievedValue);
       monthlyTotal += numValue;
       console.log(`➕ Adding daily revenue: ${achievedValue} (${numValue})`);

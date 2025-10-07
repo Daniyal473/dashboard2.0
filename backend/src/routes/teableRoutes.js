@@ -387,11 +387,13 @@ router.get('/debug-hour-check', async (req, res) => {
     
     const pakistanDateTime = teableService.getPakistanDateTime();
     
-    // Extract hour using the new logic
-    const datePart = pakistanDateTime.substring(0, 10);
-    const timePart = pakistanDateTime.substring(12);
-    const hourPart = timePart.substring(0, 2);
-    const currentHour = `${datePart}, ${hourPart}`;
+    // Extract hour using ISO format logic: "2025-10-06T10:00:17.449Z"
+    const currentDate = new Date(pakistanDateTime);
+    const currentHour = currentDate.getUTCHours();
+    const currentDay = currentDate.getUTCDate();
+    const currentMonth = currentDate.getUTCMonth();
+    const currentYear = currentDate.getUTCFullYear();
+    const currentHourString = `${currentYear}-${(currentMonth+1).toString().padStart(2,'0')}-${currentDay.toString().padStart(2,'0')} ${currentHour}:00`;
     
     // Get all records to show comparison
     const recordsResult = await teableService.getAllRecords();
@@ -402,15 +404,23 @@ router.get('/debug-hour-check', async (req, res) => {
         const recordDateTime = record.fields['Date and Time '];
         if (!recordDateTime) return 'No DateTime';
         
-        const recordDatePart = recordDateTime.substring(0, 10);
-        const recordTimePart = recordDateTime.substring(12);
-        const recordHourPart = recordTimePart.substring(0, 2);
-        const recordHour = `${recordDatePart}, ${recordHourPart}`;
+        // Parse ISO format from existing record
+        const recordDate = new Date(recordDateTime);
+        const recordHour = recordDate.getUTCHours();
+        const recordDay = recordDate.getUTCDate();
+        const recordMonth = recordDate.getUTCMonth();
+        const recordYear = recordDate.getUTCFullYear();
+        const recordHourString = `${recordYear}-${(recordMonth+1).toString().padStart(2,'0')}-${recordDay.toString().padStart(2,'0')} ${recordHour}:00`;
+        
+        const matchesCurrent = recordHour === currentHour && 
+                              recordDay === currentDay && 
+                              recordMonth === currentMonth && 
+                              recordYear === currentYear;
         
         return {
           original: recordDateTime,
-          extracted: recordHour,
-          matchesCurrent: recordHour === currentHour
+          extracted: recordHourString,
+          matchesCurrent: matchesCurrent
         };
       });
     }
@@ -419,7 +429,7 @@ router.get('/debug-hour-check', async (req, res) => {
       success: true,
       data: {
         currentPakistanDateTime: pakistanDateTime,
-        extractedCurrentHour: currentHour,
+        extractedCurrentHour: currentHourString,
         existingRecords: existingHours,
         hasMatchingHour: existingHours.some(h => h.matchesCurrent)
       }

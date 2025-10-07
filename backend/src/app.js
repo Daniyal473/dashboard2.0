@@ -21,6 +21,7 @@ app.set('trust proxy', true);
 const userRoutes = require("./routes/userRoutes");
 const revenueRoutes = require("./routes/revenueRoutes");
 const teableRoutes = require("./routes/teableRoutes");
+const monthlyTargetHandler = require("../api/monthly-target");
 
 // Import and start scheduler
 const schedulerService = require("./services/schedulerService");
@@ -40,7 +41,8 @@ app.get("/", (req, res) => {
       revenue: "/api/revenue",
       revenueHealth: "/api/revenue/health",
       teable: "/api/teable",
-      teableStatus: "/api/teable/status"
+      teableStatus: "/api/teable/status",
+      monthlyTarget: "/api/monthly-target"
     }
   });
 });
@@ -49,6 +51,9 @@ app.get("/", (req, res) => {
 app.use("/api/users", userRoutes);
 app.use("/api/revenue", revenueRoutes);
 app.use("/api/teable", teableRoutes);
+
+// Monthly target route
+app.all("/api/monthly-target", monthlyTargetHandler);
 
 // Simple test route
 app.get("/api/hello", (req, res) => {

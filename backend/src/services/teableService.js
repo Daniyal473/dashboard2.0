@@ -14,22 +14,15 @@ class TeableService {
 
   /**
    * Get Pakistan date and time (UTC+5)
-   * @returns {string} Formatted Pakistan date and time
+   * @returns {string} ISO formatted Pakistan date and time
    */
   getPakistanDateTime() {
     const now = new Date();
     // Create Pakistan time (UTC+5)
     const pakistanTime = new Date(now.getTime() + (5 * 60 * 60 * 1000));
     
-    // Format as DD/MM/YYYY, HH:MM:SS
-    const day = pakistanTime.getUTCDate().toString().padStart(2, '0');
-    const month = (pakistanTime.getUTCMonth() + 1).toString().padStart(2, '0');
-    const year = pakistanTime.getUTCFullYear();
-    const hours = pakistanTime.getUTCHours().toString().padStart(2, '0');
-    const minutes = pakistanTime.getUTCMinutes().toString().padStart(2, '0');
-    const seconds = pakistanTime.getUTCSeconds().toString().padStart(2, '0');
-    
-    return `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`;
+    // Return ISO format: "2025-10-06T10:00:17.449Z"
+    return pakistanTime.toISOString();
   }
 
   /**
@@ -39,13 +32,14 @@ class TeableService {
   async checkIfDataExistsForCurrentHour() {
     try {
       const pakistanDateTime = this.getPakistanDateTime();
-      // Extract date and hour properly: "03/10/2025, 11" (ensure we get full hour)
-      const datePart = pakistanDateTime.substring(0, 10); // "03/10/2025"
-      const timePart = pakistanDateTime.substring(12); // "11:36:56"
-      const hourPart = timePart.substring(0, 2); // "11"
-      const currentHour = `${datePart}, ${hourPart}`; // "03/10/2025, 11"
+      // Extract date and hour from ISO format: "2025-10-06T10:00:17.449Z"
+      const currentDate = new Date(pakistanDateTime);
+      const currentHour = currentDate.getUTCHours();
+      const currentDay = currentDate.getUTCDate();
+      const currentMonth = currentDate.getUTCMonth();
+      const currentYear = currentDate.getUTCFullYear();
       
-      console.log('🔍 Checking for existing data in hour:', currentHour);
+      console.log('🔍 Checking for existing data in hour:', `${currentYear}-${(currentMonth+1).toString().padStart(2,'0')}-${currentDay.toString().padStart(2,'0')} ${currentHour}:00`);
       
       const response = await this.getAllRecords();
       if (!response.success) {
@@ -65,13 +59,17 @@ class TeableService {
         const recordDateTime = record.fields['Date and Time '];
         if (!recordDateTime) return false;
         
-        // Extract hour from existing record in same format
-        const recordDatePart = recordDateTime.substring(0, 10); // "03/10/2025"
-        const recordTimePart = recordDateTime.substring(12); // "10:01:10"
-        const recordHourPart = recordTimePart.substring(0, 2); // "10"
-        const recordHour = `${recordDatePart}, ${recordHourPart}`; // "03/10/2025, 10"
+        // Parse ISO format from existing record
+        const recordDate = new Date(recordDateTime);
+        const recordHour = recordDate.getUTCHours();
+        const recordDay = recordDate.getUTCDate();
+        const recordMonth = recordDate.getUTCMonth();
+        const recordYear = recordDate.getUTCFullYear();
         
-        return recordHour === currentHour;
+        return recordHour === currentHour && 
+               recordDay === currentDay && 
+               recordMonth === currentMonth && 
+               recordYear === currentYear;
       });
       
       if (existingRecord) {
@@ -204,7 +202,8 @@ class TeableService {
         const dataExists = await this.checkIfDataExistsForCurrentHour();
         if (dataExists) {
           const pakistanDateTime = this.getPakistanDateTime();
-          const currentHour = pakistanDateTime.substring(0, 13);
+          const currentDate = new Date(pakistanDateTime);
+          const currentHour = `${currentDate.getUTCFullYear()}-${(currentDate.getUTCMonth()+1).toString().padStart(2,'0')}-${currentDate.getUTCDate().toString().padStart(2,'0')} ${currentDate.getUTCHours()}:00`;
           return {
             success: false,
             error: `❌ ERROR: Data already exists for hour ${currentHour}. Only one post per hour is allowed.`,
