@@ -19,7 +19,6 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-
 // Material Dashboard 2 React Context Provider
 import { MaterialUIControllerProvider } from "context";
 
