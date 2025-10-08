@@ -19,6 +19,8 @@ import Table from "react-bootstrap/Table";
 import { Row, Col } from "react-bootstrap";
 
 // @mui material components
+import IconButton from "@mui/material/IconButton";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import Chip from "@mui/material/Chip";
@@ -40,11 +42,11 @@ import ApartmentIcon from "@mui/icons-material/Apartment";
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
+import MDButton from "components/MDButton";
 
 // Material Dashboard 2 React example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
-import Footer from "examples/Footer";
 
 function ReservationCard({ guest }) {
   const [open, setOpen] = useState(false);
@@ -53,7 +55,7 @@ function ReservationCard({ guest }) {
   const [error, setError] = useState(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isCheckedOut, setIsCheckedOut] = useState(false);
-  
+
 
   const HOSTAWAY_API = "https://api.hostaway.com/v1/reservations";
   const HOSTAWAY_TOKEN =
@@ -119,16 +121,16 @@ function ReservationCard({ guest }) {
       const checkInTime = reservation.checkInTime
         ? formatTime(reservation.checkInTime)
         : guest.checkinTime
-        ? formatTime(guest.checkinTime)
-        : "N/A";
+          ? formatTime(guest.checkinTime)
+          : "N/A";
 
       const departure = reservation.departureDate || guest.checkoutDate || "N/A";
 
       const checkOutTime = reservation.checkOutTime
         ? formatTime(reservation.checkOutTime)
         : guest.checkoutTime
-        ? formatTime(guest.checkoutTime)
-        : "N/A";
+          ? formatTime(guest.checkoutTime)
+          : "N/A";
 
       const vehicleNumber =
         reservation.customFieldValues?.find((field) => field.customField?.name === "Vehicle Number")
@@ -337,9 +339,8 @@ ul li {
               />
             </div>
             <div class="heading-text" style="margin: 25px 40px 10px 20px">
-              <h2 style="text-align: center; margin: 0; font-size: 16px;"> ${guestName}'s Check-in Form <span style="font-size: 12px; color: #666;">(${
-        guest.reservationId
-      })</span></h2>
+              <h2 style="text-align: center; margin: 0; font-size: 16px;"> ${guestName}'s Check-in Form <span style="font-size: 12px; color: #666;">(${guest.reservationId
+        })</span></h2>
               <p style="text-align: center; font-family: monospace">Actual Check-in Date / Time: ${actualCheckInTime}</p>
             </div>
             </div>
@@ -506,8 +507,8 @@ ul li {
       const checkOutTime = reservation.checkOutTime
         ? formatTime(reservation.checkOutTime)
         : guest.checkoutTime
-        ? formatTime(guest.checkoutTime)
-        : "N/A";
+          ? formatTime(guest.checkoutTime)
+          : "N/A";
 
       const vehicleNumber =
         reservation.customFieldValues?.find((field) => field.customField?.name === "Vehicle Number")
@@ -702,32 +703,32 @@ ul li {
           const isEarlyCheckOut =
             earlyCheckOutData && earlyCheckOutData.allowed === true;
 
-    if (isSameDayCheckout) {
-      return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
+          if (isSameDayCheckout) {
+            return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
                 ${guestName}'s Same Day Check-out Form 
                 <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
               </h3>
               <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
                 Actual Check-out Date / Time: ${actualCheckOutTime}
               </p>`;
-    } else if (isEarlyCheckOut) {
-      return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
+          } else if (isEarlyCheckOut) {
+            return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
                 ${guestName}'s Early Check-out Form 
                 <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
               </h3>
               <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
                 Actual Check-out Date / Time: ${actualCheckOutTime}
               </p>`;
-    } else {
-      return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
+          } else {
+            return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
                 ${guestName}'s Check-out Form 
                 <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
               </h3>
               <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
                 Actual Check-out Date / Time: ${actualCheckOutTime}
               </p>`;
-    }
-  })()}
+          }
+        })()}
    </div>
 </div>
 
@@ -854,35 +855,30 @@ ul li {
     <p>📍 30-A, Block L, Gulberg 3, Lahore</p>
   </div>
 
-  ${
-    allTotalCharges > 0
-      ? `
+  ${allTotalCharges > 0
+          ? `
     <div class="charges-breakdown">
       <h6 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Charges Breakdown:</h6>
-      ${
-        financeFields.baseRate > 0
-          ? `<p>• <strong>Base Rate:</strong> ${financeFields.baseRate.toFixed(
+      ${financeFields.baseRate > 0
+            ? `<p>• <strong>Base Rate:</strong> ${financeFields.baseRate.toFixed(
               2
             )} ${currencyLabel}</p>`
-          : ""
-      }
-      ${
-        financeFields.cleaningFeeValue > 0
-          ? `<p>• <strong>Cleaning Fee:</strong> ${financeFields.cleaningFeeValue.toFixed(
+            : ""
+          }
+      ${financeFields.cleaningFeeValue > 0
+            ? `<p>• <strong>Cleaning Fee:</strong> ${financeFields.cleaningFeeValue.toFixed(
               2
             )} ${currencyLabel}</p>`
-          : ""
-      }
-      ${
-        financeFields.additionalCleaningFee > 0
-          ? `<p>• <strong>Cleaning Fee:</strong> ${financeFields.additionalCleaningFee.toFixed(
+            : ""
+          }
+      ${financeFields.additionalCleaningFee > 0
+            ? `<p>• <strong>Cleaning Fee:</strong> ${financeFields.additionalCleaningFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-          : ""
-      }
-      ${
-        financeFields.midstayCleaningFee > 0
-          ? `<p>• <strong>Midstay Cleaning Fee:</strong> ${financeFields.midstayCleaningFee.toFixed(
+            : ""
+          }
+      ${financeFields.midstayCleaningFee > 0
+            ? `<p>• <strong>Midstay Cleaning Fee:</strong> ${financeFields.midstayCleaningFee.toFixed(
               2
             )} ${currencyLabel}</p>`
             : ""
@@ -899,68 +895,60 @@ ${CheckOutSecurityDeposit !== "0"
             ? `<p>• <strong>Sales Tax:</strong> ${financeFields.salesTax.toFixed(
               2
             )} ${currencyLabel}</p>`
-          : ""
-      }
-      ${
-        financeFields.earlyCheckinFee > 0
-          ? `<p>• <strong>Early Check-in Fee:</strong> ${financeFields.earlyCheckinFee.toFixed(
+            : ""
+          }
+      ${financeFields.earlyCheckinFee > 0
+            ? `<p>• <strong>Early Check-in Fee:</strong> ${financeFields.earlyCheckinFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-          : ""
-      }
-      ${
-        financeFields.bedLinenFee > 0
-          ? `<p>• <strong>Bed Linen Fee:</strong> ${financeFields.bedLinenFee.toFixed(
+            : ""
+          }
+      ${financeFields.bedLinenFee > 0
+            ? `<p>• <strong>Bed Linen Fee:</strong> ${financeFields.bedLinenFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-          : ""
-      }
-      ${
-        financeFields.extraBedsFee > 0
-          ? `<p>• <strong>Extra Beds Fee:</strong> ${financeFields.extraBedsFee.toFixed(
+            : ""
+          }
+      ${financeFields.extraBedsFee > 0
+            ? `<p>• <strong>Extra Beds Fee:</strong> ${financeFields.extraBedsFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-          : ""
-      }
-      ${
-        financeFields.lateCheckoutFee > 0
-          ? `<p>• <strong>Late Checkout Fee:</strong> ${financeFields.lateCheckoutFee.toFixed(
+            : ""
+          }
+      ${financeFields.lateCheckoutFee > 0
+            ? `<p>• <strong>Late Checkout Fee:</strong> ${financeFields.lateCheckoutFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-          : ""
-      }
-      ${
-        financeFields.damageDeposit > 0
-          ? `<p>• <strong>Damage Deposit:</strong> ${financeFields.damageDeposit.toFixed(
+            : ""
+          }
+      ${financeFields.damageDeposit > 0
+            ? `<p>• <strong>Damage Deposit:</strong> ${financeFields.damageDeposit.toFixed(
               2
             )} ${currencyLabel}</p>`
-          : ""
-      }
-      ${
-        financeFields.parkingFee > 0
-          ? `<p>• <strong>Parking Fee:</strong> ${financeFields.parkingFee.toFixed(
+            : ""
+          }
+      ${financeFields.parkingFee > 0
+            ? `<p>• <strong>Parking Fee:</strong> ${financeFields.parkingFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-          : ""
-      }
-      ${
-        financeFields.serviceFee > 0
-          ? `<p>• <strong>Service Fee:</strong> ${financeFields.serviceFee.toFixed(
+            : ""
+          }
+      ${financeFields.serviceFee > 0
+            ? `<p>• <strong>Service Fee:</strong> ${financeFields.serviceFee.toFixed(
               2
             )}  ${currencyLabel}</p>`
-          : ""
-      }
-      ${
-        financeFields.towelChangeFee > 0
-          ? `<p>• <strong>Towel Change Fee:</strong> ${financeFields.towelChangeFee.toFixed(
+            : ""
+          }
+      ${financeFields.towelChangeFee > 0
+            ? `<p>• <strong>Towel Change Fee:</strong> ${financeFields.towelChangeFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-          : ""
-      }
+            : ""
+          }
     </div>
     `
-      : ""
-  }
+          : ""
+        }
 </div>
 <div>
 <span style="margin-left: -19px;"> ✂----------------------------------------------------------------------------------------------------------
@@ -989,9 +977,8 @@ ${CheckOutSecurityDeposit !== "0"
       <p style="margin: 5px 0;"><strong>Apartment:</strong> <br> ${listingMapId || "N/A"}</p>
     </div>
     <div style="flex: 1;">
-      <p style="margin: 5px 0;"><strong>Departure Date and Time:</strong> <br> ${
-        actualCheckOutTime || "N/A"
-      }</p>
+      <p style="margin: 5px 0;"><strong>Departure Date and Time:</strong> <br> ${actualCheckOutTime || "N/A"
+        }</p>
     </div>
   </div>
   
@@ -1390,14 +1377,33 @@ ${CheckOutSecurityDeposit !== "0"
     >
       <MDBox p={2}>
         {/* Reservation ID at top */}
-        <MDTypography variant="subtitle2" color="dark" fontWeight="bold">
-          Reservation #{guest.reservationId || "N/A"}
+        <MDTypography variant="subtitle2">
+          Reservation ID:{" "}
+          {guest.reservationId ? (
+            <MDTypography
+              component="span"
+              color="info"
+              sx={{
+                cursor: "pointer",
+                textDecoration: "underline",
+                "&:hover": { color: "primary.main" },
+              }}
+              onClick={() =>
+                window.open(`https://dashboard.hostaway.com/reservations/${guest.reservationId}`, "_blank")
+              }
+            >
+              {guest.reservationId}
+            </MDTypography>
+          ) : (
+            "N/A"
+          )}
         </MDTypography>
+
 
         {/* Guest Info */}
         <MDBox display="flex" alignItems="center" mt={1} mb={1}>
           <PersonIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
-          <MDTypography variant="body1" fontWeight="medium">
+          <MDTypography variant="body1">
             {guest.guestName || "N/A"}
           </MDTypography>
         </MDBox>
@@ -1412,7 +1418,7 @@ ${CheckOutSecurityDeposit !== "0"
 
         {/* Stay Duration */}
         <MDBox mt={1} mb={1}>
-          <MDTypography variant="body2" fontWeight="medium">
+          <MDTypography variant="body2">
             {guest.stayDuration || "N/A"}
           </MDTypography>
         </MDBox>
@@ -1451,35 +1457,26 @@ ${CheckOutSecurityDeposit !== "0"
 
         {/* Preview Button */}
         <MDBox mt={2} display="flex" justifyContent="space-between" alignItems="center">
-          <Button
-            variant="outlined"
-            size="small"
+          <IconButton
             onClick={handleOpen}
             sx={{
-              borderRadius: "12px",
-              textTransform: "none",
-              fontWeight: "bold",
-              boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-              backgroundColor: "#28282B", // ✅ Black background
-              color: "#ffffff", // ✅ White text
-              borderColor: "#28282B", // ✅ Black border
+              color: "#28282B", // icon color
+              border: "1.5px solid #28282B", // 🔲 thin border
+              borderRadius: "50%", // make it circular
+              padding: "6px", // keep spacing balanced
+              transition: "all 0.2s ease-in-out",
               "&:hover": {
-                backgroundColor: "#333333", // Slightly lighter black on hover
-                borderColor: "#28282B",
-              },
-              "&:focus": {
-                backgroundColor: "#000000",
-              },
-              "&:active": {
-                backgroundColor: "#222222",
+                color: "#28282B", // same as normal
+                borderColor: "#28282B", // keep consistent
+                backgroundColor: "rgba(0, 0, 0, 0.05)", // subtle translucent hover
               },
             }}
           >
-            Preview
-          </Button>
+            <VisibilityIcon fontSize="medium" />
+          </IconButton>
 
           {/* Mark Check in Button - only show in Upcoming Stay */}
-          {guest.stack === "Upcoming Stay" &&
+          {(!guest.actualCheckin || guest.actualCheckin === "N/A") &&
             (!isCheckedIn ? (
               <Button
                 variant="outlined"
@@ -1537,7 +1534,8 @@ ${CheckOutSecurityDeposit !== "0"
             ))}
 
           {/* Mark Check Out Button - show in all stacks apart from Upcoming Stay */}
-          {guest.stack !== "Upcoming Stay" &&
+          {guest.actualCheckin && guest.actualCheckin !== "N/A" &&
+            (!guest.actualCheckout || guest.actualCheckout === "N/A") &&
             (!isCheckedOut ? (
               <Button
                 variant="outlined"
@@ -1593,6 +1591,13 @@ ${CheckOutSecurityDeposit !== "0"
                 Print Check Out
               </Button>
             ))}
+          {/* ✅ Checked Out Label */}
+          {guest.actualCheckin && guest.actualCheckin !== "N/A" &&
+            guest.actualCheckout && guest.actualCheckout !== "N/A" && (
+              <MDTypography variant="body2" color="success.main" fontWeight="bold">
+                Checked Out
+              </MDTypography>
+            )}
         </MDBox>
       </MDBox>
       {/* Preview Dialog */}
@@ -1765,8 +1770,8 @@ ${CheckOutSecurityDeposit !== "0"
                         {reservationDetails?.checkInTime
                           ? formatTime(reservationDetails.checkInTime)
                           : guest.checkinTime
-                          ? formatTime(guest.checkinTime)
-                          : "N/A"}
+                            ? formatTime(guest.checkinTime)
+                            : "N/A"}
                       </td>
                     </tr>
                     <tr>
@@ -1783,8 +1788,8 @@ ${CheckOutSecurityDeposit !== "0"
                         {reservationDetails?.checkOutTime
                           ? formatTime(reservationDetails.checkOutTime)
                           : guest.checkoutTime
-                          ? formatTime(guest.checkoutTime)
-                          : "N/A"}
+                            ? formatTime(guest.checkoutTime)
+                            : "N/A"}
                       </td>
                     </tr>
                     <tr>
@@ -1866,6 +1871,8 @@ function KanbanView() {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [syncing, setSyncing] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
   // API Configuration
   const API_ENDPOINT = "https://teable.namuve.com/api/table/tbliOdo8ldmMO8rrYyN/record";
@@ -1894,6 +1901,17 @@ function KanbanView() {
     stack: "Status", // fldUCJESFtQspNSVHLs
     listingName: "Listing Name",
   };
+
+  // 🕒 Countdown Timer for Cooldown
+  useEffect(() => {
+    let timer;
+    if (cooldown > 0) {
+      timer = setInterval(() => {
+        setCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -1983,7 +2001,48 @@ function KanbanView() {
     };
 
     fetchReservations();
+
   }, []);
+
+  function mapRecordToReservation(row) {
+    const fields = row.fields || {};
+
+    let tags = [];
+    try {
+      const rawTags = fields["Tags"];
+      if (Array.isArray(rawTags)) tags = rawTags;
+      else if (typeof rawTags === "string" && rawTags) tags = JSON.parse(rawTags);
+    } catch (e) {
+      console.warn("Tag parse failed:", e);
+    }
+
+    const stacks = [
+      "Upcoming Stay",
+      "Checked In",
+      "Staying Guest",
+      "Upcoming Checkout",
+      "Checked Out",
+      "Same Day Check Out",
+      "No Show",
+      "Unknown",
+    ];
+
+    const stack = fields["Status"] || "Unknown";
+
+    return {
+      id: row.id,
+      guestName: fields["Guest Name"] || "N/A",
+      reservationId: fields["Reservation ID"] || "N/A",
+      aptStatus: fields["Apt Status"] || "N/A",
+      stayDuration: fields["Stay Duration"] || "N/A",
+      actualCheckin: fields["Actual Checkin"] || "N/A",
+      actualCheckout: fields["Actual Checkout"] || "N/A",
+      tags,
+      stack: stacks.includes(stack) ? stack : "Unknown",
+      listingName: fields["Listing Name"] || "N/A",
+    };
+  }
+
 
   if (loading) {
     return (
@@ -1992,7 +2051,6 @@ function KanbanView() {
         <MDBox mt={6} mb={3}>
           <MDTypography variant="h5">Loading reservations...</MDTypography>
         </MDBox>
-        <Footer />
       </DashboardLayout>
     );
   }
@@ -2006,26 +2064,31 @@ function KanbanView() {
             Error: {error}
           </MDTypography>
         </MDBox>
-        <Footer />
       </DashboardLayout>
     );
   }
-  
-  
-  const handleSync = async () => {
-    try {
-      console.log("🔄 Sync started...");
 
-      const response = await fetch("https://n8n.namuve.com/webhook/68542fac-bcac-4458-be3c-bff32534caf9", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          timestamp: new Date().toISOString(),
-          triggeredBy: "FDO Panel",
-        }),
-      });
+
+  const handleSync = async () => {
+    if (syncing || cooldown > 0) return; // Prevent double click
+
+    setSyncing(true);
+    console.log("🔄 Sync started...");
+
+    try {
+      const response = await fetch(
+        "https://n8n.namuve.com/webhook/68542fac-bcac-4458-be3c-bff32534caf9",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            timestamp: new Date().toISOString(),
+            triggeredBy: "FDO Panel",
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Webhook failed: ${response.statusText}`);
@@ -2033,47 +2096,64 @@ function KanbanView() {
 
       const data = await response.text();
       console.log("✅ Sync successful:", data);
+
+      // 🧭 Start 3-minute cooldown (180 seconds)
+      setCooldown(180);
     } catch (error) {
       console.error("❌ Sync failed:", error);
+    } finally {
+      setSyncing(false);
     }
   };
 
+  const stackColors = {
+    "Upcoming Stay": "#FFF8E1",       // light yellow
+    "Checked In": "#E8F5E9",          // light green
+    "Staying Guest": "#E0F7FA",       // light cyan
+    "Upcoming Checkout": "#FFF3E0",   // light orange
+    "Checked Out": "#E3F2FD",         // light blue
+    "Same Day Check Out": "#F3E5F5",  // light purple
+    "No Show": "#FFEBEE",             // light red/pink
+    "Unknown": "#F5F5F5",             // neutral gray
+  };
 
   return (
     <DashboardLayout>
       <DashboardNavbar />
-      <MDBox mt={4} mb={2}>
+      <MDBox mt={3} mb={2}>
         <Grid container spacing={3} justifyContent="center">
           <Grid item xs={12}>
             <Card>
-              <MDBox p={2}>
-                <MDTypography variant="h5">Kanban View</MDTypography>
-                <Button
+              <MDBox p={2} display="flex" justifyContent="space-between" alignItems="center">
+                <MDTypography variant="h5">Reservations</MDTypography>
+                <MDButton
                   variant="outlined"
-                  size="small"
+                  color="info"
                   onClick={handleSync}
+                  disabled={syncing || cooldown > 0}
                   sx={{
-                    borderRadius: "12px",
                     textTransform: "none",
                     fontWeight: "bold",
-                    boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                    backgroundColor: "#28282B", // ✅ Black background
-                    color: "#ffffff", // ✅ White text
-                    borderColor: "#28282B", // ✅ Black border
+                    fontSize: "1rem", // ⬆️ increase text size
+                    borderRadius: "10px",
+                    px: 1.5, // ↓ reduce horizontal padding
+                    py: 0.5, // ↓ add smaller vertical padding
+                    borderWidth: "2px",
                     "&:hover": {
-                      backgroundColor: "#333333", // Slightly lighter black on hover
-                      borderColor: "#28282B",
-                    },
-                    "&:focus": {
-                      backgroundColor: "#000000",
-                    },
-                    "&:active": {
-                      backgroundColor: "#222222",
+                      backgroundColor: "transparent", // keep it clean on hover
+                      borderColor: "#3C96EF",         // accent border color
+                      color: "#3C96EF",               // highlight on hover
                     },
                   }}
                 >
-                  Sync
-                </Button>
+                  {syncing
+                    ? "⏳ Syncing..."
+                    : cooldown > 0
+                      ? `🕒 Processing ${Math.floor(cooldown / 60)}:${String(
+                        cooldown % 60
+                      ).padStart(2, "0")}`
+                      : "🔄 Sync"}
+                </MDButton>
               </MDBox>
               <MDBox
                 display="flex"
@@ -2122,11 +2202,12 @@ function KanbanView() {
                   >
                     <Card
                       sx={{
-                        backgroundColor: "#FAF9F6", // light gray background for the stack
+                        backgroundColor: stackColors[stack] || "#FAF9F6", // 🎨 color based on stack name
                         borderRadius: "16px",
                         boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
                       }}
                     >
+
                       <MDBox p={2}>
                         <MDBox display="flex" justifyContent="space-between" alignItems="center">
                           <MDTypography variant="h6">{stack}</MDTypography>
@@ -2163,7 +2244,6 @@ function KanbanView() {
           </Grid>
         </Grid>
       </MDBox>
-      <Footer />
     </DashboardLayout>
   );
 }
