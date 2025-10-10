@@ -17,6 +17,14 @@ import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import Table from "react-bootstrap/Table";
 import { Row, Col } from "react-bootstrap";
+import Form from 'react-bootstrap/Form';
+import { Button as RBButton } from 'react-bootstrap';
+import Link from '@mui/icons-material/Link';
+import OpenInNewIcon from "@mui/icons-material/OpenInNew"; // add this at the top
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import dayjs from "dayjs";
+import SyncIcon from '@mui/icons-material/Sync';
+
 
 // Authentication context
 import { useAuth } from "context/AuthContext";
@@ -41,11 +49,15 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import PersonIcon from "@mui/icons-material/Person";
 import ApartmentIcon from "@mui/icons-material/Apartment";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import Divider from '@mui/material/Divider';
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDButton from "components/MDButton";
+import MDInput from "components/MDInput";
+
 
 // Material Dashboard 2 React example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -59,7 +71,9 @@ function ReservationCard({ guest }) {
   const [error, setError] = useState(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isCheckedOut, setIsCheckedOut] = useState(false);
-  
+  const [cooldown, setCooldown] = useState(false);
+  const [cooldownTime, setCooldownTime] = useState(0);
+
 
   const HOSTAWAY_API = "https://api.hostaway.com/v1/reservations";
   const HOSTAWAY_TOKEN =
@@ -1378,6 +1392,55 @@ ${
 
   const handleClose = () => setOpen(false);
 
+  const refreshCard = () => {
+    // your actual card refresh logic (API call, reload, etc.)
+    window.location.reload();
+  };
+
+  // inside your FdoPanel component
+  const handleWebhook = async (reservationId) => {
+    const today = new Date().toISOString().split("T")[0];
+
+    try {
+      const response = await fetch(
+        "https://n8n.namuve.com/webhook/a56db5c8-324a-4118-bba7-304de5efb9cd",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reservation_id: reservationId,
+            "Today Date": today,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        console.log(`✅ Webhook triggered for reservation ${reservationId}!`);
+
+        // Start cooldown
+        setCooldown(true);
+        setCooldownTime(20);
+
+        const countdown = setInterval(() => {
+          setCooldownTime((prev) => {
+            if (prev <= 1) {
+              clearInterval(countdown);
+              setCooldown(false);
+              refreshCard(); // refresh after cooldown
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        console.error("❌ Webhook failed:", await response.text());
+      }
+    } catch (error) {
+      console.error("⚠️ Error sending webhook:", error);
+    }
+  };
+
+
   return (
     <Card
       sx={{
@@ -1389,67 +1452,106 @@ ${
     >
       <MDBox p={2}>
         {/* Reservation ID at top */}
-        <MDTypography variant="subtitle2">
-          Reservation ID:{" "}
-          {guest.reservationId ? (
-            <MDTypography
-              component="span"
-              color="info"
-              sx={{
-                cursor: "pointer",
-                textDecoration: "underline",
-                "&:hover": { color: "primary.main" },
-              }}
-              onClick={() =>
-                window.open(`https://dashboard.hostaway.com/reservations/${guest.reservationId}`, "_blank")
-              }
-            >
-              {guest.reservationId}
-            </MDTypography>
-          ) : (
-            "N/A"
-          )}
-        </MDTypography>
-
-
-        {/* Guest Info */}
-        <MDBox display="flex" alignItems="center" mt={1} mb={1}>
-          <PersonIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
-          <MDTypography variant="body1">
-            {guest.guestName || "N/A"}
+        <MDBox display="flex" justifyContent="space-between" alignItems="center" sx={{ gap: 0.5 }}>
+          <MDTypography variant="body2" color="text.secondary" sx={{ fontSize: "0.85rem", margin: 0 }}>
+            Reservation ID
+          </MDTypography>
+          <MDTypography variant="body2" sx={{ fontSize: "0.85rem", margin: 0 }}>
+            {guest.reservationId ? (
+              <MDTypography
+                component="span"
+                color="dark"
+                fontWeight="bold"
+                sx={{
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  "&:hover": { textDecoration: "underline" },
+                  fontSize: "0.85rem",
+                }}
+                onClick={() =>
+                  window.open(`https://dashboard.hostaway.com/reservations/${guest.reservationId}`, "_blank")
+                }
+              >
+                {guest.reservationId}
+                <OpenInNewIcon sx={{ ml: 0.5, fontSize: "14px" }} />
+              </MDTypography>
+            ) : (
+              "N/A"
+            )}
           </MDTypography>
         </MDBox>
 
-        {/* Apartment Status */}
-        <MDBox display="flex" alignItems="center" mb={1}>
+        {/* Guest Info */}
+        <MDBox display="flex" alignItems="center" mt={1} mb={1} justifyContent="space-between">
+          <MDBox display="flex" alignItems="center">
+            <PersonIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
+            <MDTypography variant="body2" fontWeight="medium" sx={{ fontSize: "0.85rem" }}>
+              {guest.guestName || "N/A"}
+            </MDTypography>
+          </MDBox>
+          <MDBox display="flex" alignItems="center">
+            <ApartmentIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
+            <MDTypography variant="body2" fontWeight="medium" sx={{ fontSize: "0.85rem" }}>
+              {guest.listingName || "N/A"}
+            </MDTypography>
+          </MDBox>
+        </MDBox>
+
+        <MDBox display="flex" alignItems="center" mt={1} mb={1}>
+          <CalendarTodayIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
+          <MDTypography variant="body2" sx={{ fontSize: "0.85rem" }}>
+            {guest.arrivalDate && guest.departureDate ? (
+              <>
+                {`${dayjs(guest.arrivalDate).format("D MMM")} – ${dayjs(guest.departureDate).format("D MMM, YYYY")}`}
+              </>
+            ) : (
+              "N/A"
+            )}
+          </MDTypography>
+        </MDBox>
+
+        {/* Apartment Status 
+        <MDBox display="flex" alignItems="center" mb={0}>
           <ApartmentIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
           <MDTypography variant="body2" color="text">
             {guest.aptStatus || "N/A"}
           </MDTypography>
         </MDBox>
+        */}
 
-        {/* Stay Duration */}
-        <MDBox mt={1} mb={1}>
+        {/* Stay Duration 
+        <MDBox mt={0} mb={0}>
           <MDTypography variant="body2">
             {guest.stayDuration || "N/A"}
           </MDTypography>
         </MDBox>
+        */}
 
         {/* Check-in / Check-out */}
-        <MDBox mt={1}>
-          <MDBox display="flex" alignItems="center" mb={0.5}>
-            <CheckCircleIcon fontSize="small" sx={{ mr: 1, color: "success.main" }} />
-            <MDTypography variant="body2">Check-In: {guest.actualCheckin || "N/A"}</MDTypography>
-          </MDBox>
-          <MDBox display="flex" alignItems="center">
-            <ExitToAppIcon fontSize="small" sx={{ mr: 1, color: "error.main" }} />
-            <MDTypography variant="body2">Check-Out: {guest.actualCheckout || "N/A"}</MDTypography>
-          </MDBox>
+        <MDBox mt={0}>
+          {guest.actualCheckin && guest.actualCheckin !== "N/A" && (
+            <MDBox display="flex" alignItems="center" mb={0.5}>
+              <CheckCircleIcon fontSize="small" sx={{ mr: 1, color: "success.main" }} />
+              <MDTypography variant="body2" sx={{ fontSize: "0.85rem", color: "success.main" }}>
+                Check-In: {guest.actualCheckin}
+              </MDTypography>
+            </MDBox>
+          )}
+
+          {guest.actualCheckout && guest.actualCheckout !== "N/A" && (
+            <MDBox display="flex" alignItems="center">
+              <ExitToAppIcon fontSize="small" sx={{ mr: 1, color: "error.main" }} />
+              <MDTypography variant="body2" sx={{ fontSize: "0.85rem", color: "primary.main" }}>
+                Check-Out: {guest.actualCheckout}
+              </MDTypography>
+            </MDBox>
+          )}
         </MDBox>
 
         {/* Tags */}
         {guest.tags?.length > 0 && (
-          <MDBox display="flex" flexWrap="wrap" mt={2}>
+          <MDBox display="flex" flexWrap="wrap" mt={1}>
             {guest.tags.map((tag, index) => (
               <Chip
                 key={index}
@@ -1461,31 +1563,74 @@ ${
                   bgcolor: "dark.light",
                   color: "white",
                   fontWeight: "bold",
+                  fontSize: "0.71rem",
                 }}
               />
             ))}
           </MDBox>
         )}
 
+        <Divider sx={{ my: 1, borderWidth: "2px" }} /> {/* my: 1 adds margin top and bottom */}
+
         {/* Preview Button */}
-        <MDBox mt={2} display="flex" justifyContent="space-between" alignItems="center">
-          <IconButton
-            onClick={handleOpen}
+        <MDBox mt={1} display="flex" justifyContent="space-between" alignItems="center" >
+          <MDBox
             sx={{
-              color: "#28282B", // icon color
-              border: "1.5px solid #28282B", // 🔲 thin border
-              borderRadius: "50%", // make it circular
-              padding: "6px", // keep spacing balanced
-              transition: "all 0.2s ease-in-out",
-              "&:hover": {
-                color: "#28282B", // same as normal
-                borderColor: "#28282B", // keep consistent
-                backgroundColor: "rgba(0, 0, 0, 0.05)", // subtle translucent hover
-              },
+              display: "flex",
+              alignItems: "center",
+              gap: 1.2, // tighter but breathable space
             }}
           >
-            <VisibilityIcon fontSize="medium" />
-          </IconButton>
+            {/* 👁️ View Details */}
+            <IconButton
+              onClick={handleOpen}
+              sx={{
+                color: "#28282B",
+                border: "1.5px solid #28282B",
+                borderRadius: "12px",
+                padding: "6px 9px",
+                fontSize: "0.85rem",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                transition: "all 0.25s ease-in-out",
+                "&:hover": {
+                  transform: "scale(1.1)",
+                  backgroundColor: "rgba(0,0,0,0.06)",
+                },
+              }}
+            >
+              <VisibilityIcon sx={{ fontSize: "1rem" }} />
+            </IconButton>
+
+            {/* 🔄 Webhook Trigger */}
+            <IconButton
+              onClick={() => handleWebhook(guest.reservationId)}
+              disabled={cooldown}
+              sx={{
+                color: "#28282B",
+                border: "1.5px solid #28282B",
+                borderRadius: "12px",
+                padding: "6px 9px",
+                fontWeight: "bold",
+                fontSize: "0.85rem",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+                transition: "all 0.25s ease-in-out",
+                "&:hover": {
+                  transform: "scale(1.05)",
+                  backgroundColor: "rgba(0, 0, 0, 0.05)",
+                },
+                "&:disabled": {
+                  opacity: 0.6,
+                  cursor: "not-allowed",
+                },
+              }}
+            >
+              {cooldown ? (
+                <span style={{ fontSize: "0.6rem" }}>🕒 0:{String(cooldownTime).padStart(2, "0")}</span>
+              ) : (
+                <SyncIcon sx={{ fontSize: "1rem" }} />
+              )}
+            </IconButton>
+          </MDBox>
 
           {/* Mark Check in Button - only show in Upcoming Stay */}
           {(!guest.actualCheckin || guest.actualCheckin === "N/A") &&
@@ -1606,7 +1751,7 @@ ${
           {/* ✅ Checked Out Label */}
           {guest.actualCheckin && guest.actualCheckin !== "N/A" &&
             guest.actualCheckout && guest.actualCheckout !== "N/A" && (
-              <MDTypography variant="body2" color="success.main" fontWeight="bold">
+              <MDTypography variant="body2" color="success.main" fontWeight="bold" sx={{ textDecoration: "underline" }}>
                 Checked Out
               </MDTypography>
             )}
@@ -1886,6 +2031,7 @@ function KanbanView() {
   const [error, setError] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // API Configuration
   const API_ENDPOINT = "https://teable.namuve.com/api/table/tbliOdo8ldmMO8rrYyN/record";
@@ -1918,6 +2064,9 @@ function KanbanView() {
   const FIELD_MAP = {
     guestName: "Guest Name", // fldrVBpLpF2tgV0x6Ej
     reservationId: "Reservation ID", // fld86bKCKbHUjwct1kH
+    listingName: "Listing Name",
+    arrivalDate: "Arrival Date",
+    departureDate: "Departure Date",
     aptStatus: "Apt Status", // fld1eUwsfQm1Q7Ohjbw
     stayDuration: "Stay Duration", // fld51m5EBER5vxwDZSL
     actualCheckin: "Actual Checkin", // fldTuBkzfSTgE8MamHG
@@ -1989,6 +2138,9 @@ function KanbanView() {
             id: row.id || `fallback-${Date.now()}-${Math.random()}`,
             guestName: fields[FIELD_MAP.guestName] || "N/A",
             reservationId: fields[FIELD_MAP.reservationId] || "N/A",
+            listingName: fields[FIELD_MAP.listingName] || "N/A",
+            arrivalDate: fields[FIELD_MAP.arrivalDate] || "N/A",
+            departureDate: fields[FIELD_MAP.departureDate] || "N/A",
             aptStatus: fields[FIELD_MAP.aptStatus] || "N/A",
             stayDuration: fields[FIELD_MAP.stayDuration] || "N/A",
             actualCheckin: fields[FIELD_MAP.actualCheckin] || "N/A",
@@ -2054,6 +2206,9 @@ function KanbanView() {
       id: row.id,
       guestName: fields["Guest Name"] || "N/A",
       reservationId: fields["Reservation ID"] || "N/A",
+      listingName: fields["Listing Name"] || "N/A",
+      arrivalDate: fields["Arrival Date"] || "N/A",
+      departureDate: fields["Departure Date"] || "N/A",
       aptStatus: fields["Apt Status"] || "N/A",
       stayDuration: fields["Stay Duration"] || "N/A",
       actualCheckin: fields["Actual Checkin"] || "N/A",
@@ -2147,6 +2302,24 @@ function KanbanView() {
   };
 
 
+  const matchesSearch = (guest, term) => {
+    if (!term.trim()) return true;
+    const lowerTerm = term.toLowerCase();
+
+    return (
+      String(guest.reservationId ?? "").toLowerCase().includes(lowerTerm) ||
+      String(guest.guestName ?? "").toLowerCase().includes(lowerTerm) ||
+      String(guest.aptStatus ?? "").toLowerCase().includes(lowerTerm) ||
+      String(guest.listingName ?? "").toLowerCase().includes(lowerTerm) ||
+      String(guest.arrivalDate ?? "").toLowerCase().includes(lowerTerm) ||
+      String(guest.departureDate ?? "").toLowerCase().includes(lowerTerm) ||
+      String(guest.stayDuration ?? "").toLowerCase().includes(lowerTerm) ||
+      String(guest.actualCheckin ?? "").toLowerCase().includes(lowerTerm) ||
+      String(guest.actualCheckout ?? "").toLowerCase().includes(lowerTerm) ||
+      String(guest.tags ?? "").toLowerCase().includes(lowerTerm)
+    );
+  };
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -2156,6 +2329,20 @@ function KanbanView() {
             <Card>
               <MDBox p={2} display="flex" justifyContent="space-between" alignItems="center">
                 <MDTypography variant="h5">Reservations</MDTypography>
+                {/* 🔍 Search Bar using React-Bootstrap */}
+                <MDBox display="flex" alignItems="center" gap={1}>
+                  <Form className="d-flex" onSubmit={(e) => e.preventDefault()}>
+                    <Form.Control
+                      type="search"
+                      placeholder="Search For Reservations"
+                      className="me-2"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      aria-label="Search"
+                      style={{ minWidth: '220px', fontSize: '0.9rem', padding: '0.25rem 0.5rem' }}
+                    />
+                  </Form>
+                </MDBox>
                 <MDButton
                   variant="outlined"
                   color="info"
@@ -2210,68 +2397,46 @@ function KanbanView() {
                   },
                 }}
               >
-                {stacks.map((stack) => (
-                  <MDBox
-                    key={stack}
-                    minWidth={360}
-                    mr={2}
-                    sx={{
-                      // Desktop view: Keep original width
-                      "@media (min-width: 1536px)": {
-                        minWidth: 360,
-                        marginRight: 2,
-                      },
-                      // Laptop/Tablet view: Smaller width for single row
-                      "@media (max-width: 1535px)": {
-                        minWidth: "280px !important",
-                        maxWidth: "280px",
-                        marginRight: 1,
-                        flex: "0 0 280px",
-                      },
-                    }}
-                  >
-                    <Card
+                {stacks.map((stack) => {
+                  // Get all guests in this stack
+                  const stackGuests = reservations.filter((guest) => guest.stack === stack);
+
+                  // Skip completely empty stacks
+                  if (stackGuests.length === 0) return null;
+
+                  // Filter guests by search term
+                  const filteredGuests = stackGuests.filter((guest) => matchesSearch(guest, searchTerm));
+
+                  // Skip stack if no guests match the search
+                  if (filteredGuests.length === 0) return null;
+
+                  return (
+                    <MDBox
+                      key={stack}
+                      minWidth={360}
+                      mr={2}
                       sx={{
-                        backgroundColor: stackColors[stack] || "#FAF9F6", // 🎨 color based on stack name
-                        borderRadius: "16px",
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                        "@media (min-width: 1536px)": { minWidth: 335, marginRight: 2 },
+                        "@media (max-width: 1535px)": { minWidth: "280px !important", maxWidth: "280px", marginRight: 1, flex: "0 0 280px" }
                       }}
                     >
-
-                      <MDBox p={2}>
-                        <MDBox display="flex" justifyContent="space-between" alignItems="center">
-                          <MDTypography variant="h6">{stack}</MDTypography>
-                          <Chip
-                            label={reservations.filter((guest) => guest.stack === stack).length}
-                            color="primary"
-                            size="small"
-                            sx={{
-                              fontWeight: "bold",
-                              backgroundColor: "#28282B",
-                            }}
-                          />
+                      <Card sx={{ backgroundColor: stackColors[stack] || "#FAF9F6", borderRadius: "16px", boxShadow: "0 2px 6px rgba(0,0,0,0.06)" }}>
+                        <MDBox p={2}>
+                          <MDBox display="flex" justifyContent="space-between" alignItems="center">
+                            <MDTypography variant="h6">{stack}</MDTypography>
+                            <Chip label={filteredGuests.length} color="primary" size="small" sx={{ fontWeight: "bold", backgroundColor: "#28282B" }} />
+                          </MDBox>
                         </MDBox>
-                      </MDBox>
 
-                      <MDBox
-                        px={2}
-                        pb={2}
-                        sx={{
-                          flex: 1,
-                          overflowY: "auto",
-                          overflowX: "hidden",
-                          maxHeight: "calc(100vh - 350px)", // adjust if needed
-                        }}
-                      >
-                        {reservations
-                          .filter((guest) => guest.stack === stack)
-                          .map((guest) => (
-                            <ReservationCard key={guest.id} guest={guest} />
+                        <MDBox px={2} pb={2} sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", maxHeight: "calc(100vh - 350px)" }}>
+                          {filteredGuests.map((guest) => (
+                            <ReservationCard key={guest.id} guest={guest} searchTerm={searchTerm} />
                           ))}
-                      </MDBox>
-                    </Card>
-                  </MDBox>
-                ))}
+                        </MDBox>
+                      </Card>
+                    </MDBox>
+                  );
+                })}
               </MDBox>
             </Card>
           </Grid>
