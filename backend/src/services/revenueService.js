@@ -216,6 +216,7 @@ async function getRevenueAndOccupancy() {
     'Studio': 0,
     '1BR': 0,
     '2BR': 0,
+    '2BR Premium': 0,
     '3BR': 0
   };
 
@@ -802,9 +803,12 @@ async function getRevenueAndOccupancy() {
       console.log(`🔍 Any Guest Checked In: ${anyGuestCheckedIn}` );
       console.log(`✅ TOTAL Revenue: ${(apiActualRevenue + expectedRevenue).toFixed(2)} PKR` );
       console.log(`\n=== CATEGORY-WISE REVENUE ===`);
+      console.log(`🔍 DEBUG: categoryRevenue object keys:`, Object.keys(categoryRevenue));
+      console.log(`🔍 DEBUG: categoryRevenue object:`, categoryRevenue);
       console.log(`🏠 Studio: ${categoryRevenue['Studio'].toFixed(2)} PKR`);
       console.log(`🏠 1BR: ${categoryRevenue['1BR'].toFixed(2)} PKR`);
       console.log(`🏠 2BR: ${categoryRevenue['2BR'].toFixed(2)} PKR`);
+      console.log(`🏠 2BR Premium: ${categoryRevenue['2BR Premium'].toFixed(2)} PKR`);
       console.log(`🏠 3BR: ${categoryRevenue['3BR'].toFixed(2)} PKR`);
       console.log(`=======================================`);
 
@@ -915,7 +919,7 @@ async function getRevenueAndOccupancy() {
       quarterlyAchievedRevenue: '0', // Quarterly achieved revenue (error fallback)
       occupancyRate: 0,
       categoryAvailability: {},
-      categoryRevenue: { 'Studio': 0, '1BR': 0, '2BR': 0, '3BR': 0 }, // Category revenue fallback
+      categoryRevenue: { 'Studio': 0, '1BR': 0, '2BR': 0, '2BR Premium': 0, '3BR': 0 }, // Category revenue fallback
       error: 'API temporarily unavailable',
       lastUpdated: new Date().toISOString()
     };

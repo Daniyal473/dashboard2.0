@@ -60,3 +60,5 @@ deployment-notes.md
 .deployment-secrets
 deployment-secrets.txt
 commit.sh
+
+.vercel

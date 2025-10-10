@@ -38,6 +38,9 @@ import reportsLineChartData from "layouts/dashboard/data/reportsLineChartData";
 import Projects from "layouts/dashboard/components/Projects";
 import OrdersOverview from "layouts/dashboard/components/OrdersOverview";
 
+// API Configuration
+import { API_ENDPOINTS } from "config/api";
+
 function Dashboard() {
   const { sales, tasks } = reportsLineChartData;
 
@@ -54,7 +57,7 @@ function Dashboard() {
   useEffect(() => {
     const fetchMonthlyData = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/monthly-target", {
+        const response = await fetch(API_ENDPOINTS.MONTHLY_TARGET, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

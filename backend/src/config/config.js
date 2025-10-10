@@ -81,7 +81,8 @@ const missingEnvVars = requiredEnvVars.filter(envVar => !config[envVar]);
 if (missingEnvVars.length > 0) {
   console.error('Missing required environment variables:', missingEnvVars);
   if (process.env.NODE_ENV === 'production') {
-    process.exit(1);
+    console.warn('⚠️  Production deployment with missing environment variables - some features may not work');
+    // Don't exit in production, just warn
   } else {
     console.warn('Running in development mode with missing environment variables');
   }

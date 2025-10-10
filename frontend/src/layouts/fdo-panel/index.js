@@ -18,6 +18,9 @@ import PropTypes from "prop-types";
 import Table from "react-bootstrap/Table";
 import { Row, Col } from "react-bootstrap";
 
+// Authentication context
+import { useAuth } from "context/AuthContext";
+
 // @mui material components
 import IconButton from "@mui/material/IconButton";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -47,6 +50,7 @@ import MDButton from "components/MDButton";
 // Material Dashboard 2 React example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
+import Footer from "examples/Footer";
 
 function ReservationCard({ guest }) {
   const [open, setOpen] = useState(false);
@@ -55,7 +59,7 @@ function ReservationCard({ guest }) {
   const [error, setError] = useState(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isCheckedOut, setIsCheckedOut] = useState(false);
-
+  
 
   const HOSTAWAY_API = "https://api.hostaway.com/v1/reservations";
   const HOSTAWAY_TOKEN =
@@ -693,15 +697,14 @@ ul li {
     </div>
     <div class="heading-text" style="margin: 20px 0px 0px 40px !important">
   ${(() => {
-          const sameDayData = JSON.parse(
-            localStorage.getItem(`sameDayCheckOut_${guest.reservationId}`) || "{}"
-          );
-          const earlyCheckOutData = JSON.parse(
-            localStorage.getItem(`earlyCheckOut_${guest.reservationId}`) || "{}"
-          );
-          const isSameDayCheckout = sameDayData && sameDayData.value === "Yes";
-          const isEarlyCheckOut =
-            earlyCheckOutData && earlyCheckOutData.allowed === true;
+    const sameDayData = JSON.parse(
+      localStorage.getItem(`sameDayCheckOut_${guest.reservationId}`) || "{}"
+    );
+    const earlyCheckOutData = JSON.parse(
+      localStorage.getItem(`earlyCheckOut_${guest.reservationId}`) || "{}"
+    );
+    const isSameDayCheckout = sameDayData && sameDayData.value === "Yes";
+    const isEarlyCheckOut = earlyCheckOutData && earlyCheckOutData.allowed === true;
 
           if (isSameDayCheckout) {
             return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
@@ -881,18 +884,21 @@ ul li {
             ? `<p>• <strong>Midstay Cleaning Fee:</strong> ${financeFields.midstayCleaningFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-            : ""
-          }
-     ${CheckOutDamageDeposit !== 0
-            ? `<p>• <strong>Damage Deposit:</strong> ${CheckOutDamageDeposit} ${currencyLabel}</p>`
-            : ""
-          }
-${CheckOutSecurityDeposit !== "0"
-            ? `<p>• <strong>Security Deposit:</strong> ${CheckOutSecurityDeposit} ${currencyLabel}</p>`
-            : ""
-          }
-      ${financeFields.salesTax > 0
-            ? `<p>• <strong>Sales Tax:</strong> ${financeFields.salesTax.toFixed(
+          : ""
+      }
+     ${
+       CheckOutDamageDeposit !== 0
+         ? `<p>• <strong>Damage Deposit:</strong> ${CheckOutDamageDeposit} ${currencyLabel}</p>`
+         : ""
+     }
+${
+  CheckOutSecurityDeposit !== "0"
+    ? `<p>• <strong>Security Deposit:</strong> ${CheckOutSecurityDeposit} ${currencyLabel}</p>`
+    : ""
+}
+      ${
+        financeFields.salesTax > 0
+          ? `<p>• <strong>Sales Tax:</strong> ${financeFields.salesTax.toFixed(
               2
             )} ${currencyLabel}</p>`
             : ""
@@ -1232,7 +1238,13 @@ ${CheckOutSecurityDeposit !== "0"
         remainingBalance = balance > 0 ? balance.toFixed(2) : "0";
       }
 
-      setReservationDetails({ ...result, pricePerNight, earlyCheckinCharges, securityDeposit, remainingBalance });
+      setReservationDetails({
+        ...result,
+        pricePerNight,
+        earlyCheckinCharges,
+        securityDeposit,
+        remainingBalance,
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -1868,6 +1880,7 @@ ReservationCard.propTypes = {
 };
 
 function KanbanView() {
+  const { user } = useAuth();
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1888,6 +1901,18 @@ function KanbanView() {
     "No Show",
     "Unknown",
   ];
+
+  // 🎨 Stack color mapping
+  const stackColors = {
+    "Upcoming Stay": "#E3F2FD",      // Light blue
+    "Checked In": "#E8F5E8",         // Light green
+    "Staying Guest": "#FFF3E0",      // Light orange
+    "Upcoming Checkout": "#FCE4EC",  // Light pink
+    "Checked Out": "#F3E5F5",        // Light purple
+    "Same Day Check Out": "#FFEBEE", // Light red
+    "No Show": "#EFEBE9",            // Light brown
+    "Unknown": "#F5F5F5",            // Light gray
+  };
 
   // Field mappings from API response
   const FIELD_MAP = {
@@ -1970,23 +1995,19 @@ function KanbanView() {
             actualCheckout: fields[FIELD_MAP.actualCheckout] || "N/A",
             tags,
             stack: stacks.includes(stack) ? stack : "Unknown", // Ensure valid stack
-            listingName: fields[FIELD_MAP.listingName]
-              ? fields[FIELD_MAP.listingName]
-              : "N/A",
+            listingName: fields[FIELD_MAP.listingName] ? fields[FIELD_MAP.listingName] : "N/A",
             type: fields[FIELD_MAP.listingName]
               ? (() => {
-                const rawType =
-                  fields[FIELD_MAP.listingName].match(/\(([^)]+)\)/)?.[1] || "N/A";
-                const typeMap = {
-                  "1B": "1 Bedroom",
-                  "2B": "2 Bedroom",
-                  "3B": "3 Bedroom",
-                  "S": "Studio",
-                };
-                return typeMap[rawType] || rawType;
-              })()
+                  const rawType = fields[FIELD_MAP.listingName].match(/\(([^)]+)\)/)?.[1] || "N/A";
+                  const typeMap = {
+                    "1B": "1 Bedroom",
+                    "2B": "2 Bedroom",
+                    "3B": "3 Bedroom",
+                    S: "Studio",
+                  };
+                  return typeMap[rawType] || rawType;
+                })()
               : "N/A",
-
           };
 
           return reservation;
@@ -2044,18 +2065,39 @@ function KanbanView() {
   }
 
 
+  // Loading state
   if (loading) {
-    return (
+    const loadingContent = (
+      <MDBox mt={6} mb={3} display="flex" justifyContent="center">
+        <CircularProgress />
+      </MDBox>
+    );
+
+    return user?.role === "user" ? (
+      loadingContent
+    ) : (
       <DashboardLayout>
         <DashboardNavbar />
         <MDBox mt={6} mb={3}>
           <MDTypography variant="h5">Loading reservations...</MDTypography>
         </MDBox>
+        <Footer />
       </DashboardLayout>
     );
   }
 
+  // Error state
   if (error) {
+    const errorContent = (
+      <MDBox mt={6} mb={3}>
+        <MDTypography color="error">Error: {error}</MDTypography>
+      </MDBox>
+    );
+
+    if (user?.role === "user") {
+      return errorContent;
+    }
+
     return (
       <DashboardLayout>
         <DashboardNavbar />
@@ -2064,11 +2106,12 @@ function KanbanView() {
             Error: {error}
           </MDTypography>
         </MDBox>
+        <Footer />
       </DashboardLayout>
     );
   }
-
-
+  
+  
   const handleSync = async () => {
     if (syncing || cooldown > 0) return; // Prevent double click
 
@@ -2076,19 +2119,16 @@ function KanbanView() {
     console.log("🔄 Sync started...");
 
     try {
-      const response = await fetch(
-        "https://n8n.namuve.com/webhook/68542fac-bcac-4458-be3c-bff32534caf9",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            timestamp: new Date().toISOString(),
-            triggeredBy: "FDO Panel",
-          }),
-        }
-      );
+      const response = await fetch("https://n8n.namuve.com/webhook/68542fac-bcac-4458-be3c-bff32534caf9", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          timestamp: new Date().toISOString(),
+          triggeredBy: "FDO Panel",
+        }),
+      });
 
       if (!response.ok) {
         throw new Error(`Webhook failed: ${response.statusText}`);
@@ -2106,21 +2146,11 @@ function KanbanView() {
     }
   };
 
-  const stackColors = {
-    "Upcoming Stay": "#FFF8E1",       // light yellow
-    "Checked In": "#E8F5E9",          // light green
-    "Staying Guest": "#E0F7FA",       // light cyan
-    "Upcoming Checkout": "#FFF3E0",   // light orange
-    "Checked Out": "#E3F2FD",         // light blue
-    "Same Day Check Out": "#F3E5F5",  // light purple
-    "No Show": "#FFEBEE",             // light red/pink
-    "Unknown": "#F5F5F5",             // neutral gray
-  };
 
   return (
     <DashboardLayout>
       <DashboardNavbar />
-      <MDBox mt={3} mb={2}>
+      <MDBox mt={4} mb={2}>
         <Grid container spacing={3} justifyContent="center">
           <Grid item xs={12}>
             <Card>
@@ -2223,13 +2253,16 @@ function KanbanView() {
                         </MDBox>
                       </MDBox>
 
-                      <MDBox px={2} pb={2}
+                      <MDBox
+                        px={2}
+                        pb={2}
                         sx={{
                           flex: 1,
                           overflowY: "auto",
                           overflowX: "hidden",
                           maxHeight: "calc(100vh - 350px)", // adjust if needed
-                        }}>
+                        }}
+                      >
                         {reservations
                           .filter((guest) => guest.stack === stack)
                           .map((guest) => (
@@ -2244,6 +2277,7 @@ function KanbanView() {
           </Grid>
         </Grid>
       </MDBox>
+      <Footer />
     </DashboardLayout>
   );
 }

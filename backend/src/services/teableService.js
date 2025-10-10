@@ -10,6 +10,10 @@ class TeableService {
       'Content-Type': 'application/json'
     };
     this.lastPostedTime = null; // Track last posting time - reset for testing
+    
+    // Local memory cache for posted records
+    this.postedRecordsCache = new Map(); // Key: hour string, Value: record data
+    this.lastPostedRecord = null; // Store the most recent posted record
   }
 
   /**
@@ -31,35 +35,88 @@ class TeableService {
    */
   async checkIfDataExistsForCurrentHour() {
     try {
-      const pakistanDateTime = this.getPakistanDateTime();
-      // Extract date and hour from ISO format: "2025-10-06T10:00:17.449Z"
-      const currentDate = new Date(pakistanDateTime);
-      const currentHour = currentDate.getUTCHours();
-      const currentDay = currentDate.getUTCDate();
-      const currentMonth = currentDate.getUTCMonth();
-      const currentYear = currentDate.getUTCFullYear();
+      // Get current Pakistan time properly
+      const now = new Date();
+      const pakistanTime = new Date(now.getTime() + (5 * 60 * 60 * 1000));
+      const currentHour = pakistanTime.getUTCHours();
+      const currentDay = pakistanTime.getUTCDate();
+      const currentMonth = pakistanTime.getUTCMonth();
+      const currentYear = pakistanTime.getUTCFullYear();
       
-      console.log('🔍 Checking for existing data in hour:', `${currentYear}-${(currentMonth+1).toString().padStart(2,'0')}-${currentDay.toString().padStart(2,'0')} ${currentHour}:00`);
+      const currentHourString = `${currentYear}-${(currentMonth+1).toString().padStart(2,'0')}-${currentDay.toString().padStart(2,'0')} ${currentHour}:00`;
+      console.log('🔍 Checking for existing data in Pakistan hour:', currentHourString);
       
-      const response = await this.getAllRecords();
+      // FIRST: Check local memory cache (most reliable)
+      if (this.postedRecordsCache.has(currentHourString)) {
+        const cachedRecord = this.postedRecordsCache.get(currentHourString);
+        console.log('🚫 BLOCKED BY LOCAL CACHE: Data already posted for this hour');
+        console.log(`   Cached Record: ${cachedRecord.datetime} (ID: ${cachedRecord.id})`);
+        return true;
+      }
+      
+      // Show last posted record info
+      if (this.lastPostedRecord) {
+        console.log('📝 Last posted record in memory:', this.lastPostedRecord.datetime, '(ID:', this.lastPostedRecord.id + ')');
+      }
+      
+      // For duplicate checking, we only need recent records (last 500 should be enough)
+      const response = await this.getAllRecords(500);
       if (!response.success) {
         console.error('❌ Failed to fetch records for duplicate check:', response.error);
-        // If we can't check for duplicates due to network error, 
-        // we should NOT allow posting to prevent duplicates
         throw new Error(`Cannot verify duplicates: ${response.error}`);
       }
       
-      if (!response.data.records) {
-        console.log('✅ No existing records found');
+      if (!response.data.records || response.data.records.length === 0) {
+        console.log('✅ No existing records found in database');
         return false;
       }
       
-      // Check if any record has the same hour
-      const existingRecord = response.data.records.find(record => {
+      console.log(`🔍 Checking ${response.data.records.length} existing records...`);
+      console.log(`🎯 Looking for matches with: ${currentHourString}`);
+      
+      // Debug: Show the most recent records first
+      const sortedRecords = response.data.records.sort((a, b) => {
+        const dateA = new Date(a.fields['Date and Time '] || 0);
+        const dateB = new Date(b.fields['Date and Time '] || 0);
+        return dateB.getTime() - dateA.getTime(); // Most recent first
+      });
+      
+      console.log('🕐 Most recent 24 records:');
+      for (let i = 0; i < Math.min(24, sortedRecords.length); i++) {
+        const record = sortedRecords[i];
+        const recordDateTime = record.fields['Date and Time '];
+        console.log(`   ${i+1}. ${recordDateTime} (ID: ${record.id}, autoNumber: ${record.autoNumber})`);
+      }
+      
+      // Check if any record has the same hour (focus on today's records)
+      const todayRecords = response.data.records.filter(record => {
         const recordDateTime = record.fields['Date and Time '];
         if (!recordDateTime) return false;
         
-        // Parse ISO format from existing record
+        const recordDate = new Date(recordDateTime);
+        const recordDay = recordDate.getUTCDate();
+        const recordMonth = recordDate.getUTCMonth();
+        const recordYear = recordDate.getUTCFullYear();
+        
+        // Only check records from today (same day)
+        const isToday = recordDay === currentDay && 
+                       recordMonth === currentMonth && 
+                       recordYear === currentYear;
+        
+        if (isToday) {
+          console.log(`📅 Today's record found: ${recordDateTime}`);
+        }
+        
+        return isToday;
+      });
+      
+      console.log(`🔍 Found ${todayRecords.length} records from today (${currentYear}-${(currentMonth+1).toString().padStart(2,'0')}-${currentDay.toString().padStart(2,'0')}) to check`);
+      
+      // Debug: Check if any records from current hour exist in the full dataset
+      const currentHourRecords = response.data.records.filter(record => {
+        const recordDateTime = record.fields['Date and Time '];
+        if (!recordDateTime) return false;
+        
         const recordDate = new Date(recordDateTime);
         const recordHour = recordDate.getUTCHours();
         const recordDay = recordDate.getUTCDate();
@@ -72,16 +129,48 @@ class TeableService {
                recordYear === currentYear;
       });
       
-      if (existingRecord) {
-        console.log('⚠️ Found existing record for this hour:', existingRecord.fields['Date and Time ']);
+      if (currentHourRecords.length > 0) {
+        console.log(`🚨 FOUND ${currentHourRecords.length} records from current hour ${currentHour}:00 in database:`);
+        currentHourRecords.forEach((record, idx) => {
+          console.log(`   ${idx+1}. ${record.fields['Date and Time ']} (ID: ${record.id}, autoNumber: ${record.autoNumber})`);
+        });
+        console.log('🚫 BLOCKING POST - Data already exists for this hour!');
         return true;
       }
       
-      console.log('✅ No duplicate found for current hour');
+      for (let i = 0; i < todayRecords.length; i++) {
+        const record = todayRecords[i];
+        const recordDateTime = record.fields['Date and Time '];
+        
+        // Parse the stored datetime (already in Pakistan time ISO format)
+        const recordDate = new Date(recordDateTime);
+        const recordHour = recordDate.getUTCHours();
+        const recordDay = recordDate.getUTCDate();
+        const recordMonth = recordDate.getUTCMonth();
+        const recordYear = recordDate.getUTCFullYear();
+        
+        const recordHourString = `${recordYear}-${(recordMonth+1).toString().padStart(2,'0')}-${recordDay.toString().padStart(2,'0')} ${recordHour}:00`;
+        
+        console.log(`📝 Today's Record ${i+1}: ${recordDateTime} → Pakistan hour: ${recordHourString}`);
+        
+        const isMatch = recordHour === currentHour && 
+                       recordDay === currentDay && 
+                       recordMonth === currentMonth && 
+                       recordYear === currentYear;
+        
+        if (isMatch) {
+          console.log('🚫 DUPLICATE FOUND! Existing record matches current Pakistan hour');
+          console.log(`   Current: ${currentHourString}`);
+          console.log(`   Existing: ${recordHourString}`);
+          console.log(`   Record ID: ${record.id}`);
+          return true;
+        }
+      }
+      
+      console.log('✅ No duplicate found for current Pakistan hour');
       return false;
     } catch (error) {
       console.error('❌ Error checking existing data:', error.message);
-      // Throw error instead of returning false to prevent posting when we can't verify
       throw error;
     }
   }
@@ -159,30 +248,183 @@ class TeableService {
   }
 
   /**
-   * Get all records from Teable database
+   * Get all records from Teable database with dynamic pagination
+   * @param {number} maxRecords - Maximum records to fetch (default: 500 for performance)
    * @returns {Promise<Object>} Response from Teable API
    */
-  async getAllRecords() {
+  async getAllRecords(maxRecords = 500) {
     try {
-      console.log('📋 Fetching all records from Teable...');
+      console.log(`📋 Fetching records from Teable with dynamic pagination (max: ${maxRecords})...`);
       
-      const response = await axios.get(this.baseURL, {
-        headers: this.headers,
-        timeout: 10000 // Reduced timeout for duplicate checking
+      const cacheBuster = Date.now();
+      const pageSize = 100; // Teable's standard page size
+      let allRecords = [];
+      let currentPage = 0;
+      let hasMoreRecords = true;
+      const maxPages = Math.ceil(maxRecords / pageSize); // Safety limit
+      
+      while (hasMoreRecords && currentPage < maxPages) {
+        const skip = currentPage * pageSize;
+        const take = Math.min(pageSize, maxRecords - allRecords.length);
+        
+        console.log(`📄 Fetching page ${currentPage + 1}: skip=${skip}, take=${take}`);
+        
+        // Use Teable's pagination format: take & skip
+        const url = `${this.baseURL}?take=${take}&skip=${skip}&_cb=${cacheBuster + currentPage}`;
+        
+        try {
+          const response = await axios.get(url, {
+            headers: {
+              ...this.headers,
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            },
+            timeout: 8000 // Timeout per page
+          });
+          
+          const pageRecords = response.data.records || [];
+          console.log(`   ✅ Page ${currentPage + 1}: Got ${pageRecords.length} records`);
+          
+          // Add records to collection
+          allRecords.push(...pageRecords);
+          
+          // Check if we should continue
+          if (pageRecords.length < take) {
+            // Got fewer records than requested - this is the last page
+            hasMoreRecords = false;
+            console.log(`   🏁 Last page reached (got ${pageRecords.length} < ${take})`);
+          } else if (allRecords.length >= maxRecords) {
+            // Reached our maximum limit
+            hasMoreRecords = false;
+            console.log(`   🛑 Maximum records limit reached (${maxRecords})`);
+          }
+          
+          currentPage++;
+          
+          // Small delay between requests to be nice to the API
+          if (hasMoreRecords) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          
+        } catch (pageError) {
+          console.error(`❌ Error fetching page ${currentPage + 1}:`, pageError.message);
+          // If a page fails, stop pagination but return what we have
+          hasMoreRecords = false;
+        }
+      }
+      
+      console.log(`✅ Dynamic pagination complete: ${allRecords.length} total records from ${currentPage} pages`);
+      
+      // Sort records by autoNumber descending (newest first) for consistency
+      allRecords.sort((a, b) => {
+        const autoA = a.autoNumber || 0;
+        const autoB = b.autoNumber || 0;
+        return autoB - autoA;
       });
-
-      console.log('✅ Successfully fetched records from Teable');
+      
+      console.log(`🔄 Sorted ${allRecords.length} records by autoNumber (newest first)`);
+      
       return {
         success: true,
-        data: response.data,
+        data: {
+          records: allRecords,
+          totalFetched: allRecords.length,
+          pagesProcessed: currentPage,
+          hasMore: currentPage >= maxPages && allRecords.length === maxRecords
+        },
         timestamp: new Date().toISOString()
       };
 
     } catch (error) {
-      console.error('❌ Error fetching records from Teable:', error.message);
+      console.error('❌ Error in dynamic pagination:', error.message);
       return {
         success: false,
-        error: `Fetch Error: ${error.response?.status} - ${error.response?.data?.message || error.message}`,
+        error: `Pagination Error: ${error.response?.status} - ${error.response?.data?.message || error.message}`,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Get ALL records from Teable database (unlimited pagination)
+   * Use this when you need the complete dataset
+   * @returns {Promise<Object>} Response with all records
+   */
+  async getAllRecordsUnlimited() {
+    try {
+      console.log('📋 Fetching ALL records from Teable (unlimited pagination)...');
+      
+      const cacheBuster = Date.now();
+      const pageSize = 100;
+      let allRecords = [];
+      let currentPage = 0;
+      let hasMoreRecords = true;
+      const maxPages = 100; // Safety limit: 10,000 records max
+      
+      while (hasMoreRecords && currentPage < maxPages) {
+        const skip = currentPage * pageSize;
+        
+        console.log(`📄 Fetching page ${currentPage + 1}: skip=${skip}, take=${pageSize}`);
+        
+        const url = `${this.baseURL}?take=${pageSize}&skip=${skip}&_cb=${cacheBuster + currentPage}`;
+        
+        try {
+          const response = await axios.get(url, {
+            headers: {
+              ...this.headers,
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+            },
+            timeout: 10000
+          });
+          
+          const pageRecords = response.data.records || [];
+          console.log(`   ✅ Page ${currentPage + 1}: Got ${pageRecords.length} records`);
+          
+          allRecords.push(...pageRecords);
+          
+          // Stop if we got fewer records than requested (last page)
+          if (pageRecords.length < pageSize) {
+            hasMoreRecords = false;
+            console.log(`   🏁 Last page reached (got ${pageRecords.length} < ${pageSize})`);
+          }
+          
+          currentPage++;
+          
+          // Progress update every 10 pages
+          if (currentPage % 10 === 0) {
+            console.log(`📊 Progress: ${allRecords.length} records fetched from ${currentPage} pages...`);
+          }
+          
+          // Small delay between requests
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
+        } catch (pageError) {
+          console.error(`❌ Error fetching page ${currentPage + 1}:`, pageError.message);
+          hasMoreRecords = false;
+        }
+      }
+      
+      console.log(`✅ Unlimited pagination complete: ${allRecords.length} total records from ${currentPage} pages`);
+      
+      // Sort by autoNumber descending (newest first)
+      allRecords.sort((a, b) => (b.autoNumber || 0) - (a.autoNumber || 0));
+      
+      return {
+        success: true,
+        data: {
+          records: allRecords,
+          totalFetched: allRecords.length,
+          pagesProcessed: currentPage
+        },
+        timestamp: new Date().toISOString()
+      };
+
+    } catch (error) {
+      console.error('❌ Error in unlimited pagination:', error.message);
+      return {
+        success: false,
+        error: `Unlimited Pagination Error: ${error.message}`,
         timestamp: new Date().toISOString()
       };
     }
@@ -197,36 +439,30 @@ class TeableService {
    */
   async postTargetData(targetData) {
     try {
-      // Check if data already exists for current hour
+      // Check if data already exists for current hour (PRIMARY CHECK)
       try {
         const dataExists = await this.checkIfDataExistsForCurrentHour();
         if (dataExists) {
           const pakistanDateTime = this.getPakistanDateTime();
           const currentDate = new Date(pakistanDateTime);
           const currentHour = `${currentDate.getUTCFullYear()}-${(currentDate.getUTCMonth()+1).toString().padStart(2,'0')}-${currentDate.getUTCDate().toString().padStart(2,'0')} ${currentDate.getUTCHours()}:00`;
+          
+          console.log('🚫 POSTING BLOCKED: Data already exists for this hour');
           return {
             success: false,
-            error: `❌ ERROR: Data already exists for hour ${currentHour}. Only one post per hour is allowed.`,
+            error: `❌ DATA ALREADY POSTED: Revenue data for hour ${currentHour} (Pakistan Time) already exists in database. Only ONE post per hour is allowed to prevent duplicates.`,
             currentHour: currentHour,
+            message: "Please wait until the next hour to post new data.",
             timestamp: new Date().toISOString()
           };
         }
       } catch (duplicateCheckError) {
         // If we can't check for duplicates, don't allow posting
+        console.log('🚫 POSTING BLOCKED: Cannot verify duplicates');
         return {
           success: false,
-          error: `❌ ERROR: Cannot post data - unable to verify duplicates due to network error: ${duplicateCheckError.message}`,
-          timestamp: new Date().toISOString()
-        };
-      }
-
-      // Check if we can post now (1 hour cooldown)
-      if (!this.canPostNow()) {
-        const remainingMinutes = this.getTimeUntilNextPost();
-        return {
-          success: false,
-          error: `Data already posted for this hour. Please wait ${remainingMinutes} minutes before posting again.`,
-          remainingMinutes: remainingMinutes,
+          error: `❌ POSTING BLOCKED: Cannot verify if data already exists for this hour due to database connection error. Posting blocked to prevent duplicates.`,
+          details: duplicateCheckError.message,
           timestamp: new Date().toISOString()
         };
       }
@@ -258,10 +494,30 @@ class TeableService {
       // Update last posted time on successful post
       this.lastPostedTime = new Date();
       
+      // Cache the posted record in memory
+      const currentDate = new Date(pakistanDateTime);
+      const currentHourString = `${currentDate.getUTCFullYear()}-${(currentDate.getUTCMonth()+1).toString().padStart(2,'0')}-${currentDate.getUTCDate().toString().padStart(2,'0')} ${currentDate.getUTCHours()}:00`;
+      const postedRecord = {
+        id: response.data.records[0].id,
+        autoNumber: response.data.records[0].autoNumber,
+        datetime: pakistanDateTime,
+        hourString: currentHourString,
+        actual: targetData.actual,
+        achieved: targetData.achieved
+      };
+      
+      // Store in cache
+      this.postedRecordsCache.set(currentHourString, postedRecord);
+      this.lastPostedRecord = postedRecord;
+      
+      console.log('💾 Cached posted record:', postedRecord.datetime, '(ID:', postedRecord.id + ')');
+      console.log('📊 Cache now contains', this.postedRecordsCache.size, 'hour(s)');
+      
       return {
         success: true,
         data: response.data,
         pakistanDateTime: pakistanDateTime,
+        cachedRecord: postedRecord,
         nextAllowedPostTime: new Date(this.lastPostedTime.getTime() + (60 * 60 * 1000)).toISOString(),
         timestamp: new Date().toISOString()
       };

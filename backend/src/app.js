@@ -6,7 +6,34 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: config.CORS_ORIGIN,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://tested-1pln9mbk8-rana-talhas-projects.vercel.app',
+      'https://tested-murex.vercel.app',
+      /\.vercel\.app$/ // Allow all Vercel domains
+    ];
+    
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (typeof allowedOrigin === 'string') {
+        return allowedOrigin === origin;
+      }
+      if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -21,6 +48,7 @@ app.set('trust proxy', true);
 const userRoutes = require("./routes/userRoutes");
 const revenueRoutes = require("./routes/revenueRoutes");
 const teableRoutes = require("./routes/teableRoutes");
+const authRoutes = require("./routes/authRoutes");
 const monthlyTargetHandler = require("../api/monthly-target");
 
 // Import and start scheduler
@@ -42,7 +70,8 @@ app.get("/", (req, res) => {
       revenueHealth: "/api/revenue/health",
       teable: "/api/teable",
       teableStatus: "/api/teable/status",
-      monthlyTarget: "/api/monthly-target"
+      monthlyTarget: "/api/monthly-target",
+      auth: "/api/auth"
     }
   });
 });
@@ -51,6 +80,7 @@ app.get("/", (req, res) => {
 app.use("/api/users", userRoutes);
 app.use("/api/revenue", revenueRoutes);
 app.use("/api/teable", teableRoutes);
+app.use("/api/auth", authRoutes);
 
 // Monthly target route
 app.all("/api/monthly-target", monthlyTargetHandler);

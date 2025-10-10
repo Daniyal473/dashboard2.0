@@ -16,7 +16,10 @@ Coded by www.creative-tim.com
 import { useEffect } from "react";
 
 // react-router-dom components
-import { useLocation, NavLink } from "react-router-dom";
+import { useLocation, NavLink, useNavigate } from "react-router-dom";
+
+// Authentication context
+import { useAuth } from "context/AuthContext";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
@@ -51,7 +54,16 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, transparentSidenav, whiteSidenav, darkMode, sidenavColor } = controller;
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const collapseName = location.pathname.replace("/", "");
+
+  // Handle logout functionality with proper navigation
+  const handleLogout = () => {
+    logout();
+    // Use replace to prevent back button issues
+    navigate("/authentication/sign-in", { replace: true });
+  };
 
   let textColor = "white";
 
@@ -88,26 +100,37 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
     let returnValue;
 
     if (type === "collapse") {
-      returnValue = href ? (
-        <Link
-          href={href}
-          key={key}
-          target="_blank"
-          rel="noreferrer"
-          sx={{ textDecoration: "none" }}
-        >
-          <SidenavCollapse
-            name={name}
-            icon={icon}
-            active={key === collapseName}
-            noCollapse={noCollapse}
-          />
-        </Link>
-      ) : (
-        <NavLink key={key} to={route}>
-          <SidenavCollapse name={name} icon={icon} active={key === collapseName} />
-        </NavLink>
-      );
+      // Handle logout functionality
+      if (key === "logout") {
+        returnValue = (
+          <div key={key} onClick={handleLogout} style={{ cursor: "pointer" }}>
+            <SidenavCollapse name={name} icon={icon} active={false} />
+          </div>
+        );
+      } else if (href) {
+        returnValue = (
+          <Link
+            href={href}
+            key={key}
+            target="_blank"
+            rel="noreferrer"
+            sx={{ textDecoration: "none" }}
+          >
+            <SidenavCollapse
+              name={name}
+              icon={icon}
+              active={key === collapseName}
+              noCollapse={noCollapse}
+            />
+          </Link>
+        );
+      } else {
+        returnValue = (
+          <NavLink key={key} to={route}>
+            <SidenavCollapse name={name} icon={icon} active={key === collapseName} />
+          </NavLink>
+        );
+      }
     } else if (type === "title") {
       returnValue = (
         <MDTypography

@@ -12,8 +12,8 @@ import MDTypography from "components/MDTypography";
 import MDInput from "components/MDInput";
 import MDButton from "components/MDButton";
 
-function Cover() {
-  const [step, setStep] = useState(1); // 1: username input, 2: password reset
+function ForgotPassword() {
+  const [step, setStep] = useState(1); // 1: username, 2: new password
   const [formData, setFormData] = useState({
     username: "",
     newPassword: "",
@@ -31,37 +31,36 @@ function Cover() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    
+
     if (step === 1) {
       // First step - validate username and move to password reset
       if (!formData.username) {
         setMessage({ type: "error", text: "Username is required!" });
         return;
       }
-      
+
       setLoading(true);
-      
+
       // Simulate API call to verify username exists
       setTimeout(() => {
         setLoading(false);
         setStep(2);
         setMessage({ type: "success", text: "Username verified! Please enter your new password." });
       }, 1000);
-      
     } else {
       // Second step - reset password
       if (!formData.newPassword || !formData.confirmPassword) {
         setMessage({ type: "error", text: "Both password fields are required!" });
         return;
       }
-      
+
       if (formData.newPassword !== formData.confirmPassword) {
         setMessage({ type: "error", text: "Passwords do not match!" });
         return;
       }
-      
+
       setLoading(true);
-      
+
       try {
         const response = await fetch(`http://localhost:5000/api/auth/reset-password`, {
           method: "POST",
@@ -78,9 +77,9 @@ function Cover() {
         const result = await response.json();
 
         if (result.success) {
-          setMessage({ 
-            type: "success", 
-            text: "Password reset successfully! You can now login with your new password." 
+          setMessage({
+            type: "success",
+            text: "Password reset successfully! You can now login with your new password.",
           });
           // Reset form after success
           setTimeout(() => {
@@ -143,10 +142,9 @@ function Cover() {
                   lineHeight: 1.5,
                 }}
               >
-                {step === 1 
+                {step === 1
                   ? "Enter the username you use to log in to Chatwoot to get the password reset instructions"
-                  : "Enter your new password below"
-                }
+                  : "Enter your new password below"}
               </MDTypography>
             </MDBox>
 
@@ -163,7 +161,7 @@ function Cover() {
                 <MDBox mb={4}>
                   <MDInput
                     type="text"
-                    placeholder="talha@namuve.com"
+                    placeholder=""
                     fullWidth
                     value={formData.username}
                     onChange={handleInputChange("username")}
@@ -334,10 +332,13 @@ function Cover() {
                     },
                   }}
                 >
-                  {loading 
-                    ? (step === 1 ? "Verifying..." : "Updating...") 
-                    : (step === 1 ? "Submit" : "Update Password")
-                  }
+                  {loading
+                    ? step === 1
+                      ? "Verifying..."
+                      : "Updating..."
+                    : step === 1
+                    ? "Submit"
+                    : "Update Password"}
                 </MDButton>
               </MDBox>
 
@@ -345,12 +346,12 @@ function Cover() {
               <MDBox textAlign="center">
                 <MDTypography variant="body2" sx={{ fontSize: "0.875rem" }}>
                   If you want to go back to the login page,{" "}
-                  <Link 
-                    to="/authentication/sign-in" 
-                    style={{ 
-                      color: "#1f93ff", 
+                  <Link
+                    to="/authentication/sign-in"
+                    style={{
+                      color: "#1f93ff",
                       textDecoration: "none",
-                      fontWeight: "500"
+                      fontWeight: "500",
                     }}
                   >
                     click here
@@ -366,4 +367,4 @@ function Cover() {
   );
 }
 
-export default Cover;
+export default ForgotPassword;
