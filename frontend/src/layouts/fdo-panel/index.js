@@ -24,6 +24,9 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew"; // add this at the to
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import dayjs from "dayjs";
 import SyncIcon from '@mui/icons-material/Sync';
+import SearchIcon from "@mui/icons-material/Search";
+import InputBase from "@mui/material/InputBase";
+import { alpha } from "@mui/material/styles";
 
 
 // Authentication context
@@ -711,14 +714,14 @@ ul li {
     </div>
     <div class="heading-text" style="margin: 20px 0px 0px 40px !important">
   ${(() => {
-    const sameDayData = JSON.parse(
-      localStorage.getItem(`sameDayCheckOut_${guest.reservationId}`) || "{}"
-    );
-    const earlyCheckOutData = JSON.parse(
-      localStorage.getItem(`earlyCheckOut_${guest.reservationId}`) || "{}"
-    );
-    const isSameDayCheckout = sameDayData && sameDayData.value === "Yes";
-    const isEarlyCheckOut = earlyCheckOutData && earlyCheckOutData.allowed === true;
+          const sameDayData = JSON.parse(
+            localStorage.getItem(`sameDayCheckOut_${guest.reservationId}`) || "{}"
+          );
+          const earlyCheckOutData = JSON.parse(
+            localStorage.getItem(`earlyCheckOut_${guest.reservationId}`) || "{}"
+          );
+          const isSameDayCheckout = sameDayData && sameDayData.value === "Yes";
+          const isEarlyCheckOut = earlyCheckOutData && earlyCheckOutData.allowed === true;
 
           if (isSameDayCheckout) {
             return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
@@ -898,21 +901,18 @@ ul li {
             ? `<p>• <strong>Midstay Cleaning Fee:</strong> ${financeFields.midstayCleaningFee.toFixed(
               2
             )} ${currencyLabel}</p>`
-          : ""
-      }
-     ${
-       CheckOutDamageDeposit !== 0
-         ? `<p>• <strong>Damage Deposit:</strong> ${CheckOutDamageDeposit} ${currencyLabel}</p>`
-         : ""
-     }
-${
-  CheckOutSecurityDeposit !== "0"
-    ? `<p>• <strong>Security Deposit:</strong> ${CheckOutSecurityDeposit} ${currencyLabel}</p>`
-    : ""
-}
-      ${
-        financeFields.salesTax > 0
-          ? `<p>• <strong>Sales Tax:</strong> ${financeFields.salesTax.toFixed(
+            : ""
+          }
+     ${CheckOutDamageDeposit !== 0
+            ? `<p>• <strong>Damage Deposit:</strong> ${CheckOutDamageDeposit} ${currencyLabel}</p>`
+            : ""
+          }
+${CheckOutSecurityDeposit !== "0"
+            ? `<p>• <strong>Security Deposit:</strong> ${CheckOutSecurityDeposit} ${currencyLabel}</p>`
+            : ""
+          }
+      ${financeFields.salesTax > 0
+            ? `<p>• <strong>Sales Tax:</strong> ${financeFields.salesTax.toFixed(
               2
             )} ${currencyLabel}</p>`
             : ""
@@ -1759,7 +1759,7 @@ ${
       </MDBox>
       {/* Preview Dialog */}
       <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
-        <DialogTitle>Reservation Details</DialogTitle>
+        <DialogTitle>Reservation Details For {reservationDetails?.guestName}</DialogTitle>
         <DialogContent dividers>
           {loadingDetails ? (
             <MDBox display="flex" justifyContent="center" alignItems="center" py={2}>
@@ -1770,198 +1770,203 @@ ${
               Error: {error}
             </MDTypography>
           ) : (
-            <Row>
-              {/* Left Column */}
-              <Col md={6}>
-                <Table striped bordered hover size="sm">
-                  <tbody>
-                    <tr>
-                      <td>
-                        <strong>Name</strong>
-                      </td>
-                      <td>{reservationDetails?.guestName || guest.guestName || "N/A"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>CNIC</strong>
-                      </td>
-                      <td>
-                        {reservationDetails?.customFieldValues?.find(
-                          (field) => field.customField?.name === "ID card Number/ Passport number"
-                        )?.value || "N/A"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Unit</strong>
-                      </td>
-                      <td>{guest.listingName || "N/A"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Contact</strong>
-                      </td>
-                      <td>{reservationDetails?.phone || "N/A"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Total Nights</strong>
-                      </td>
-                      <td>{reservationDetails?.nights || "N/A"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Total Amount</strong>
-                      </td>
-                      <td>
-                        {reservationDetails?.totalPrice || "N/A"}{" "}
-                        {reservationDetails?.currency || ""}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Remaining Balance</strong>
-                      </td>
-                      <td>
-                        {reservationDetails?.remainingBalance || "N/A"}{" "}
-                        {reservationDetails?.currency || ""}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Early Check-in</strong>
-                      </td>
-                      <td>
-                        {reservationDetails?.earlyCheckinCharges || "N/A"}{" "}
-                        {reservationDetails?.currency || ""}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Price/Night</strong>
-                      </td>
-                      <td>
-                        {reservationDetails?.pricePerNight || "N/A"}{" "}
-                        {reservationDetails?.currency || ""}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Vehicle No</strong>
-                      </td>
-                      <td>
-                        {reservationDetails?.customFieldValues?.find(
-                          (field) => field.customField?.name === "Vehicle Number"
-                        )?.value ||
-                          guest.vehicleNo ||
-                          "N/A"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Channel ID</strong>
-                      </td>
-                      <td>{reservationDetails?.channelName || "N/A"}</td>
-                    </tr>
-                  </tbody>
-                </Table>
-              </Col>
+            <>
+              <Row>
+                {/* Left Column */}
+                <Col md={6}>
+                  <Table striped bordered hover size="sm">
+                    <tbody>
+                      <tr>
+                        <td>
+                          <strong>Reservation ID:</strong>
+                        </td>
+                        <td>{guest.reservationId}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>CNIC</strong>
+                        </td>
+                        <td>
+                          {reservationDetails?.customFieldValues?.find(
+                            (field) => field.customField?.name === "ID card Number/ Passport number"
+                          )?.value || "N/A"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Unit</strong>
+                        </td>
+                        <td>{guest.listingName || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Contact</strong>
+                        </td>
+                        <td>{reservationDetails?.phone || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Total Nights</strong>
+                        </td>
+                        <td>{reservationDetails?.nights || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Total Amount</strong>
+                        </td>
+                        <td>
+                          {reservationDetails?.totalPrice || "N/A"}{" "}
+                          {reservationDetails?.currency || ""}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Remaining Balance</strong>
+                        </td>
+                        <td>
+                          {reservationDetails?.remainingBalance || "N/A"}{" "}
+                          {reservationDetails?.currency || ""}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Early Check-in</strong>
+                        </td>
+                        <td>
+                          {reservationDetails?.earlyCheckinCharges || "N/A"}{" "}
+                          {reservationDetails?.currency || ""}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Price/Night</strong>
+                        </td>
+                        <td>
+                          {reservationDetails?.pricePerNight || "N/A"}{" "}
+                          {reservationDetails?.currency || ""}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Vehicle No</strong>
+                        </td>
+                        <td>
+                          {reservationDetails?.customFieldValues?.find(
+                            (field) => field.customField?.name === "Vehicle Number"
+                          )?.value ||
+                            guest.vehicleNo ||
+                            "N/A"}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </Table>
+                </Col>
 
-              {/* Right Column */}
-              <Col md={6}>
-                <Table striped bordered hover size="sm">
-                  <tbody>
-                    <tr>
-                      <td>
-                        <strong>Reservation ID</strong>
-                      </td>
-                      <td>{guest.reservationId || "N/A"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Address</strong>
-                      </td>
-                      <td>
-                        {reservationDetails?.customFieldValues?.find(
-                          (field) => field.customField?.name === "Address"
-                        )?.value ||
-                          guest.address ||
-                          "N/A"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Email</strong>
-                      </td>
-                      <td>{reservationDetails?.guestEmail || "N/A"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Adults</strong>
-                      </td>
-                      <td>{reservationDetails?.numberOfGuests || "N/A"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Children</strong>
-                      </td>
-                      <td>{reservationDetails?.children || "N/A"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Payment Status</strong>
-                      </td>
-                      <td>{reservationDetails?.paymentStatus || "N/A"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Check-in Date</strong>
-                      </td>
-                      <td>{reservationDetails?.arrivalDate || "N/A"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Check-in Time</strong>
-                      </td>
-                      <td>
-                        {reservationDetails?.checkInTime
-                          ? formatTime(reservationDetails.checkInTime)
-                          : guest.checkinTime
-                            ? formatTime(guest.checkinTime)
-                            : "N/A"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Check-out Date</strong>
-                      </td>
-                      <td>{reservationDetails?.departureDate || guest.checkoutDate || "N/A"}</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Check-out Time</strong>
-                      </td>
-                      <td>
-                        {reservationDetails?.checkOutTime
-                          ? formatTime(reservationDetails.checkOutTime)
-                          : guest.checkoutTime
-                            ? formatTime(guest.checkoutTime)
-                            : "N/A"}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>Security Deposit</strong>
-                      </td>
-                      <td>
-                        {reservationDetails?.securityDeposit || "N/A"}{" "}
-                        {reservationDetails?.currency || ""}
-                      </td>
-                    </tr>
-                  </tbody>
-                </Table>
-              </Col>
-            </Row>
+                {/* Right Column */}
+                <Col md={6}>
+                  <Table striped bordered hover size="sm">
+                    <tbody>
+                      <tr>
+                        <td>
+                          <strong>Channel ID</strong>
+                        </td>
+                        <td>{reservationDetails?.channelName || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Email</strong>
+                        </td>
+                        <td>{reservationDetails?.guestEmail || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Adults</strong>
+                        </td>
+                        <td>{reservationDetails?.numberOfGuests || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Children</strong>
+                        </td>
+                        <td>{reservationDetails?.children || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Payment Status</strong>
+                        </td>
+                        <td>{reservationDetails?.paymentStatus || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Check-in Date</strong>
+                        </td>
+                        <td>{reservationDetails?.arrivalDate || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Check-in Time</strong>
+                        </td>
+                        <td>
+                          {reservationDetails?.checkInTime
+                            ? formatTime(reservationDetails.checkInTime)
+                            : guest.checkinTime
+                              ? formatTime(guest.checkinTime)
+                              : "N/A"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Check-out Date</strong>
+                        </td>
+                        <td>{reservationDetails?.departureDate || guest.checkoutDate || "N/A"}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Check-out Time</strong>
+                        </td>
+                        <td>
+                          {reservationDetails?.checkOutTime
+                            ? formatTime(reservationDetails.checkOutTime)
+                            : guest.checkoutTime
+                              ? formatTime(guest.checkoutTime)
+                              : "N/A"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Security Deposit</strong>
+                        </td>
+                        <td>
+                          {reservationDetails?.securityDeposit || "N/A"}{" "}
+                          {reservationDetails?.currency || ""}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </Table>
+                </Col>
+              </Row>
+              {/* ✅ Full-width row at the end */}
+              <Row className="mt-0">
+                <Col md={12}>
+                  <Table striped bordered hover size="sm">
+                    <tbody>
+                      <tr>
+                        <td>
+                          <strong>Address</strong>
+                        </td>
+                        <td>
+                          {reservationDetails?.customFieldValues?.find(
+                            (field) => field.customField?.name === "Address"
+                          )?.value ||
+                            guest.address ||
+                            "N/A"}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </Table>
+                </Col>
+              </Row>
+            </>
           )}
         </DialogContent>
 
@@ -2049,15 +2054,50 @@ function KanbanView() {
   ];
 
   // 🎨 Stack color mapping
-  const stackColors = {
-    "Upcoming Stay": "#E3F2FD",      // Light blue
-    "Checked In": "#E8F5E8",         // Light green
-    "Staying Guest": "#FFF3E0",      // Light orange
-    "Upcoming Checkout": "#FCE4EC",  // Light pink
-    "Checked Out": "#F3E5F5",        // Light purple
-    "Same Day Check Out": "#FFEBEE", // Light red
-    "No Show": "#EFEBE9",            // Light brown
-    "Unknown": "#F5F5F5",            // Light gray
+  const stackStyles = {
+    "Upcoming Stay": {
+      backgroundColor: "#EFF6FF", // bg-blue-50
+      border: "1px solid #BFDBFE", // border-blue-200
+      "&.dark": {
+        backgroundColor: "rgba(30,58,138,0.3)", // dark:bg-blue-950/30
+        borderColor: "#1E3A8A", // dark:border-blue-800
+      },
+    },
+    "Checked In": {
+      backgroundColor: "#ECFDF5",
+      border: "1px solid #A7F3D0",
+      "&.dark": { backgroundColor: "rgba(6,78,59,0.3)", borderColor: "#065F46" },
+    },
+    "Staying Guest": {
+      backgroundColor: "#FFFBEB",
+      border: "1px solid #FDE68A",
+      "&.dark": { backgroundColor: "rgba(120,53,15,0.3)", borderColor: "#92400E" },
+    },
+    "Upcoming Checkout": {
+      backgroundColor: "#FDF2F8",
+      border: "1px solid #FBCFE8",
+      "&.dark": { backgroundColor: "rgba(131,24,67,0.3)", borderColor: "#9D174D" },
+    },
+    "Checked Out": {
+      backgroundColor: "#FAF5FF",
+      border: "1px solid #E9D5FF",
+      "&.dark": { backgroundColor: "rgba(59,7,100,0.3)", borderColor: "#6B21A8" },
+    },
+    "Same Day Check Out": {
+      backgroundColor: "#FEF2F2",
+      border: "1px solid #FECACA",
+      "&.dark": { backgroundColor: "rgba(127,29,29,0.3)", borderColor: "#991B1B" },
+    },
+    "No Show": {
+      backgroundColor: "#FFF7ED",
+      border: "1px solid #FED7AA",
+      "&.dark": { backgroundColor: "rgba(124,45,18,0.3)", borderColor: "#9A3412" },
+    },
+    "Unknown": {
+      backgroundColor: "#F9FAFB",
+      border: "1px solid #E5E7EB",
+      "&.dark": { backgroundColor: "rgba(17,24,39,0.3)", borderColor: "#1F2937" },
+    },
   };
 
   // Field mappings from API response
@@ -2150,15 +2190,15 @@ function KanbanView() {
             listingName: fields[FIELD_MAP.listingName] ? fields[FIELD_MAP.listingName] : "N/A",
             type: fields[FIELD_MAP.listingName]
               ? (() => {
-                  const rawType = fields[FIELD_MAP.listingName].match(/\(([^)]+)\)/)?.[1] || "N/A";
-                  const typeMap = {
-                    "1B": "1 Bedroom",
-                    "2B": "2 Bedroom",
-                    "3B": "3 Bedroom",
-                    S: "Studio",
-                  };
-                  return typeMap[rawType] || rawType;
-                })()
+                const rawType = fields[FIELD_MAP.listingName].match(/\(([^)]+)\)/)?.[1] || "N/A";
+                const typeMap = {
+                  "1B": "1 Bedroom",
+                  "2B": "2 Bedroom",
+                  "3B": "3 Bedroom",
+                  S: "Studio",
+                };
+                return typeMap[rawType] || rawType;
+              })()
               : "N/A",
           };
 
@@ -2265,8 +2305,8 @@ function KanbanView() {
       </DashboardLayout>
     );
   }
-  
-  
+
+
   const handleSync = async () => {
     if (syncing || cooldown > 0) return; // Prevent double click
 
@@ -2327,51 +2367,114 @@ function KanbanView() {
         <Grid container spacing={3} justifyContent="center">
           <Grid item xs={12}>
             <Card>
-              <MDBox p={2} display="flex" justifyContent="space-between" alignItems="center">
+              <MDBox
+                p={2}
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                {/* Left side title */}
                 <MDTypography variant="h5">Reservations</MDTypography>
-                {/* 🔍 Search Bar using React-Bootstrap */}
-                <MDBox display="flex" alignItems="center" gap={1}>
-                  <Form className="d-flex" onSubmit={(e) => e.preventDefault()}>
-                    <Form.Control
-                      type="search"
-                      placeholder="Search For Reservations"
-                      className="me-2"
+
+                {/* Right side (Search + Button) */}
+                <MDBox display="flex" alignItems="center" gap={2}>
+                  {/* Search Bar */}
+                  <MDBox
+                    sx={{
+                      position: "relative",
+                      width: 260,
+                    }}
+                  >
+                    {/* Search icon inside input */}
+                    <SearchIcon
+                      sx={{
+                        position: "absolute",
+                        left: 12,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        fontSize: 20,
+                        color: "#666",
+                        zIndex: 1,
+                        pointerEvents: "none",
+                      }}
+                    />
+
+                    {/* Input field */}
+                    <InputBase
+                      placeholder="Search reservations..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      aria-label="Search"
-                      style={{ minWidth: '220px', fontSize: '0.9rem', padding: '0.25rem 0.5rem' }}
+                      sx={{
+                        pl: 5.5,
+                        pr: 1.5,
+                        py: 0.7,
+                        width: "100%",
+                        borderRadius: "10px",
+                        border: "1px solid #ccc",
+                        backgroundColor: "#fff",
+                        fontSize: "0.9rem",
+                        transition: "border 0.2s ease, box-shadow 0.2s ease",
+                        "&:hover": {
+                          border: "1.5px solid #555",
+                        },
+                        "&:focus-within": {
+                          border: "2px solid #333",
+                        },
+                      }}
                     />
-                  </Form>
+                  </MDBox>
+
+                  {/* Sync Button */}
+                  <MDButton
+                    variant="outlined"
+                    onClick={handleSync}
+                    disabled={syncing || cooldown > 0}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      textTransform: "none",
+                      fontWeight: "bold",
+                      fontSize: "1rem",
+                      borderRadius: "10px",
+                      px: 2,
+                      py: 0.6,
+                      border: "2px solid",
+                      borderColor: "primary.main",
+                      color: "primary.main",
+                      backgroundColor: "transparent",
+                      transition: "all 0.2s ease",
+                      "&:hover": {
+                        borderColor: "primary.dark",
+                        color: "primary.dark",
+                      },
+                      "&:disabled": {
+                        opacity: 1, // keep text readable
+                        color: "text.secondary", // visible text when disabled
+                        borderColor: "text.secondary",
+                      },
+                    }}
+                  >
+                    <SyncIcon
+                      sx={{
+                        fontSize: 20,
+                        animation: syncing ? "spin 1s linear infinite" : "none",
+                        "@keyframes spin": {
+                          "0%": { transform: "rotate(0deg)" },
+                          "100%": { transform: "rotate(360deg)" },
+                        },
+                      }}
+                    />
+
+                    {syncing
+                      ? "Syncing..."
+                      : cooldown > 0
+                        ? `${Math.floor(cooldown / 60)}:${String(cooldown % 60).padStart(2, "0")}`
+                        : "Sync"}
+                  </MDButton>
                 </MDBox>
-                <MDButton
-                  variant="outlined"
-                  color="info"
-                  onClick={handleSync}
-                  disabled={syncing || cooldown > 0}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: "bold",
-                    fontSize: "1rem", // ⬆️ increase text size
-                    borderRadius: "10px",
-                    px: 1.5, // ↓ reduce horizontal padding
-                    py: 0.5, // ↓ add smaller vertical padding
-                    borderWidth: "2px",
-                    "&:hover": {
-                      backgroundColor: "transparent", // keep it clean on hover
-                      borderColor: "#3C96EF",         // accent border color
-                      color: "#3C96EF",               // highlight on hover
-                    },
-                  }}
-                >
-                  {syncing
-                    ? "⏳ Syncing..."
-                    : cooldown > 0
-                      ? `🕒 Processing ${Math.floor(cooldown / 60)}:${String(
-                        cooldown % 60
-                      ).padStart(2, "0")}`
-                      : "🔄 Sync"}
-                </MDButton>
               </MDBox>
+
               <MDBox
                 display="flex"
                 overflow="auto"
@@ -2420,7 +2523,7 @@ function KanbanView() {
                         "@media (max-width: 1535px)": { minWidth: "280px !important", maxWidth: "280px", marginRight: 1, flex: "0 0 280px" }
                       }}
                     >
-                      <Card sx={{ backgroundColor: stackColors[stack] || "#FAF9F6", borderRadius: "16px", boxShadow: "0 2px 6px rgba(0,0,0,0.06)" }}>
+                      <Card sx={{ ...(stackStyles[stack] || {}) }}>
                         <MDBox p={2}>
                           <MDBox display="flex" justifyContent="space-between" alignItems="center">
                             <MDTypography variant="h6">{stack}</MDTypography>
