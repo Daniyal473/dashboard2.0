@@ -1022,7 +1022,7 @@ ${CheckOutSecurityDeposit !== "0"
     link.click();
   }
 </script>
-</body>
+</body>ce
 </html>
   `;
 
@@ -1094,6 +1094,7 @@ ${CheckOutSecurityDeposit !== "0"
 
       console.log(`✅ Check-in time saved: ${formattedDateTime}`);
       setIsCheckedIn(true); // ✅ switch button
+      await handleWebhook();
     } catch (err) {
       console.error("❌ Error in handleMarkCheckIn:", err);
     }
@@ -1158,6 +1159,7 @@ ${CheckOutSecurityDeposit !== "0"
 
       console.log(`✅ Check-out time saved: ${formattedDateTime}`);
       setIsCheckedOut(true); // ✅ switch button
+      await handleWebhook();
     } catch (err) {
       console.error("❌ Error in handleMarkCheckOut:", err);
     }
@@ -1453,7 +1455,7 @@ ${CheckOutSecurityDeposit !== "0"
       <MDBox p={2}>
         {/* Reservation ID at top */}
         <MDBox display="flex" justifyContent="space-between" alignItems="center" sx={{ gap: 0.5 }}>
-          <MDTypography variant="body2" color="text.secondary" sx={{ fontSize: "0.85rem", margin: 0 }}>
+          <MDTypography variant="body2" sx={{ fontSize: "0.85rem", margin: 0 }}>
             Reservation ID
           </MDTypography>
           <MDTypography variant="body2" sx={{ fontSize: "0.85rem", margin: 0 }}>
@@ -1751,7 +1753,7 @@ ${CheckOutSecurityDeposit !== "0"
           {/* ✅ Checked Out Label */}
           {guest.actualCheckin && guest.actualCheckin !== "N/A" &&
             guest.actualCheckout && guest.actualCheckout !== "N/A" && (
-              <MDTypography variant="body2" color="success.main" fontWeight="bold" sx={{ textDecoration: "underline" }}>
+              <MDTypography variant="body2" fontWeight="bold" sx={{ textDecoration: "underline" }}>
                 Checked Out
               </MDTypography>
             )}
