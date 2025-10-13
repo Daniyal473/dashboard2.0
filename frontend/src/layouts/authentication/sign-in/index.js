@@ -258,41 +258,41 @@ function Basic() {
               <MDTypography
                 variant="h4"
                 sx={{
-                  color: "#1f2937",
-                  fontWeight: "600",
+                  color: "#000000",
+                  fontWeight: "400",
                   fontSize: "1.875rem",
                   mb: 1,
                 }}
               >
-                Howdy, admin 👋
+                Sign into your account
               </MDTypography>
             </MDBox>
 
             {/* Form */}
             <MDBox component="form" onSubmit={handleSubmit}>
-              {/* Email Address Field */}
+              {/* Username Field */}
               <MDBox mb={3}>
                 <MDTypography
                   variant="body2"
                   sx={{
-                    color: "#374151",
+                    color: "#000000",
                     fontWeight: "500",
                     mb: 1,
                     fontSize: "0.875rem",
                   }}
                 >
-                  Email Address
+                  Username
                 </MDTypography>
                 <MDInput
                   type="text"
-                  placeholder="Email eg: someone@example.com"
+                  placeholder="Username"
                   fullWidth
                   value={formData.username}
                   onChange={handleInputChange("username")}
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: "6px",
-                      border: "2px solid #958e09", // Exact color specified by user
+                      border: "1px solid #d1d5db",
                       backgroundColor: "#ffffff",
                       fontSize: "0.875rem",
                       "& fieldset": {
@@ -323,7 +323,7 @@ function Basic() {
                 <MDTypography
                   variant="body2"
                   sx={{
-                    color: "#374151",
+                    color: "#000000",
                     fontWeight: "500",
                     mb: 1,
                     fontSize: "0.875rem",
@@ -375,13 +375,18 @@ function Basic() {
                   sx={{
                     position: "absolute",
                     right: 8,
-                    top: "50%",
+                    top: "calc(50% + 12px)", // Adjusted to account for label
                     transform: "translateY(-50%)",
                     zIndex: 1,
                     color: "#6b7280",
+                    padding: "8px",
+                    "&:hover": {
+                      backgroundColor: "rgba(107, 114, 128, 0.1)",
+                      color: "#374151",
+                    },
                   }}
                 >
-                  {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
                 </IconButton>
               </MDBox>
 
@@ -585,9 +590,15 @@ function Basic() {
                 top: "50%",
                 transform: "translateY(-50%)",
                 zIndex: 1,
+                color: "#6b7280",
+                padding: "8px",
+                "&:hover": {
+                  backgroundColor: "rgba(107, 114, 128, 0.1)",
+                  color: "#374151",
+                },
               }}
             >
-              {adminDialog.showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+              {adminDialog.showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
             </IconButton>
           </MDBox>
         </DialogContent>

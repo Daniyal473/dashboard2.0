@@ -87,21 +87,6 @@ function UserLayout({ children }) {
           <Box display="flex" alignItems="center" gap={2}>
             {user && (
               <Box display="flex" alignItems="center" gap={2}>
-                {/* User Role Badge */}
-                <Chip
-                  icon={<PersonIcon fontSize="small" />}
-                  label="User Access"
-                  size="small"
-                  sx={{
-                    backgroundColor: "#dcfce7",
-                    color: "#166534",
-                    fontWeight: "600",
-                    fontSize: "0.75rem",
-                    "& .MuiChip-icon": {
-                      color: "#166534",
-                    },
-                  }}
-                />
 
                 {/* User Avatar and Info */}
                 <Box display="flex" alignItems="center" gap={1.5}>
@@ -128,15 +113,6 @@ function UserLayout({ children }) {
                       }}
                     >
                       {user.username}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "#6b7280",
-                        fontSize: "0.75rem",
-                      }}
-                    >
-                      FDO Panel Only
                     </Typography>
                   </Box>
                 </Box>

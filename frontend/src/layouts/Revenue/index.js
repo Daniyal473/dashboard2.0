@@ -25,6 +25,12 @@ import React, { Component, useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import useMediaQuery from "@mui/material/useMediaQuery";
 
+// Authentication context
+import { useAuth } from "context/AuthContext";
+
+// @mui material components
+import CircularProgress from "@mui/material/CircularProgress";
+
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
@@ -1045,6 +1051,7 @@ ImprovedListingRevenue.propTypes = {
 };
 
 function Revenue() {
+  const { user, isAuthenticated, loading: authLoading, isAdmin } = useAuth();
   const [revenueData, setRevenueData] = useState(null);
   const [monthlyData, setMonthlyData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1105,6 +1112,39 @@ function Revenue() {
     const interval = setInterval(fetchData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <MDBox
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="50vh"
+        >
+          <CircularProgress />
+          <MDTypography variant="h6" ml={2}>
+            Loading...
+          </MDTypography>
+        </MDBox>
+        <Footer />
+      </DashboardLayout>
+    );
+  }
+
+  // Redirect to sign-in if not authenticated
+  if (!isAuthenticated || !user) {
+    window.location.href = "/authentication/sign-in";
+    return null;
+  }
+
+  // Redirect non-admin users (Revenue is admin-only)
+  if (!isAdmin()) {
+    window.location.href = "/fdo-panel";
+    return null;
+  }
 
   // Format currency values
   const formatCurrency = (value) => {
@@ -1233,7 +1273,18 @@ function Revenue() {
     // Expected revenue from backend
     const expectedRevenue = revenueData ? parseFloat(revenueData.expectedRevenue) || 0 : 0; // Rs100K (expected)
     const totalRevenue = revenueData ? parseFloat(revenueData.totalRevenue) || 0 : 0;
-    const monthlyAchievedRevenue = monthlyData ? monthlyData.totalMonthlyAchieved || 0 : 0;
+    const monthlyAchievedRevenue = monthlyData 
+      ? monthlyData.totalMonthlyAchieved || monthlyData.monthlyAchieved || actualRevenue || 0 
+      : actualRevenue || 0;
+    
+    // Debug logging for monthly data
+    console.log("🔍 Monthly Data Debug:", {
+      monthlyData,
+      totalMonthlyAchieved: monthlyData?.totalMonthlyAchieved,
+      monthlyAchieved: monthlyData?.monthlyAchieved,
+      calculatedMonthlyAchieved: monthlyAchievedRevenue,
+      actualRevenue
+    });
     const monthlyTarget = monthlyData ? monthlyData.monthlyTarget || 17500000 : 17500000; // Default fallback
     const quarterlyAchievedRevenue = revenueData
       ? parseFloat(revenueData.quarterlyAchievedRevenue) || 0
@@ -1766,8 +1817,8 @@ function Revenue() {
                                     sx={{
                                       fontSize: "0.6rem",
                                       fontWeight: 700,
-                                      color: color,
-                                      background: `${color}15`,
+                                      color: "#3b82f6",
+                                      background: "#3b82f615",
                                       padding: "1px 6px",
                                       borderRadius: 1,
                                       display: "inline-block",
@@ -1868,8 +1919,8 @@ function Revenue() {
                                     sx={{
                                       fontSize: "0.6rem",
                                       fontWeight: 700,
-                                      color: color,
-                                      background: `${color}15`,
+                                      color: "#8b5cf6",
+                                      background: "#8b5cf615",
                                       padding: "1px 6px",
                                       borderRadius: 1,
                                       display: "inline-block",
@@ -1970,8 +2021,8 @@ function Revenue() {
                                     sx={{
                                       fontSize: "0.6rem",
                                       fontWeight: 700,
-                                      color: color,
-                                      background: `${color}15`,
+                                      color: "#06d6a0",
+                                      background: "#06d6a015",
                                       padding: "1px 6px",
                                       borderRadius: 1,
                                       display: "inline-block",
@@ -2075,8 +2126,8 @@ function Revenue() {
                                     sx={{
                                       fontSize: "0.6rem",
                                       fontWeight: 700,
-                                      color: color,
-                                      background: `${color}15`,
+                                      color: "#f59e0b",
+                                      background: "#f59e0b15",
                                       padding: "1px 6px",
                                       borderRadius: 1,
                                       display: "inline-block",
@@ -2176,8 +2227,8 @@ function Revenue() {
                                     sx={{
                                       fontSize: "0.6rem",
                                       fontWeight: 700,
-                                      color: color,
-                                      background: `${color}15`,
+                                      color: "#ef4444",
+                                      background: "#ef444415",
                                       padding: "1px 6px",
                                       borderRadius: 1,
                                       display: "inline-block",
@@ -2314,42 +2365,6 @@ function Revenue() {
                     </MDBox>
                   )}
 
-                  {/* Progress Bar */}
-                  <MDBox
-                    sx={{
-                      height: 18,
-                      borderRadius: 9,
-                      background: "#f1f5f9",
-                      overflow: "hidden",
-                      position: "relative",
-                      boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)",
-                      border: "1px solid #e2e8f0",
-                      mb: 1.5,
-                      width: "100%",
-                    }}
-                  >
-                    <MDBox
-                      sx={{
-                        height: "100%",
-                        width: `${Math.min(item.progress || 0, 100)}%`,
-                        background: item.gradient,
-                        borderRadius: 9,
-                        transition: "width 2s cubic-bezier(0.4, 0, 0.2, 1)",
-                        position: "relative",
-                        "&::after": {
-                          content: '""',
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          height: "50%",
-                          background:
-                            "linear-gradient(to bottom, rgba(255,255,255,0.6) 0%, transparent 100%)",
-                          borderRadius: "9px 9px 0 0",
-                        },
-                      }}
-                    />
-                  </MDBox>
 
                   {/* Progress Text */}
                   <MDBox
@@ -2381,7 +2396,7 @@ function Revenue() {
                           fontSize: "0.6rem",
                         }}
                       >
-                        Real-time
+                        
                       </MDTypography>
                     </MDBox>
                     <MDBox
@@ -2428,15 +2443,23 @@ function Revenue() {
                       }}
                     >
                       <MDTypography
-                        variant="h6"
+                        variant="h4"
                         sx={{
-                          color: "#ffffff",
-                          fontWeight: 900,
-                          fontSize: "1.1rem",
-                          textShadow: "0 2px 6px rgba(0,0,0,0.5)",
+                          color: index === 0 ? "#3b82f6" : 
+                                 index === 1 ? "#8b5cf6" : 
+                                 index === 2 ? "#06d6a0" : 
+                                 index === 3 ? "#f59e0b" : "#ef4444",
+                          fontWeight: 500,
+                          fontSize: "1.2rem",
                           position: "relative",
                           zIndex: 1,
-                          filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.3))",
+                          letterSpacing: "1px",
+                          fontFamily: "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
+                          background: "#ffffff",
+                          padding: "8px 16px",
+                          borderRadius: "8px",
+                          border: "1px solid #e2e8f0",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                         }}
                       >
                         {typeof item.progress === "number"

@@ -15,8 +15,12 @@ Coded by www.creative-tim.com
 
 import { useEffect } from "react";
 
+// Authentication context
+import { useAuth } from "context/AuthContext";
+
 // @mui material components
 import Grid from "@mui/material/Grid";
+import CircularProgress from "@mui/material/CircularProgress";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -41,6 +45,7 @@ import OrdersOverview from "layouts/rtl/components/OrdersOverview";
 import { useMaterialUIController, setDirection } from "context";
 
 function RTL() {
+  const { user, isAuthenticated, loading: authLoading, isAdmin } = useAuth();
   const [, dispatch] = useMaterialUIController();
   const { sales, tasks } = reportsLineChartData;
 
@@ -50,6 +55,36 @@ function RTL() {
 
     return () => setDirection(dispatch, "ltr");
   }, []);
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <MDBox
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="50vh"
+        >
+          <CircularProgress />
+        </MDBox>
+        <Footer />
+      </DashboardLayout>
+    );
+  }
+
+  // Redirect to sign-in if not authenticated
+  if (!isAuthenticated || !user) {
+    window.location.href = "/authentication/sign-in";
+    return null;
+  }
+
+  // Redirect non-admin users (RTL is admin-only)
+  if (!isAdmin()) {
+    window.location.href = "/fdo-panel";
+    return null;
+  }
 
   return (
     <DashboardLayout>

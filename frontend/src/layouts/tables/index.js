@@ -31,9 +31,49 @@ import DataTable from "examples/Tables/DataTable";
 import authorsTableData from "layouts/tables/data/authorsTableData";
 import projectsTableData from "layouts/tables/data/projectsTableData";
 
+// React hooks
+import { useState, useEffect } from "react";
+
+// Authentication context
+import { useAuth } from "context/AuthContext";
+
+// @mui material components
+import CircularProgress from "@mui/material/CircularProgress";
+
 function Tables() {
+  const { user, isAuthenticated, loading: authLoading, isAdmin } = useAuth();
   const { columns, rows } = authorsTableData();
   const { columns: pColumns, rows: pRows } = projectsTableData();
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <MDBox
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="50vh"
+        >
+          <CircularProgress />
+        </MDBox>
+        <Footer />
+      </DashboardLayout>
+    );
+  }
+
+  // Redirect to sign-in if not authenticated
+  if (!isAuthenticated || !user) {
+    window.location.href = "/authentication/sign-in";
+    return null;
+  }
+
+  // Redirect non-admin users (Tables is admin-only)
+  if (!isAdmin()) {
+    window.location.href = "/fdo-panel";
+    return null;
+  }
 
   return (
     <DashboardLayout>

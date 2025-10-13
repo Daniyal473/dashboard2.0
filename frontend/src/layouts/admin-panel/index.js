@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 
+// Authentication context
+import { useAuth } from "context/AuthContext";
+
 // @mui material components
 import Card from "@mui/material/Card";
 import Grid from "@mui/material/Grid";
@@ -13,6 +16,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
+import CircularProgress from "@mui/material/CircularProgress";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -29,6 +33,7 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
 function AdminPanel() {
+  const { user, isAuthenticated, loading: authLoading, isAdmin } = useAuth();
   const [createUserForm, setCreateUserForm] = useState({
     username: "",
     password: "",
@@ -358,6 +363,39 @@ function AdminPanel() {
     // fetchPasswordHistory();
   }, []);
 
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <MDBox
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="50vh"
+        >
+          <CircularProgress />
+          <MDTypography variant="h6" ml={2}>
+            Loading...
+          </MDTypography>
+        </MDBox>
+        <Footer />
+      </DashboardLayout>
+    );
+  }
+
+  // Redirect to sign-in if not authenticated
+  if (!isAuthenticated || !user) {
+    window.location.href = "/authentication/sign-in";
+    return null;
+  }
+
+  // Redirect non-admin users
+  if (!isAdmin()) {
+    window.location.href = "/fdo-panel";
+    return null;
+  }
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -583,7 +621,7 @@ function AdminPanel() {
                                   variant="caption"
                                   sx={{ color: "#6b7280", fontSize: "0.75rem" }}
                                 >
-                                  FDO Panel Access Only
+                                  
                                 </MDTypography>
                               </MDBox>
                             </MDBox>

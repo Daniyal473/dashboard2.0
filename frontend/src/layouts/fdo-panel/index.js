@@ -2030,7 +2030,7 @@ ReservationCard.propTypes = {
 };
 
 function KanbanView() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -2217,6 +2217,29 @@ function KanbanView() {
 
   }, []);
 
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <MDBox
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+      >
+        <CircularProgress />
+        <MDTypography variant="h6" ml={2}>
+          Loading...
+        </MDTypography>
+      </MDBox>
+    );
+  }
+
+  // Redirect to sign-in if not authenticated
+  if (!isAuthenticated || !user) {
+    window.location.href = "/authentication/sign-in";
+    return null;
+  }
+
   function mapRecordToReservation(row) {
     const fields = row.fields || {};
 
@@ -2360,24 +2383,23 @@ function KanbanView() {
     );
   };
 
-  return (
-    <DashboardLayout>
-      <DashboardNavbar />
-      <MDBox mt={4} mb={2}>
-        <Grid container spacing={3} justifyContent="center">
-          <Grid item xs={12}>
-            <Card>
-              <MDBox
-                p={2}
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-              >
-                {/* Left side title */}
-                <MDTypography variant="h5">Reservations</MDTypography>
+  // Main content for both user and admin
+  const mainContent = (
+    <MDBox mt={user?.role === "user" ? 2 : 4} mb={2}>
+      <Grid container spacing={3} justifyContent="center">
+        <Grid item xs={12}>
+          <Card>
+            <MDBox
+              p={2}
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              {/* Left side title */}
+              <MDTypography variant="h5">Reservations</MDTypography>
 
-                {/* Right side (Search + Button) */}
-                <MDBox display="flex" alignItems="center" gap={2}>
+              {/* Right side (Search + Button) */}
+              <MDBox display="flex" alignItems="center" gap={2}>
                   {/* Search Bar */}
                   <MDBox
                     sx={{
@@ -2545,6 +2567,15 @@ function KanbanView() {
           </Grid>
         </Grid>
       </MDBox>
+  );
+
+  // Return with appropriate layout based on user role
+  return user?.role === "user" ? (
+    mainContent
+  ) : (
+    <DashboardLayout>
+      <DashboardNavbar />
+      {mainContent}
       <Footer />
     </DashboardLayout>
   );

@@ -22,6 +22,12 @@ import MDBox from "components/MDBox";
 // React hooks
 import { useState, useEffect } from "react";
 
+// Authentication context
+import { useAuth } from "context/AuthContext";
+
+// @mui material components
+import CircularProgress from "@mui/material/CircularProgress";
+
 // Material Dashboard 2 React example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
@@ -42,6 +48,7 @@ import OrdersOverview from "layouts/dashboard/components/OrdersOverview";
 import { API_ENDPOINTS } from "config/api";
 
 function Dashboard() {
+  const { user, isAuthenticated, loading: authLoading, isAdmin } = useAuth();
   const { sales, tasks } = reportsLineChartData;
 
   // State for monthly target data
@@ -92,6 +99,36 @@ function Dashboard() {
     const interval = setInterval(fetchMonthlyData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <MDBox
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="50vh"
+        >
+          <CircularProgress />
+        </MDBox>
+        <Footer />
+      </DashboardLayout>
+    );
+  }
+
+  // Redirect to sign-in if not authenticated
+  if (!isAuthenticated || !user) {
+    window.location.href = "/authentication/sign-in";
+    return null;
+  }
+
+  // Redirect non-admin users (Dashboard is admin-only)
+  if (!isAdmin()) {
+    window.location.href = "/fdo-panel";
+    return null;
+  }
 
   return (
     <DashboardLayout>

@@ -13,9 +13,16 @@ Coded by www.creative-tim.com
 * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 */
 
+// React hooks
+import { useState, useEffect } from "react";
+
+// Authentication context
+import { useAuth } from "context/AuthContext";
+
 // @mui material components
 import Grid from "@mui/material/Grid";
 import Divider from "@mui/material/Divider";
+import CircularProgress from "@mui/material/CircularProgress";
 
 // @mui icons
 import FacebookIcon from "@mui/icons-material/Facebook";
@@ -52,6 +59,38 @@ import team3 from "assets/images/team-3.jpg";
 import team4 from "assets/images/team-4.jpg";
 
 function Overview() {
+  const { user, isAuthenticated, loading: authLoading, isAdmin } = useAuth();
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <MDBox
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="50vh"
+        >
+          <CircularProgress />
+        </MDBox>
+        <Footer />
+      </DashboardLayout>
+    );
+  }
+
+  // Redirect to sign-in if not authenticated
+  if (!isAuthenticated || !user) {
+    window.location.href = "/authentication/sign-in";
+    return null;
+  }
+
+  // Redirect non-admin users (Profile is admin-only)
+  if (!isAdmin()) {
+    window.location.href = "/fdo-panel";
+    return null;
+  }
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
