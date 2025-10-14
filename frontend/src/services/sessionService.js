@@ -1,13 +1,11 @@
 class SessionService {
   constructor() {
-    this.sessionTimer = null;
-    this.activityTimer = null;
+    this.inactivityTimer = null;
     this.logoutCallback = null;
     this.isActive = false;
     
-    // Session configuration
-    this.SESSION_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
-    this.ACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+    // Session configuration - Only inactivity timeout (dynamic)
+    this.INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hour of inactivity = logout
     
     // Bind methods
     this.handleActivity = this.handleActivity.bind(this);
@@ -20,55 +18,45 @@ class SessionService {
     this.logoutCallback = logoutCallback;
     this.isActive = true;
     
-    // Store session start time
-    const sessionStartTime = Date.now();
-    localStorage.setItem('sessionStartTime', sessionStartTime.toString());
+    // Store session start time and last activity time
+    const currentTime = Date.now();
+    localStorage.setItem('sessionStartTime', currentTime.toString());
+    localStorage.setItem('lastActivityTime', currentTime.toString());
     
-    // Set absolute session timeout (1 hour)
-    this.sessionTimer = setTimeout(() => {
-      this.performLogout('Session expired after 1 hour');
-    }, this.SESSION_DURATION);
-    
-    // Set initial activity timeout (30 minutes)
-    this.resetActivityTimer();
+    // Start inactivity monitoring (1 hour of no activity = logout)
+    this.resetInactivityTimer();
     
     // Add activity listeners
     this.addActivityListeners();
     
-    console.log('🕐 Session started - 1 hour timeout active');
+    console.log('🕐 Dynamic session started - logout after 1 hour of inactivity');
   }
 
-  // Reset activity timer on user interaction
-  resetActivityTimer() {
+  // Reset inactivity timer on user interaction
+  resetInactivityTimer() {
     if (!this.isActive) return;
     
-    // Clear existing activity timer
-    if (this.activityTimer) {
-      clearTimeout(this.activityTimer);
+    // Clear existing inactivity timer
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
     }
     
     // Update last activity time
-    localStorage.setItem('lastActivityTime', Date.now().toString());
+    const currentTime = Date.now();
+    localStorage.setItem('lastActivityTime', currentTime.toString());
     
-    // Check if we're still within the 1-hour absolute limit
-    const sessionStartTime = parseInt(localStorage.getItem('sessionStartTime') || '0');
-    const timeElapsed = Date.now() - sessionStartTime;
+    console.log('🔄 Activity detected - inactivity timer reset (1 hour from now)');
     
-    if (timeElapsed >= this.SESSION_DURATION) {
-      this.performLogout('Session expired after 1 hour');
-      return;
-    }
-    
-    // Set new activity timeout (30 minutes from now)
-    this.activityTimer = setTimeout(() => {
-      this.performLogout('Session expired due to inactivity');
-    }, this.ACTIVITY_TIMEOUT);
+    // Set new inactivity timeout (1 hour from now)
+    this.inactivityTimer = setTimeout(() => {
+      this.performLogout('Session expired after 1 hour of inactivity');
+    }, this.INACTIVITY_TIMEOUT);
   }
 
   // Handle user activity
   handleActivity() {
     if (this.isActive) {
-      this.resetActivityTimer();
+      this.resetInactivityTimer();
     }
   }
 
@@ -119,15 +107,10 @@ class SessionService {
   endSession() {
     this.isActive = false;
     
-    // Clear timers
-    if (this.sessionTimer) {
-      clearTimeout(this.sessionTimer);
-      this.sessionTimer = null;
-    }
-    
-    if (this.activityTimer) {
-      clearTimeout(this.activityTimer);
-      this.activityTimer = null;
+    // Clear inactivity timer
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+      this.inactivityTimer = null;
     }
     
     // Remove activity listeners
@@ -142,45 +125,37 @@ class SessionService {
 
   // Check if session is still valid (for page refresh scenarios)
   isSessionValid() {
-    const sessionStartTime = parseInt(localStorage.getItem('sessionStartTime') || '0');
     const lastActivityTime = parseInt(localStorage.getItem('lastActivityTime') || '0');
     
-    if (!sessionStartTime || !lastActivityTime) {
+    if (!lastActivityTime) {
       return false;
     }
     
     const now = Date.now();
-    const sessionAge = now - sessionStartTime;
     const timeSinceActivity = now - lastActivityTime;
     
-    // Check if session has exceeded 1 hour absolute limit
-    if (sessionAge >= this.SESSION_DURATION) {
-      return false;
-    }
-    
-    // Check if inactive for more than 30 minutes
-    if (timeSinceActivity >= this.ACTIVITY_TIMEOUT) {
+    // Check if inactive for more than 1 hour
+    if (timeSinceActivity >= this.INACTIVITY_TIMEOUT) {
       return false;
     }
     
     return true;
   }
 
-  // Get remaining session time
+  // Get remaining inactivity time
   getRemainingTime() {
-    const sessionStartTime = parseInt(localStorage.getItem('sessionStartTime') || '0');
     const lastActivityTime = parseInt(localStorage.getItem('lastActivityTime') || '0');
     
-    if (!sessionStartTime || !lastActivityTime) {
+    if (!lastActivityTime) {
       return 0;
     }
     
     const now = Date.now();
-    const sessionTimeRemaining = this.SESSION_DURATION - (now - sessionStartTime);
-    const activityTimeRemaining = this.ACTIVITY_TIMEOUT - (now - lastActivityTime);
+    const timeSinceActivity = now - lastActivityTime;
+    const remainingTime = this.INACTIVITY_TIMEOUT - timeSinceActivity;
     
-    // Return the shorter of the two timeouts
-    return Math.min(sessionTimeRemaining, activityTimeRemaining);
+    // Return remaining time until inactivity logout (can be negative if expired)
+    return Math.max(remainingTime, 0);
   }
 }
 

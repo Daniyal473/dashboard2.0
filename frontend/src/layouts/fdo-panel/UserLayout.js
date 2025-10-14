@@ -7,7 +7,7 @@ import { AppBar, Toolbar, Typography, Box, Avatar, Chip } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PersonIcon from "@mui/icons-material/Person";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import NotificationsIcon from "@mui/icons-material/Notifications";
+import customLogo from "assets/images/custom-logo.png";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -49,14 +49,15 @@ function UserLayout({ children }) {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: 40,
-                height: 40,
-                borderRadius: "12px",
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                width: 80,
+                height: 80,
+                borderRadius: "20px",
+                backgroundColor: "white",
+                border: "1px solid #e2e8f0",
                 color: "white",
               }}
             >
-              <NotificationsIcon fontSize="medium" />
+              <img src={customLogo} alt="Logo" style={{ width: 70, height: 70, borderRadius: "16px" }} />
             </Box>
             <Box>
               <Typography

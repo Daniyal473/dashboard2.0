@@ -106,15 +106,15 @@ router.post('/admin/verify', async (req, res) => {
 // Create User Route (Admin only)
 router.post('/admin/create-user', async (req, res) => {
   try {
-    const { adminPassword, username, password, role } = req.body;
+    const { username, password, role } = req.body;
 
     console.log('👤 Admin creating user:', username);
 
     // Validate input
-    if (!adminPassword || !username || !password) {
+    if (!username || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Admin password, username, and password are required'
+        message: 'Username and password are required'
       });
     }
 
@@ -123,14 +123,6 @@ router.post('/admin/create-user', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Invalid role. Must be "user" or "admin"'
-      });
-    }
-
-    // Verify admin password
-    if (!(await authService.verifyAdminPassword(adminPassword))) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid admin password'
       });
     }
 
@@ -152,21 +144,13 @@ router.post('/admin/create-user', async (req, res) => {
 // Delete User Route (Admin only)
 router.delete('/admin/delete-user', async (req, res) => {
   try {
-    const { adminPassword, username } = req.body;
+    const { username } = req.body;
 
     // Validate input
-    if (!adminPassword || !username) {
+    if (!username) {
       return res.status(400).json({
         success: false,
-        message: 'Admin password and username are required'
-      });
-    }
-
-    // Verify admin password
-    if (!(await authService.verifyAdminPassword(adminPassword))) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid admin password'
+        message: 'Username is required'
       });
     }
 
@@ -188,23 +172,6 @@ router.delete('/admin/delete-user', async (req, res) => {
 // Get All Users Route (Admin only)
 router.get('/admin/users', async (req, res) => {
   try {
-    const { adminPassword } = req.query;
-
-    if (!adminPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'Admin password is required'
-      });
-    }
-
-    // Verify admin password
-    if (!(await authService.verifyAdminPassword(adminPassword))) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid admin password'
-      });
-    }
-
     console.log('📋 Admin requesting all users');
 
     // Get all users
@@ -259,23 +226,6 @@ router.post('/admin/update-password', async (req, res) => {
 // Get Password Reset History Route (Admin only)
 router.get('/admin/password-history', async (req, res) => {
   try {
-    const { adminPassword } = req.query;
-
-    if (!adminPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'Admin password is required'
-      });
-    }
-
-    // Verify admin password
-    if (!(await authService.verifyAdminPassword(adminPassword))) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid admin password'
-      });
-    }
-
     console.log('📋 Admin requesting password reset history');
     console.log('🔗 Reset Password Table URL:', process.env.RESET_PASSWORD_TABLE_URL);
 
@@ -323,13 +273,13 @@ router.post('/verify-token', async (req, res) => {
 // Update User Role Route (Admin only)
 router.put('/admin/update-role', async (req, res) => {
   try {
-    const { adminPassword, username, role } = req.body;
+    const { username, role } = req.body;
 
     // Validate input
-    if (!adminPassword || !username || !role) {
+    if (!username || !role) {
       return res.status(400).json({
         success: false,
-        message: 'Admin password, username, and role are required'
+        message: 'Username and role are required'
       });
     }
 
@@ -338,14 +288,6 @@ router.put('/admin/update-role', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Invalid role. Must be "user" or "admin"'
-      });
-    }
-
-    // Verify admin password
-    if (!(await authService.verifyAdminPassword(adminPassword))) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid admin password'
       });
     }
 

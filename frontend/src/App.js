@@ -21,6 +21,10 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 // Authentication context
 import { AuthProvider, useAuth } from "context/AuthContext";
 
+// Offline detection service and component
+import offlineService from "services/offlineService";
+import NoInternet from "components/NoInternet";
+
 // @mui material components
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -78,6 +82,7 @@ function AppContent() {
   } = controller;
   const [onMouseEnter, setOnMouseEnter] = useState(false);
   const [rtlCache, setRtlCache] = useState(null);
+  const [isOnline, setIsOnline] = useState(offlineService.getStatus());
   const { pathname } = useLocation();
   const { user, isAuthenticated, loading } = useAuth();
 
@@ -102,6 +107,22 @@ function AppContent() {
     document.scrollingElement.scrollTop = 0;
   }, [pathname]);
 
+  // Subscribe to offline/online status changes
+  useEffect(() => {
+    console.log('App: Setting up offline service subscription');
+    console.log('App: Initial offline service status:', offlineService.getStatus());
+    
+    const unsubscribe = offlineService.subscribe((online) => {
+      console.log('App: Received status update from offlineService:', online ? 'ONLINE' : 'OFFLINE');
+      setIsOnline(online);
+    });
+
+    return () => {
+      console.log('App: Cleaning up offline service subscription');
+      unsubscribe();
+    };
+  }, []);
+
   // Check if current route is authentication page
   const isAuthPage = pathname.includes("/authentication/");
 
@@ -123,6 +144,12 @@ function AppContent() {
         Loading...
       </div>
     );
+  }
+
+  // Show No Internet component when offline
+  if (!isOnline) {
+    console.log('App: Rendering NoInternet component because isOnline =', isOnline);
+    return <NoInternet />;
   }
 
   // Open sidenav when mouse enter on mini sidenav

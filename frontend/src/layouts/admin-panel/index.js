@@ -11,11 +11,6 @@ import Alert from "@mui/material/Alert";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
 import CircularProgress from "@mui/material/CircularProgress";
 
 // Material Dashboard 2 React components
@@ -44,24 +39,111 @@ function AdminPanel() {
   const [passwordHistory, setPasswordHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-  const [activeTab, setActiveTab] = useState("users"); // users, history
+  const [activeTab, setActiveTab] = useState("users"); // users, history, monthly-target
   const [editingUser, setEditingUser] = useState(null);
   const [editRole, setEditRole] = useState("");
   const [originalRole, setOriginalRole] = useState("");
-
-  // Admin password dialog state
-  const [adminDialog, setAdminDialog] = useState({
-    open: false,
-    password: "",
-    action: null, // 'create', 'fetch', 'update', 'delete'
-    actionData: null
+  
+  // Monthly Target state
+  const [monthlyTarget, setMonthlyTarget] = useState({
+    amount: "",
+    days: ""
   });
+  const [calculatedTargets, setCalculatedTargets] = useState({
+    dailyTarget: 0,
+    quarterlyTarget: 0
+  });
+
 
   // Handle form input changes
   const handleInputChange = (field) => (event) => {
     setCreateUserForm({
       ...createUserForm,
       [field]: event.target.value,
+    });
+  };
+
+  // Handle Monthly Target input changes
+  const handleMonthlyTargetChange = (field) => (event) => {
+    const value = event.target.value;
+    const updatedTarget = {
+      ...monthlyTarget,
+      [field]: value,
+    };
+    setMonthlyTarget(updatedTarget);
+    
+    // Calculate targets when both amount and days are provided
+    if (updatedTarget.amount && updatedTarget.days) {
+      const amount = parseFloat(updatedTarget.amount.replace(/,/g, ''));
+      const days = parseInt(updatedTarget.days);
+      
+      if (!isNaN(amount) && !isNaN(days) && days > 0) {
+        const dailyTarget = amount / days;
+        const quarterlyTarget = amount * 3;
+        
+        setCalculatedTargets({
+          dailyTarget: dailyTarget,
+          quarterlyTarget: quarterlyTarget
+        });
+      } else {
+        setCalculatedTargets({
+          dailyTarget: 0,
+          quarterlyTarget: 0
+        });
+      }
+    } else {
+      setCalculatedTargets({
+        dailyTarget: 0,
+        quarterlyTarget: 0
+      });
+    }
+  };
+
+  // Format number with commas
+  const formatNumber = (num) => {
+    if (num === 0) return '0';
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    });
+  };
+
+  // Handle Monthly Target form submission
+  const handleMonthlyTargetSubmit = (event) => {
+    event.preventDefault();
+    
+    if (!monthlyTarget.amount || !monthlyTarget.days) {
+      setMessage({ type: "error", text: "Please enter both amount and days!" });
+      return;
+    }
+    
+    const amount = parseFloat(monthlyTarget.amount.replace(/,/g, ''));
+    const days = parseInt(monthlyTarget.days);
+    
+    if (isNaN(amount) || amount <= 0) {
+      setMessage({ type: "error", text: "Please enter a valid amount!" });
+      return;
+    }
+    
+    if (isNaN(days) || days <= 0 || days > 31) {
+      setMessage({ type: "error", text: "Please enter valid days (1-31)!" });
+      return;
+    }
+    
+    // Store in localStorage for now (frontend only implementation)
+    const targetData = {
+      amount: amount,
+      days: days,
+      dailyTarget: calculatedTargets.dailyTarget,
+      quarterlyTarget: calculatedTargets.quarterlyTarget,
+      createdAt: new Date().toISOString()
+    };
+    
+    localStorage.setItem('monthlyTargetData', JSON.stringify(targetData));
+    
+    setMessage({ 
+      type: "success", 
+      text: `Monthly Target set successfully! Daily: ${formatNumber(calculatedTargets.dailyTarget)}, Quarterly: ${formatNumber(calculatedTargets.quarterlyTarget)}` 
     });
   };
 
@@ -84,20 +166,15 @@ function AdminPanel() {
       return;
     }
 
-    // Prompt for admin password
-    setAdminDialog({
-      open: true,
-      password: "",
-      action: 'create',
-      actionData: { ...createUserForm }
-    });
+    // Execute create user directly
+    await executeCreateUser();
   };
 
-  // Execute create user with admin password
-  const executeCreateUser = async (adminPassword) => {
+  // Execute create user
+  const executeCreateUser = async () => {
     setLoading(true);
 
-    console.log("👤 Creating user:", adminDialog.actionData.username);
+    console.log("👤 Creating user:", createUserForm.username);
 
     try {
       const response = await fetch(API_ENDPOINTS.CREATE_USER, {
@@ -106,10 +183,9 @@ function AdminPanel() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          adminPassword: adminPassword,
-          username: adminDialog.actionData.username,
-          password: adminDialog.actionData.password,
-          role: adminDialog.actionData.role,
+          username: createUserForm.username,
+          password: createUserForm.password,
+          role: createUserForm.role,
         }),
       });
 
@@ -118,10 +194,9 @@ function AdminPanel() {
       if (result.success) {
         setMessage({
           type: "success",
-          text: `User "${adminDialog.actionData.username}" created successfully!`,
+          text: `User "${createUserForm.username}" created successfully!`,
         });
         setCreateUserForm({ username: "", password: "", confirmPassword: "", role: "user" });
-        setAdminDialog({ open: false, password: "", action: null, actionData: null });
         fetchUsers(); // Refresh user list
       } else {
         setMessage({ type: "error", text: result.message });
@@ -133,21 +208,16 @@ function AdminPanel() {
     setLoading(false);
   };
 
-  // Fetch all users - prompt for admin password
-  const fetchUsers = () => {
-    setAdminDialog({
-      open: true,
-      password: "",
-      action: 'fetch',
-      actionData: null
-    });
+  // Fetch all users
+  const fetchUsers = async () => {
+    await executeFetchUsers();
   };
 
-  // Execute fetch users with admin password
-  const executeFetchUsers = async (adminPassword) => {
+  // Execute fetch users
+  const executeFetchUsers = async () => {
     try {
       const response = await fetch(
-        `${API_ENDPOINTS.USERS}?adminPassword=${encodeURIComponent(adminPassword)}`,
+        API_ENDPOINTS.USERS,
         {
           method: "GET",
           headers: {
@@ -160,7 +230,6 @@ function AdminPanel() {
 
       if (result.success) {
         setUsers(result.users);
-        setAdminDialog({ open: false, password: "", action: null, actionData: null });
       } else {
         setMessage({ type: "error", text: result.message });
       }
@@ -170,18 +239,13 @@ function AdminPanel() {
     }
   };
 
-  // Update user role - prompt for admin password
-  const handleUpdateUserRole = (username, newRole) => {
-    setAdminDialog({
-      open: true,
-      password: "",
-      action: 'update',
-      actionData: { username, newRole }
-    });
+  // Update user role
+  const handleUpdateUserRole = async (username, newRole) => {
+    await executeUpdateUserRole(username, newRole);
   };
 
-  // Execute update user role with admin password
-  const executeUpdateUserRole = async (adminPassword) => {
+  // Execute update user role
+  const executeUpdateUserRole = async (username, newRole) => {
     setLoading(true);
     try {
       const response = await fetch(API_ENDPOINTS.UPDATE_USER_ROLE, {
@@ -190,9 +254,8 @@ function AdminPanel() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          adminPassword: adminPassword,
-          username: adminDialog.actionData.username,
-          role: adminDialog.actionData.newRole,
+          username: username,
+          role: newRole,
         }),
       });
 
@@ -201,12 +264,11 @@ function AdminPanel() {
       if (result.success) {
         setMessage({
           type: "success",
-          text: `User "${adminDialog.actionData.username}" role updated to ${adminDialog.actionData.newRole} successfully!`,
+          text: `User "${username}" role updated to ${newRole} successfully!`,
         });
         setEditingUser(null);
         setEditRole("");
         setOriginalRole("");
-        setAdminDialog({ open: false, password: "", action: null, actionData: null });
         fetchUsers(); // Refresh user list
       } else {
         setMessage({ type: "error", text: result.message });
@@ -218,22 +280,17 @@ function AdminPanel() {
     setLoading(false);
   };
 
-  // Delete user - prompt for admin password
-  const handleDeleteUser = (username) => {
+  // Delete user
+  const handleDeleteUser = async (username) => {
     if (!window.confirm(`Are you sure you want to delete user "${username}"?`)) {
       return;
     }
 
-    setAdminDialog({
-      open: true,
-      password: "",
-      action: 'delete',
-      actionData: { username }
-    });
+    await executeDeleteUser(username);
   };
 
-  // Execute delete user with admin password
-  const executeDeleteUser = async (adminPassword) => {
+  // Execute delete user
+  const executeDeleteUser = async (username) => {
     setLoading(true);
     try {
       const response = await fetch(API_ENDPOINTS.DELETE_USER, {
@@ -242,16 +299,14 @@ function AdminPanel() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          adminPassword: adminPassword,
-          username: adminDialog.actionData.username,
+          username: username,
         }),
       });
 
       const result = await response.json();
 
       if (result.success) {
-        setMessage({ type: "success", text: `User "${adminDialog.actionData.username}" deleted successfully!` });
-        setAdminDialog({ open: false, password: "", action: null, actionData: null });
+        setMessage({ type: "success", text: `User "${username}" deleted successfully!` });
         fetchUsers(); // Refresh user list
       } else {
         setMessage({ type: "error", text: result.message });
@@ -263,21 +318,16 @@ function AdminPanel() {
     setLoading(false);
   };
 
-  // Fetch password reset history - prompt for admin password
-  const fetchPasswordHistory = () => {
-    setAdminDialog({
-      open: true,
-      password: "",
-      action: 'history',
-      actionData: null
-    });
+  // Fetch password reset history
+  const fetchPasswordHistory = async () => {
+    await executeFetchPasswordHistory();
   };
 
-  // Execute fetch password history with admin password
-  const executeFetchPasswordHistory = async (adminPassword) => {
+  // Execute fetch password history
+  const executeFetchPasswordHistory = async () => {
     try {
       const response = await fetch(
-        `${API_ENDPOINTS.PASSWORD_HISTORY}?adminPassword=${encodeURIComponent(adminPassword)}`,
+        API_ENDPOINTS.PASSWORD_HISTORY,
         {
           method: "GET",
           headers: {
@@ -310,7 +360,6 @@ function AdminPanel() {
           });
         });
         setPasswordHistory(result.history || []);
-        setAdminDialog({ open: false, password: "", action: null, actionData: null });
       } else {
         console.error("Failed to fetch password history:", result.message);
         setPasswordHistory([]);
@@ -323,42 +372,27 @@ function AdminPanel() {
     }
   };
 
-  // Handle admin password dialog submission
-  const handleAdminSubmit = async () => {
-    if (!adminDialog.password) {
-      setMessage({ type: "error", text: "Admin password is required!" });
-      return;
-    }
-
-    try {
-      switch (adminDialog.action) {
-        case 'create':
-          await executeCreateUser(adminDialog.password);
-          break;
-        case 'fetch':
-          await executeFetchUsers(adminDialog.password);
-          break;
-        case 'update':
-          await executeUpdateUserRole(adminDialog.password);
-          break;
-        case 'delete':
-          await executeDeleteUser(adminDialog.password);
-          break;
-        case 'history':
-          await executeFetchPasswordHistory(adminDialog.password);
-          break;
-        default:
-          console.error('Unknown admin action:', adminDialog.action);
-      }
-    } catch (error) {
-      console.error('Admin action error:', error);
-      setMessage({ type: "error", text: "Operation failed. Please try again." });
-    }
-  };
 
   // Load users on component mount, password history is optional
   useEffect(() => {
     fetchUsers();
+    // Load existing monthly target data from localStorage
+    const savedTargetData = localStorage.getItem('monthlyTargetData');
+    if (savedTargetData) {
+      try {
+        const targetData = JSON.parse(savedTargetData);
+        setMonthlyTarget({
+          amount: targetData.amount.toString(),
+          days: targetData.days.toString()
+        });
+        setCalculatedTargets({
+          dailyTarget: targetData.dailyTarget,
+          quarterlyTarget: targetData.quarterlyTarget
+        });
+      } catch (error) {
+        console.error('Error loading monthly target data:', error);
+      }
+    }
     // Only fetch password history if needed (when user clicks on history tab)
     // fetchPasswordHistory();
   }, []);
@@ -479,6 +513,22 @@ function AdminPanel() {
                 }}
               >
                 Password History
+              </MDButton>
+              <MDButton
+                variant={activeTab === "monthly-target" ? "gradient" : "text"}
+                color="info"
+                onClick={() => setActiveTab("monthly-target")}
+                sx={{
+                  borderRadius: "8px",
+                  textTransform: "none",
+                  mx: { xs: 0, sm: 1 },
+                  my: { xs: 0.5, sm: 0 },
+                  px: 3,
+                  width: { xs: "100%", sm: "auto" },
+                  fontSize: { xs: "0.875rem", sm: "1rem" },
+                }}
+              >
+                Monthly Target
               </MDButton>
             </MDBox>
           </MDBox>
@@ -1201,59 +1251,143 @@ function AdminPanel() {
               </Grid>
             </Grid>
           )}
+
+          {/* Monthly Target Tab */}
+          {activeTab === "monthly-target" && (
+            <Grid container spacing={4}>
+              {/* Monthly Target Form */}
+              <Grid item xs={12}>
+                <Card
+                  sx={{
+                    p: 4,
+                    borderRadius: "20px",
+                    boxShadow: "0 25px 50px -12px rgba(30, 58, 138, 0.25)",
+                  }}
+                >
+                  <MDBox
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
+                    mb={4}
+                  >
+                    <MDBox
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: "12px",
+                        backgroundColor: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "white",
+                        fontSize: "1.25rem",
+                      }}
+                    >
+                      🎯
+                    </MDBox>
+                    <MDBox>
+                      <MDTypography variant="h4" fontWeight="bold" mb={1}>
+                        Monthly Target Setup
+                      </MDTypography>
+                      <MDTypography variant="body2" color="text">
+                        Set monthly target amount and days to calculate daily and quarterly targets
+                      </MDTypography>
+                    </MDBox>
+                  </MDBox>
+
+                  <MDBox component="form" onSubmit={handleMonthlyTargetSubmit}>
+                    <Grid container spacing={3}>
+                      <Grid item xs={12} sm={6}>
+                        <MDBox mb={3}>
+                          <MDTypography
+                            variant="body2"
+                            fontWeight="600"
+                            sx={{
+                              color: "#374151",
+                              fontSize: "0.875rem",
+                              mb: 1.5,
+                            }}
+                          >
+                            Monthly Target Amount
+                          </MDTypography>
+                          <MDInput
+                            type="text"
+                            label=""
+                            fullWidth
+                            value={monthlyTarget.amount}
+                            onChange={handleMonthlyTargetChange("amount")}
+                            placeholder=""
+                            sx={{
+                              "& .MuiOutlinedInput-root": {
+                                borderRadius: "12px",
+                                backgroundColor: "#f8fafc",
+                              },
+                            }}
+                          />
+                        </MDBox>
+                      </Grid>
+                      
+                      <Grid item xs={12} sm={6}>
+                        <MDBox mb={3}>
+                          <MDTypography
+                            variant="body2"
+                            fontWeight="600"
+                            sx={{
+                              color: "#374151",
+                              fontSize: "0.875rem",
+                              mb: 1.5,
+                            }}
+                          >
+                            Days in Month
+                          </MDTypography>
+                          <MDInput
+                            type="number"
+                            label=""
+                            fullWidth
+                            value={monthlyTarget.days}
+                            onChange={handleMonthlyTargetChange("days")}
+                            placeholder=""
+                            inputProps={{ min: 1, max: 31 }}
+                            sx={{
+                              "& .MuiOutlinedInput-root": {
+                                borderRadius: "12px",
+                                backgroundColor: "#f8fafc",
+                              },
+                            }}
+                          />
+                        </MDBox>
+                      </Grid>
+                    </Grid>
+
+                    <MDButton
+                      type="submit"
+                      variant="gradient"
+                      color="success"
+                      fullWidth
+                      size="large"
+                      disabled={loading || !monthlyTarget.amount || !monthlyTarget.days}
+                      sx={{
+                        borderRadius: "12px",
+                        textTransform: "none",
+                        fontSize: "1.1rem",
+                        fontWeight: "600",
+                        py: 1.5,
+                        mt: 2,
+                      }}
+                    >
+                      Set Monthly Target
+                    </MDButton>
+                  </MDBox>
+                </Card>
+              </Grid>
+            </Grid>
+          )}
         </Container>
       </MDBox>
       <Footer />
 
-      {/* Admin Password Dialog */}
-      <Dialog 
-        open={adminDialog.open} 
-        onClose={() => setAdminDialog({ open: false, password: "", action: null, actionData: null })}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <MDTypography variant="h4" fontWeight="medium">
-            Admin Authentication Required
-          </MDTypography>
-        </DialogTitle>
-        <DialogContent>
-          <MDBox pt={2}>
-            <MDTypography variant="body2" color="text" mb={2}>
-              Please enter the admin password to continue with this action.
-            </MDTypography>
-            <MDInput
-              type="password"
-              label="Admin Password"
-              fullWidth
-              value={adminDialog.password}
-              onChange={(e) => setAdminDialog({ ...adminDialog, password: e.target.value })}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  handleAdminSubmit();
-                }
-              }}
-            />
-          </MDBox>
-        </DialogContent>
-        <DialogActions>
-          <MDButton 
-            variant="text" 
-            color="secondary"
-            onClick={() => setAdminDialog({ open: false, password: "", action: null, actionData: null })}
-          >
-            Cancel
-          </MDButton>
-          <MDButton 
-            variant="gradient" 
-            color="info"
-            onClick={handleAdminSubmit}
-            disabled={!adminDialog.password}
-          >
-            Confirm
-          </MDButton>
-        </DialogActions>
-      </Dialog>
+
     </DashboardLayout>
   );
 }

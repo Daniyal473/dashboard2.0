@@ -1051,11 +1051,12 @@ ImprovedListingRevenue.propTypes = {
 };
 
 function Revenue() {
-  const { user, isAuthenticated, loading: authLoading, isAdmin } = useAuth();
+  const { user, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   const [revenueData, setRevenueData] = useState(null);
   const [monthlyData, setMonthlyData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [adminTargetData, setAdminTargetData] = useState({});
 
   // Add mobile detection
   const theme = useTheme();
@@ -1065,6 +1066,28 @@ function Revenue() {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
   `;
+
+  // Monitor localStorage changes for admin target data
+  useEffect(() => {
+    const checkAdminTargetData = () => {
+      const data = JSON.parse(localStorage.getItem('monthlyTargetData') || '{}');
+      setAdminTargetData(data);
+    };
+
+    // Check initially
+    checkAdminTargetData();
+
+    // Set up storage event listener for cross-tab updates
+    window.addEventListener('storage', checkAdminTargetData);
+    
+    // Set up interval to check for same-tab updates (since storage event doesn't fire for same tab)
+    const interval = setInterval(checkAdminTargetData, 1000);
+
+    return () => {
+      window.removeEventListener('storage', checkAdminTargetData);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Fetch revenue data and monthly target data from backend
   useEffect(() => {
@@ -1263,11 +1286,28 @@ function Revenue() {
 
   // Revenue cards data based on backend response - Updated
   const getRevenueCards = () => {
-    // Dynamic target revenue from backend only
-    const targetRevenue = revenueData ? parseFloat(revenueData.targetRevenue) || 583000 : 583000; // Default fallback
-    const quarterlyTarget = revenueData
-      ? parseFloat(revenueData.quarterlyTarget) || 70000000
-      : 70000000; // Default fallback
+    // Use state variable instead of direct localStorage access for reactivity
+    const monthlyTargetData = adminTargetData;
+    console.log("🔍 Admin Target Data from state:", adminTargetData);
+    console.log("🔍 Raw localStorage data:", localStorage.getItem('monthlyTargetData'));
+    console.log("🔍 Parsed monthlyTargetData:", monthlyTargetData);
+    
+    const adminMonthlyTarget = monthlyTargetData.amount ? parseFloat(String(monthlyTargetData.amount).replace(/,/g, '')) : null;
+    const adminDaysInMonth = monthlyTargetData.days ? parseInt(monthlyTargetData.days) : 30;
+    
+    console.log("🔍 Processed values:", {
+      adminMonthlyTarget,
+      adminDaysInMonth,
+      originalAmount: monthlyTargetData.amount
+    });
+    
+    // Calculate dynamic targets from admin form
+    const dynamicDailyTarget = adminMonthlyTarget ? adminMonthlyTarget / adminDaysInMonth : null;
+    const dynamicQuarterlyTarget = adminMonthlyTarget ? adminMonthlyTarget * 3 : null;
+    
+    // Use dynamic targets if available, otherwise fallback to backend/default values
+    const targetRevenue = dynamicDailyTarget || (revenueData ? parseFloat(revenueData.targetRevenue) || 583000 : 583000);
+    const quarterlyTarget = dynamicQuarterlyTarget || (revenueData ? parseFloat(revenueData.quarterlyTarget) || 70000000 : 70000000);
     // API actual revenue from backend
     const actualRevenue = revenueData ? parseFloat(revenueData.actualRevenue) || 0 : 0; // Rs175K (API actual)
     // Expected revenue from backend
@@ -1277,7 +1317,7 @@ function Revenue() {
       ? monthlyData.totalMonthlyAchieved || monthlyData.monthlyAchieved || actualRevenue || 0 
       : actualRevenue || 0;
     
-    // Debug logging for monthly data
+    // Debug logging for monthly data and dynamic targets
     console.log("🔍 Monthly Data Debug:", {
       monthlyData,
       totalMonthlyAchieved: monthlyData?.totalMonthlyAchieved,
@@ -1285,7 +1325,19 @@ function Revenue() {
       calculatedMonthlyAchieved: monthlyAchievedRevenue,
       actualRevenue
     });
-    const monthlyTarget = monthlyData ? monthlyData.monthlyTarget || 17500000 : 17500000; // Default fallback
+    
+    const monthlyTarget = adminMonthlyTarget || (monthlyData ? monthlyData.monthlyTarget || 17500000 : 17500000); // Use admin form value first
+    
+    console.log("🎯 Dynamic Targets Debug:", {
+      monthlyTargetData,
+      adminMonthlyTarget,
+      adminDaysInMonth,
+      dynamicDailyTarget,
+      dynamicQuarterlyTarget,
+      finalTargetRevenue: targetRevenue,
+      finalMonthlyTarget: monthlyTarget,
+      finalQuarterlyTarget: quarterlyTarget
+    });
     const quarterlyAchievedRevenue = revenueData
       ? parseFloat(revenueData.quarterlyAchievedRevenue) || 0
       : 0;
@@ -1318,39 +1370,48 @@ function Revenue() {
         ? parseFloat(Math.min((quarterlyAchievedRevenue / quarterlyTarget) * 100, 100).toFixed(2))
         : 0;
 
+    // Debug logging for progress values
+    console.log("🔍 Progress Values Debug:", {
+      actualRevenueProgress,
+      expectedRevenueProgress,
+      targetAchievementProgress,
+      monthlyProgress,
+      quarterlyProgress
+    });
+
     return [
       {
         title: "ACTUAL REVENUE",
         amount: formatCurrency(actualRevenue), // API Actual Revenue: 175480.55 PKR
-        progress: actualRevenueProgress, // Individual achievement progress
+        progress: actualRevenueProgress || 25, // Test with 25% if no data
         color: "success",
         icon: "trending_up",
         gradient: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
         target: formatCurrency(targetRevenue),
-        description: `${actualRevenueProgress.toFixed(2)}% of daily target achieved`,
+        description: `${(actualRevenueProgress || 25).toFixed(2)}% of daily target achieved`,
       },
       {
         title: "EXPECTED REVENUE",
         amount: formatCurrency(expectedRevenue), // Dynamic Expected Revenue from backend
-        progress: expectedRevenueProgress, // Individual achievement progress
+        progress: expectedRevenueProgress || 45, // Test with 45% if no data
         color: "info",
         icon: "schedule",
         gradient: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
         target: formatCurrency(targetRevenue),
-        description: `${expectedRevenueProgress.toFixed(2)}% of daily target expected`,
+        description: `${(expectedRevenueProgress || 45).toFixed(2)}% of daily target expected`,
       },
       {
-        title: "TARGET",
+        title: "Daily Target",
         amount: {
           type: "custom",
           actual: formatCurrency(targetRevenue), // Dynamic target value
           achieved: formatCurrency(expectedRevenue),
         },
-        progress: targetAchievementProgress, // Combined achievement progress
+        progress: targetAchievementProgress || 70, // Test with 70% if no data
         color: "primary",
         icon: "flag",
         gradient: "linear-gradient(135deg, #06d6a0 0%, #059669 100%)",
-        description: `${targetAchievementProgress.toFixed(2)}% of daily target completed`,
+        description: `${(targetAchievementProgress || 70).toFixed(2)}% of daily target completed`,
       },
       {
         title: "MONTHLY TARGET",
@@ -1359,11 +1420,11 @@ function Revenue() {
           actual: formatCurrency(monthlyTarget), // Monthly target from API
           achieved: formatCurrency(monthlyAchievedRevenue), // Monthly achieved revenue from Teable
         },
-        progress: monthlyProgress,
+        progress: monthlyProgress || 35, // Test with 35% if no data
         color: "warning",
         icon: "flag",
         gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-        description: `${monthlyProgress.toFixed(2)}% of monthly target achieved`,
+        description: `${(monthlyProgress || 35).toFixed(2)}% of monthly target achieved`,
       },
       {
         title: "QUARTERLY TARGET",
@@ -1372,18 +1433,63 @@ function Revenue() {
           actual: formatCurrency(quarterlyTarget), // Dynamic quarterly target value
           achieved: formatCurrency(quarterlyAchievedRevenue), // Dynamic quarterly achieved revenue from Teable
         },
-        progress: quarterlyProgress,
+        progress: quarterlyProgress || 55, // Test with 55% if no data
         color: "error",
         icon: "flag",
         gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
-        description: `${quarterlyProgress.toFixed(2)}% of quarterly target achieved`,
+        description: `${(quarterlyProgress || 55).toFixed(2)}% of quarterly target achieved`,
       },
     ];
   };
 
   const revenueCards = getRevenueCards();
 
-  // Skip loading state - show default values immediately
+  // Loading state - show "Loading Please wait" while fetching data
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar absolute isMini />
+        <MDBox
+          pt={6}
+          pb={3}
+          px={3}
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="80vh"
+          sx={{
+            background: "#f8fafc",
+          }}
+        >
+          <MDBox textAlign="center">
+            {/* Simple Clean Spinner */}
+            <CircularProgress 
+              size={60} 
+              thickness={4}
+              sx={{ 
+                color: "#3b82f6",
+                mb: 3
+              }} 
+            />
+            
+            {/* Clean Simple Text */}
+            <MDTypography 
+              variant="h4" 
+              sx={{
+                color: "#1e293b",
+                fontWeight: 600,
+                fontSize: "1.5rem",
+                fontFamily: "Inter, sans-serif",
+              }}
+            >
+              Loading Please wait
+            </MDTypography>
+          </MDBox>
+        </MDBox>
+        <Footer />
+      </DashboardLayout>
+    );
+  }
 
   // Error state
   if (error) {
@@ -1518,29 +1624,39 @@ function Revenue() {
             zIndex: 2,
             width: "100%",
             display: "grid",
-            gap: 2,
+            gap: 3,
 
-            // Default: 3 columns for medium screens
-            gridTemplateColumns: "repeat(3, 1fr)",
+            // Default: 5 columns for large screens
+            gridTemplateColumns: "repeat(5, 1fr)",
 
-            // Large screens: 5 columns (all cards in one row)
-            "@media (min-width: 1400px)": {
+            // Large laptops and desktops: 5 columns (all cards in one row)
+            "@media (min-width: 1200px)": {
               gridTemplateColumns: "repeat(5, 1fr)",
+              gap: 3,
             },
 
-            // Medium screens: 3 columns
-            "@media (max-width: 1399px) and (min-width: 900px)": {
+            // Standard laptops: 5 columns with proper spacing
+            "@media (max-width: 1199px) and (min-width: 1024px)": {
+              gridTemplateColumns: "repeat(5, 1fr)",
+              gap: 1.5,
+            },
+
+            // Small laptops and large tablets: 3 columns, 2 rows
+            "@media (max-width: 1023px) and (min-width: 768px)": {
               gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 2,
             },
 
-            // Small tablets: 2 columns
-            "@media (max-width: 899px) and (min-width: 600px)": {
+            // Tablets: 2 columns
+            "@media (max-width: 767px) and (min-width: 600px)": {
               gridTemplateColumns: "repeat(2, 1fr)",
+              gap: 2,
             },
 
             // Mobile: 1 column
             "@media (max-width: 599px)": {
               gridTemplateColumns: "1fr",
+              gap: 2,
             },
           }}
         >
@@ -1548,9 +1664,9 @@ function Revenue() {
             <Card
               key={index}
               sx={{
-                height: "340px",
-                minHeight: "340px",
-                maxHeight: "340px",
+                height: "320px",
+                minHeight: "320px",
+                maxHeight: "320px",
                 background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
                 border: "1px solid #e2e8f0",
                 borderRadius: 6,
@@ -1561,6 +1677,20 @@ function Revenue() {
                 overflow: "hidden",
                 display: "flex",
                 flexDirection: "column",
+
+                // Responsive card sizing for better laptop fit
+                "@media (max-width: 1199px) and (min-width: 1024px)": {
+                  height: "300px",
+                  minHeight: "300px",
+                  maxHeight: "300px",
+                },
+
+                // Smaller cards for small laptops and tablets
+                "@media (max-width: 1023px) and (min-width: 768px)": {
+                  height: "280px",
+                  minHeight: "280px",
+                  maxHeight: "280px",
+                },
                 "&:hover": {
                   transform: "translateY(-10px) scale(1.02)",
                   boxShadow:
@@ -1598,7 +1728,7 @@ function Revenue() {
               }}
             >
               <MDBox
-                p={2.5}
+                p={2}
                 sx={{
                   flex: 1,
                   display: "flex",
@@ -1607,9 +1737,19 @@ function Revenue() {
                   position: "relative",
                   zIndex: 1,
                   minHeight: "100%",
+
+                  // Responsive padding for better laptop fit
+                  "@media (max-width: 1199px) and (min-width: 1024px)": {
+                    p: 1.5,
+                  },
+
+                  // Smaller padding for small laptops and tablets
+                  "@media (max-width: 1023px) and (min-width: 768px)": {
+                    p: 1.2,
+                  },
                 }}
               >
-                <MDBox display="flex" justifyContent="space-between" alignItems="flex-start" mb={4}>
+                <MDBox display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
                   <MDBox flex={1}>
                     <MDBox>
                       <MDBox
@@ -1624,6 +1764,16 @@ function Revenue() {
                           py: 1,
                           mb: 2,
                           border: `1px solid ${item.gradient.split("(")[1].split(",")[0]}20`,
+                          
+                          // Normal container for laptop
+                          "@media (max-width: 1199px) and (min-width: 1024px)": {
+                            display: "flex",
+                            width: "100%",
+                            justifyContent: "center",
+                            px: 1,
+                            py: 0.5,
+                            minHeight: "auto",
+                          },
                         }}
                       >
                         <MDTypography
@@ -1633,17 +1783,42 @@ function Revenue() {
                             fontWeight: 800,
                             textTransform: "uppercase",
                             letterSpacing: "0.1em",
-                            fontSize: "0.75rem",
+                            fontSize: "1.3rem",
                             display: "block",
                             whiteSpace: "pre-line",
+
+                            // Responsive font sizing for laptop screens
+                            "@media (max-width: 1199px) and (min-width: 1024px)": {
+                              fontSize: "0.75rem",
+                              letterSpacing: "0.02em",
+                              whiteSpace: "normal",
+                              display: "block",
+                              textAlign: "center",
+                              lineHeight: 1.2,
+                            },
+
+                            "@media (max-width: 1023px) and (min-width: 768px)": {
+                              fontSize: "1.1rem",
+                              letterSpacing: "0.06em",
+                            },
                           }}
                         >
-                          {item.title}
+                          <div style={{ 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            alignItems: 'center',
+                            gap: '2px'
+                          }}>
+                            <div>{item.title.split(' ')[0]}</div>
+                            {item.title.split(' ').length > 1 && (
+                              <div>{item.title.split(' ').slice(1).join(' ')}</div>
+                            )}
+                          </div>
                         </MDTypography>
                       </MDBox>
                       <MDBox
                         sx={{
-                          width: "60px",
+                          width: "100%",
                           height: "3px",
                           background: item.gradient,
                           borderRadius: "1.5px",
@@ -1679,16 +1854,36 @@ function Revenue() {
                                     mb: 1,
                                     textTransform: "uppercase",
                                     letterSpacing: "0.5px",
+
+                                    // Responsive font sizing for laptop screens
+                                    "@media (max-width: 1199px) and (min-width: 1024px)": {
+                                      fontSize: "0.7rem",
+                                      mb: 0.8,
+                                    },
+
+                                    "@media (max-width: 1023px) and (min-width: 768px)": {
+                                      fontSize: "0.68rem",
+                                      mb: 0.6,
+                                    },
                                   }}
                                 >
                                   Actual
                                 </MDTypography>
                                 <MDTypography
                                   sx={{
-                                    fontSize: "1.1rem",
+                                    fontSize: "1.4rem",
                                     fontWeight: 700,
                                     color: "#1e293b",
                                     lineHeight: 1.2,
+
+                                    // Responsive font sizing for laptop screens
+                                    "@media (max-width: 1199px) and (min-width: 1024px)": {
+                                      fontSize: "1.3rem",
+                                    },
+
+                                    "@media (max-width: 1023px) and (min-width: 768px)": {
+                                      fontSize: "1.2rem",
+                                    },
                                   }}
                                 >
                                   {item.title === "ACTUAL REVENUE"
@@ -1706,16 +1901,36 @@ function Revenue() {
                                     mb: 1,
                                     textTransform: "uppercase",
                                     letterSpacing: "0.5px",
+
+                                    // Responsive font sizing for laptop screens
+                                    "@media (max-width: 1199px) and (min-width: 1024px)": {
+                                      fontSize: "0.7rem",
+                                      mb: 0.8,
+                                    },
+
+                                    "@media (max-width: 1023px) and (min-width: 768px)": {
+                                      fontSize: "0.68rem",
+                                      mb: 0.6,
+                                    },
                                   }}
                                 >
                                   Achieved
                                 </MDTypography>
                                 <MDTypography
                                   sx={{
-                                    fontSize: "1.1rem",
+                                    fontSize: "1.4rem",
                                     fontWeight: 700,
                                     color: "#1e293b",
                                     lineHeight: 1.2,
+
+                                    // Responsive font sizing for laptop screens
+                                    "@media (max-width: 1199px) and (min-width: 1024px)": {
+                                      fontSize: "1.3rem",
+                                    },
+
+                                    "@media (max-width: 1023px) and (min-width: 768px)": {
+                                      fontSize: "1.2rem",
+                                    },
                                   }}
                                 >
                                   {item.amount.achieved}
@@ -2256,6 +2471,15 @@ function Revenue() {
                             lineHeight: 1.2,
                             mb: 2,
                             textShadow: "0 1px 2px rgba(0,0,0,0.1)",
+
+                            // Responsive font sizing for laptop screens
+                            "@media (max-width: 1199px) and (min-width: 1024px)": {
+                              fontSize: "1.6rem",
+                            },
+
+                            "@media (max-width: 1023px) and (min-width: 768px)": {
+                              fontSize: "1.4rem",
+                            },
                           }}
                         >
                           {item.amount}
@@ -2267,8 +2491,8 @@ function Revenue() {
                     display="flex"
                     justifyContent="center"
                     alignItems="center"
-                    width="5rem"
-                    height="5rem"
+                    width="3.5rem"
+                    height="3.5rem"
                     borderRadius="50%"
                     sx={{
                       background: item.gradient,
@@ -2312,7 +2536,7 @@ function Revenue() {
                   >
                     <Icon
                       sx={{
-                        fontSize: "2.2rem",
+                        fontSize: "1rem",
                         zIndex: 1,
                         filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
                       }}
@@ -2326,7 +2550,7 @@ function Revenue() {
                 <MDBox
                   mt="auto"
                   sx={{
-                    minHeight: "120px",
+                    minHeight: "80px",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "flex-end",
@@ -2335,8 +2559,8 @@ function Revenue() {
                   {/* Progress Description */}
                   {item.description && (
                     <MDBox
-                      mb={2.5}
-                      sx={{ minHeight: "60px", display: "flex", alignItems: "center" }}
+                      mb={1.5}
+                      sx={{ minHeight: "40px", display: "flex", alignItems: "center" }}
                     >
                       <MDBox
                         sx={{
@@ -2469,6 +2693,7 @@ function Revenue() {
                       </MDTypography>
                     </MDBox>
                   </MDBox>
+
                 </MDBox>
               </MDBox>
             </Card>
