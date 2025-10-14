@@ -27,7 +27,9 @@ import SyncIcon from '@mui/icons-material/Sync';
 import SearchIcon from "@mui/icons-material/Search";
 import InputBase from "@mui/material/InputBase";
 import { alpha } from "@mui/material/styles";
-
+import CloseIcon from "@mui/icons-material/Close";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 
 // Authentication context
 import { useAuth } from "context/AuthContext";
@@ -61,13 +63,12 @@ import MDTypography from "components/MDTypography";
 import MDButton from "components/MDButton";
 import MDInput from "components/MDInput";
 
-
 // Material Dashboard 2 React example components
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
-function ReservationCard({ guest }) {
+function ReservationCard({ guest, setSnackbar }) {
   const [open, setOpen] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [reservationDetails, setReservationDetails] = useState({});
@@ -99,22 +100,22 @@ function ReservationCard({ guest }) {
       const cnic =
         reservation.customFieldValues?.find(
           (field) => field.customField?.name === "ID card Number/ Passport number"
-        )?.value || "N/A";
+        )?.value || "Not provided";
 
       const listingMapId = guest.listingName || "N/A";
       const listingType = guest.type || "N/A";
-      const contact = reservation.phone || "N/A";
+      const contact = reservation.phone || "Contact";
       const duration = reservation.nights || "N/A";
       const totalPrice = reservation.totalPrice || "N/A";
       const currencyLabel = reservation.currency || "";
-      let earlyCheckIn = "N/A";
+      let earlyCheckIn = "0";
       if (Array.isArray(reservation.financeField)) {
         // 🔹 Early Check-in Fee
         const earlyCheckinField = reservation.financeField.find(
           (field) => field.alias === "Early Checkin Charges per hour" && field.isDeleted === 0
         );
         if (earlyCheckinField) {
-          earlyCheckIn = earlyCheckinField.total ?? earlyCheckinField.value ?? "N/A";
+          earlyCheckIn = earlyCheckinField.total ?? earlyCheckinField.value ?? "0";
         }
       }
 
@@ -133,11 +134,11 @@ function ReservationCard({ guest }) {
         reservation.customFieldValues?.find((field) => field.customField?.name === "Address")
           ?.value ||
         guest.address ||
-        "N/A";
+        "Not provided";
 
-      const email = reservation.guestEmail || "N/A";
+      const email = reservation.guestEmail || "Not provided";
       const adults = reservation.numberOfGuests || "N/A";
-      const children = reservation.children || "N/A";
+      const children = reservation.children || "0";
       const arrival = reservation.arrivalDate || "N/A";
       const checkInTime = reservation.checkInTime
         ? formatTime(reservation.checkInTime)
@@ -157,7 +158,7 @@ function ReservationCard({ guest }) {
         reservation.customFieldValues?.find((field) => field.customField?.name === "Vehicle Number")
           ?.value ||
         guest.vehicleNo ||
-        "N/A";
+        "Not provided";
 
       let securityDepositFee = "N/A";
       if (Array.isArray(reservation.financeField)) {
@@ -165,7 +166,7 @@ function ReservationCard({ guest }) {
           (field) => field.alias === "Security Deposit" && field.isDeleted === 0
         );
         if (securityField) {
-          securityDepositFee = securityField.total ?? securityField.value ?? "N/A";
+          securityDepositFee = securityField.total ?? securityField.value ?? "0";
         }
       }
 
@@ -535,7 +536,7 @@ ul li {
         reservation.customFieldValues?.find((field) => field.customField?.name === "Vehicle Number")
           ?.value ||
         guest.vehicleNo ||
-        "N/A";
+        "Not provided";
 
       let CheckOutSecurityDeposit = "N/A";
       if (Array.isArray(reservation.financeField)) {
@@ -543,7 +544,7 @@ ul li {
           (field) => field.alias === "Security Deposit" && field.isDeleted === 0
         );
         if (securityField) {
-          CheckOutSecurityDeposit = securityField.total ?? securityField.value ?? "N/A";
+          CheckOutSecurityDeposit = securityField.total ?? securityField.value ?? "0";
         }
       }
 
@@ -1037,26 +1038,43 @@ ${CheckOutSecurityDeposit !== "0"
 
   // ✅ New function for Mark Check In
   const handleMarkCheckIn = async () => {
+    console.log("🏨 Starting check-in process...");
+
+    // 🧠 Make sure setSnackbar exists (for safety)
+    if (!setSnackbar) {
+      console.warn("⚠️ setSnackbar not provided to ReservationCard!");
+    }
+
     try {
       const getResUrl = `${HOSTAWAY_API}/${guest.reservationId}`;
-
       const res = await fetch(getResUrl, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${HOSTAWAY_TOKEN}`,
         },
       });
+
       if (!res.ok) throw new Error("Failed to fetch reservation");
 
       const resData = await res.json();
 
       const existingField = resData.result?.customFieldValues?.find(
-        (field) => field.customFieldId === 76281 && field.value && field.value.trim() !== ""
+        (field) =>
+          field.customFieldId === 76281 &&
+          field.value &&
+          field.value.trim() !== ""
       );
 
       if (existingField) {
         console.log(`🛑 Check-in already recorded: ${existingField.value}`);
-        setIsCheckedIn(true); // ✅ already checked-in
+        setIsCheckedIn(true);
+
+        // ✅ Snackbar: Already checked-in
+        setSnackbar({
+          open: true,
+          message: `Already checked in at ${existingField.value}`,
+          severity: "warning",
+        });
         return;
       }
 
@@ -1080,7 +1098,8 @@ ${CheckOutSecurityDeposit !== "0"
           Authorization: `Bearer ${HOSTAWAY_TOKEN}`,
         },
         body: JSON.stringify({
-          guestName: resData.result?.guestName || guest.guestName || "Guest Name",
+          guestName:
+            resData.result?.guestName || guest.guestName || "Guest Name",
           customFieldValues: [
             {
               customFieldId: 76281,
@@ -1093,35 +1112,67 @@ ${CheckOutSecurityDeposit !== "0"
       if (!updateRes.ok) throw new Error("Failed to update reservation");
 
       console.log(`✅ Check-in time saved: ${formattedDateTime}`);
-      setIsCheckedIn(true); // ✅ switch button
+      setIsCheckedIn(true);
+
+      // ✅ Snackbar: success message
+      setSnackbar({
+        open: true,
+        message: `Check-in recorded at ${formattedDateTime}`,
+        severity: "success",
+      });
+
       await handleWebhook();
     } catch (err) {
       console.error("❌ Error in handleMarkCheckIn:", err);
+
+      // ✅ Snackbar: error message
+      setSnackbar({
+        open: true,
+        message: `Error during check-in: ${err.message}`,
+        severity: "error",
+      });
     }
   };
+
 
   // ✅ New function for Mark Check Out
   const handleMarkCheckOut = async () => {
     try {
-      const getResUrl = `${HOSTAWAY_API}/${guest.reservationId}`;
+      console.log("🔄 Starting Check-Out process...");
 
+      const getResUrl = `${HOSTAWAY_API}/${guest.reservationId}`;
       const res = await fetch(getResUrl, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${HOSTAWAY_TOKEN}`,
         },
       });
+
       if (!res.ok) throw new Error("Failed to fetch reservation");
 
       const resData = await res.json();
 
       const existingField = resData.result?.customFieldValues?.find(
-        (field) => field.customFieldId === 76282 && field.value && field.value.trim() !== ""
+        (field) =>
+          field.customFieldId === 76282 &&
+          field.value &&
+          field.value.trim() !== ""
       );
 
       if (existingField) {
         console.log(`🛑 Check-Out already recorded: ${existingField.value}`);
-        setIsCheckedOut(true); // ✅ already checked-out
+        setIsCheckedOut(true);
+
+        if (typeof setSnackbar === "function") {
+          setSnackbar({
+            open: true,
+            message: "Guest already checked out.",
+            severity: "warning",
+          });
+        } else {
+          console.warn("⚠️ setSnackbar prop missing in ReservationCard (Check-Out)");
+        }
+
         return;
       }
 
@@ -1145,7 +1196,8 @@ ${CheckOutSecurityDeposit !== "0"
           Authorization: `Bearer ${HOSTAWAY_TOKEN}`,
         },
         body: JSON.stringify({
-          guestName: resData.result?.guestName || guest.guestName || "Guest Name",
+          guestName:
+            resData.result?.guestName || guest.guestName || "Guest Name",
           customFieldValues: [
             {
               customFieldId: 76282,
@@ -1157,11 +1209,28 @@ ${CheckOutSecurityDeposit !== "0"
 
       if (!updateRes.ok) throw new Error("Failed to update reservation");
 
-      console.log(`✅ Check-out time saved: ${formattedDateTime}`);
-      setIsCheckedOut(true); // ✅ switch button
+      console.log(`✅ Check-Out time saved: ${formattedDateTime}`);
+      setIsCheckedOut(true);
+
+      if (typeof setSnackbar === "function") {
+        setSnackbar({
+          open: true,
+          message: `Check-out recorded successfully: ${formattedDateTime}`,
+          severity: "success",
+        });
+      }
+
       await handleWebhook();
     } catch (err) {
       console.error("❌ Error in handleMarkCheckOut:", err);
+
+      if (typeof setSnackbar === "function") {
+        setSnackbar({
+          open: true,
+          message: `Error during check-out: ${err.message}`,
+          severity: "error",
+        });
+      }
     }
   };
 
@@ -1220,7 +1289,7 @@ ${CheckOutSecurityDeposit !== "0"
           (field) => field.alias === "Early Checkin Charges per hour" && field.isDeleted === 0
         );
         if (earlyCheckinField) {
-          earlyCheckinCharges = earlyCheckinField.total ?? earlyCheckinField.value ?? "N/A";
+          earlyCheckinCharges = earlyCheckinField.total ?? earlyCheckinField.value ?? "0";
         }
       }
 
@@ -1231,7 +1300,7 @@ ${CheckOutSecurityDeposit !== "0"
           (field) => field.alias === "Security Deposit" && field.isDeleted === 0
         );
         if (securityField) {
-          securityDeposit = securityField.total ?? securityField.value ?? "N/A";
+          securityDeposit = securityField.total ?? securityField.value ?? "0";
         }
       }
 
@@ -1646,18 +1715,21 @@ ${CheckOutSecurityDeposit !== "0"
                   textTransform: "none",
                   fontWeight: "bold",
                   boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                  backgroundColor: "#28282B", // ✅ Black background
-                  color: "#ffffff", // ✅ White text
-                  borderColor: "#28282B", // ✅ Black border
+                  color: "success.main",
+                  borderColor: "success.main",
+                  transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "#333333", // Slightly lighter black on hover
-                    borderColor: "#28282B",
+                    backgroundColor: "success.light", // ✅ lighter green hover
+                    borderColor: "success.dark",
+                    color: "#fff", // ✅ readable text on green bg
                   },
                   "&:focus": {
-                    backgroundColor: "#000000",
+                    backgroundColor: "success.dark", // ✅ deeper green on focus
+                    color: "#fff",
                   },
                   "&:active": {
-                    backgroundColor: "#222222",
+                    backgroundColor: "success.dark", // ✅ consistent active tone
+                    color: "#fff",
                   },
                 }}
               >
@@ -1667,26 +1739,29 @@ ${CheckOutSecurityDeposit !== "0"
               <Button
                 variant="outlined"
                 size="small"
+                onClick={handlePrintCheckIn}
                 sx={{
                   borderRadius: "12px",
                   textTransform: "none",
                   fontWeight: "bold",
                   boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                  backgroundColor: "#28282B", // ✅ Black background
-                  color: "#ffffff", // ✅ White text
-                  borderColor: "#28282B", // ✅ Black border
+                  color: "success.main",
+                  borderColor: "success.main",
+                  transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "#333333", // Slightly lighter black on hover
-                    borderColor: "#28282B",
+                    backgroundColor: "success.light",
+                    borderColor: "success.dark",
+                    color: "#fff",
                   },
                   "&:focus": {
-                    backgroundColor: "#000000",
+                    backgroundColor: "success.dark",
+                    color: "#fff",
                   },
                   "&:active": {
-                    backgroundColor: "#222222",
+                    backgroundColor: "success.dark",
+                    color: "#fff",
                   },
                 }}
-                onClick={handlePrintCheckIn}
               >
                 Print Check In
               </Button>
@@ -1705,18 +1780,21 @@ ${CheckOutSecurityDeposit !== "0"
                   textTransform: "none",
                   fontWeight: "bold",
                   boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                  backgroundColor: "#28282B", // ✅ Black background
-                  color: "#ffffff", // ✅ White text
-                  borderColor: "#28282B", // ✅ Black border
+                  color: "primary.main",
+                  borderColor: "primary.main",
+                  transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "#333333", // Slightly lighter black on hover
-                    borderColor: "#28282B",
+                    backgroundColor: "primary.light", // ✅ lighter blue on hover
+                    borderColor: "primary.dark",
+                    color: "#fff", // ✅ white text for contrast
                   },
                   "&:focus": {
-                    backgroundColor: "#000000",
+                    backgroundColor: "primary.dark", // ✅ darker blue on focus
+                    color: "#fff",
                   },
                   "&:active": {
-                    backgroundColor: "#222222",
+                    backgroundColor: "primary.dark",
+                    color: "#fff",
                   },
                 }}
               >
@@ -1726,30 +1804,34 @@ ${CheckOutSecurityDeposit !== "0"
               <Button
                 variant="outlined"
                 size="small"
+                onClick={handlePrintCheckOut}
                 sx={{
                   borderRadius: "12px",
                   textTransform: "none",
                   fontWeight: "bold",
                   boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                  backgroundColor: "#28282B", // ✅ Black background
-                  color: "#ffffff", // ✅ White text
-                  borderColor: "#28282B", // ✅ Black border
+                  color: "primary.main",
+                  borderColor: "primary.main",
+                  transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "#333333", // Slightly lighter black on hover
-                    borderColor: "#28282B",
+                    backgroundColor: "primary.light",
+                    borderColor: "primary.dark",
+                    color: "#fff",
                   },
                   "&:focus": {
-                    backgroundColor: "#000000",
+                    backgroundColor: "primary.dark",
+                    color: "#fff",
                   },
                   "&:active": {
-                    backgroundColor: "#222222",
+                    backgroundColor: "primary.dark",
+                    color: "#fff",
                   },
                 }}
-                onClick={handlePrintCheckOut}
               >
                 Print Check Out
               </Button>
             ))}
+            
           {/* ✅ Checked Out Label */}
           {guest.actualCheckin && guest.actualCheckin !== "N/A" &&
             guest.actualCheckout && guest.actualCheckout !== "N/A" && (
@@ -1761,7 +1843,31 @@ ${CheckOutSecurityDeposit !== "0"
       </MDBox>
       {/* Preview Dialog */}
       <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
-        <DialogTitle>Reservation Details For {reservationDetails?.guestName}</DialogTitle>
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span>
+            <span style={{ fontSize: "1rem", fontWeight: 400, color: "#555" }}>
+              Reservation Details For{" "}
+            </span>
+            <strong>{reservationDetails?.guestName}</strong>
+          </span>
+
+          <IconButton
+            aria-label="close"
+            onClick={handleClose}
+            sx={{
+              color: "#555",
+              "&:hover": { color: "#000" },
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
         <DialogContent dividers>
           {loadingDetails ? (
             <MDBox display="flex" justifyContent="center" alignItems="center" py={2}>
@@ -1791,7 +1897,7 @@ ${CheckOutSecurityDeposit !== "0"
                         <td>
                           {reservationDetails?.customFieldValues?.find(
                             (field) => field.customField?.name === "ID card Number/ Passport number"
-                          )?.value || "N/A"}
+                          )?.value || "Not provided"}
                         </td>
                       </tr>
                       <tr>
@@ -1835,8 +1941,7 @@ ${CheckOutSecurityDeposit !== "0"
                           <strong>Early Check-in</strong>
                         </td>
                         <td>
-                          {reservationDetails?.earlyCheckinCharges || "N/A"}{" "}
-                          {reservationDetails?.currency || ""}
+                          {Number(reservationDetails?.earlyCheckinCharges) || 0} {reservationDetails?.currency || ""}
                         </td>
                       </tr>
                       <tr>
@@ -1857,7 +1962,7 @@ ${CheckOutSecurityDeposit !== "0"
                             (field) => field.customField?.name === "Vehicle Number"
                           )?.value ||
                             guest.vehicleNo ||
-                            "N/A"}
+                            "Not provided"}
                         </td>
                       </tr>
                     </tbody>
@@ -1878,7 +1983,7 @@ ${CheckOutSecurityDeposit !== "0"
                         <td>
                           <strong>Email</strong>
                         </td>
-                        <td>{reservationDetails?.guestEmail || "N/A"}</td>
+                        <td>{reservationDetails?.guestEmail || "Not provided"}</td>
                       </tr>
                       <tr>
                         <td>
@@ -1890,13 +1995,17 @@ ${CheckOutSecurityDeposit !== "0"
                         <td>
                           <strong>Children</strong>
                         </td>
-                        <td>{reservationDetails?.children || "N/A"}</td>
+                        <td>{reservationDetails?.children || "0"}</td>
                       </tr>
                       <tr>
                         <td>
                           <strong>Payment Status</strong>
                         </td>
-                        <td>{reservationDetails?.paymentStatus || "N/A"}</td>
+                        <td>
+                          {reservationDetails?.paymentStatus === "Unknown"
+                            ? "Due"
+                            : reservationDetails?.paymentStatus || "N/A"}
+                        </td>
                       </tr>
                       <tr>
                         <td>
@@ -1920,7 +2029,7 @@ ${CheckOutSecurityDeposit !== "0"
                         <td>
                           <strong>Check-out Date</strong>
                         </td>
-                        <td>{reservationDetails?.departureDate || guest.checkoutDate || "N/A"}</td>
+                        <td>{reservationDetails?.departureDate || "N/A"}</td>
                       </tr>
                       <tr>
                         <td>
@@ -1939,7 +2048,7 @@ ${CheckOutSecurityDeposit !== "0"
                           <strong>Security Deposit</strong>
                         </td>
                         <td>
-                          {reservationDetails?.securityDeposit || "N/A"}{" "}
+                          {Number(reservationDetails?.securityDeposit) || "0"}{" "}
                           {reservationDetails?.currency || ""}
                         </td>
                       </tr>
@@ -1960,8 +2069,7 @@ ${CheckOutSecurityDeposit !== "0"
                           {reservationDetails?.customFieldValues?.find(
                             (field) => field.customField?.name === "Address"
                           )?.value ||
-                            guest.address ||
-                            "N/A"}
+                            "Not provided"}
                         </td>
                       </tr>
                     </tbody>
@@ -2118,6 +2226,12 @@ function KanbanView() {
     listingName: "Listing Name",
   };
 
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "info", // "success", "error", "warning", "info"
+  });
+
   // 🕒 Countdown Timer for Cooldown
   useEffect(() => {
     let timer;
@@ -2209,7 +2323,16 @@ function KanbanView() {
 
         setReservations(mappedReservations);
       } catch (err) {
-        setError(err.message);
+        console.error("❌ Fetch error:", err);
+
+        // Handle specific network errors
+        if (err.message === "Failed to fetch" || err.message.includes("NetworkError")) {
+          setError("Network error: Please check your internet connection.");
+        } else if (err.message.startsWith("API Error")) {
+          setError("Server error: Unable to fetch reservations. Please try again later.");
+        } else {
+          setError(`Unexpected error: ${err.message}`);
+        }
       } finally {
         setLoading(false);
       }
@@ -2331,37 +2454,98 @@ function KanbanView() {
     );
   }
 
+  const refresh = () => {
+    // your actual card refresh logic (API call, reload, etc.)
+    window.location.reload();
+  };
 
   const handleSync = async () => {
-    if (syncing || cooldown > 0) return; // Prevent double click
+    if (syncing || cooldown > 0) {
+      console.log("⚠️ Sync skipped — syncing or cooldown active.");
+      return;
+    }
 
+    console.log("🔄 Starting sync...");
     setSyncing(true);
-    console.log("🔄 Sync started...");
 
     try {
-      const response = await fetch("https://n8n.namuve.com/webhook/68542fac-bcac-4458-be3c-bff32534caf9", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          timestamp: new Date().toISOString(),
-          triggeredBy: "FDO Panel",
-        }),
-      });
+      const response = await fetch(
+        "https://n8n.namuve.com/webhook/68542fac-bcac-4458-be3c-bff32534caf9",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            timestamp: new Date().toISOString(),
+            triggeredBy: "FDO Panel",
+          }),
+        }
+      );
+
+      console.log("📡 Webhook response status:", response.status);
 
       if (!response.ok) {
-        throw new Error(`Webhook failed: ${response.statusText}`);
+        throw new Error(`Webhook failed: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.text();
       console.log("✅ Sync successful:", data);
 
-      // 🧭 Start 3-minute cooldown (180 seconds)
+      // ✅ Show success Snackbar
+      console.log("📢 Triggering success Snackbar...");
+      setSnackbar({
+        open: true,
+        message: "Sync started successfully!",
+        severity: "success",
+      });
+
+      // ⏳ Start 3-minute cooldown (180 seconds)
       setCooldown(180);
+      console.log("⏳ Cooldown started for 180 seconds");
+
+      // 🔁 Countdown and refresh when done
+      const timer = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            console.log("♻️ Cooldown ended — refreshing cards...");
+            setSnackbar({
+              open: true,
+              message: "Cooldown ended. Refreshing data...",
+              severity: "info",
+            });
+            refresh();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     } catch (error) {
       console.error("❌ Sync failed:", error);
+
+      // 👇 Log where we are before setting Snackbar
+      console.log("📢 Triggering error Snackbar...");
+
+      if (error.message.includes("NetworkError") || error.message.includes("Failed to fetch")) {
+        setSnackbar({
+          open: true,
+          message: "Network error: Please check your internet connection.",
+          severity: "error",
+        });
+      } else if (error.message.includes("Webhook failed")) {
+        setSnackbar({
+          open: true,
+          message: "Server error: Webhook failed. Please try again later.",
+          severity: "error",
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: `Unexpected error: ${error.message}`,
+          severity: "error",
+        });
+      }
     } finally {
+      console.log("✅ Sync finished — resetting syncing state.");
       setSyncing(false);
     }
   };
@@ -2387,7 +2571,7 @@ function KanbanView() {
 
   // Main content for both user and admin
   const mainContent = (
-    <MDBox mt={user?.role === "user" ? 2 : 4} mb={2}>
+    <MDBox mt={user?.role === "user" ? 2 : 4} mb={0}>
       <Grid container spacing={3} justifyContent="center">
         <Grid item xs={12}>
           <Card>
@@ -2402,184 +2586,230 @@ function KanbanView() {
 
               {/* Right side (Search + Button) */}
               <MDBox display="flex" alignItems="center" gap={2}>
-                  {/* Search Bar */}
-                  <MDBox
+                {/* Search Bar */}
+                <MDBox
+                  sx={{
+                    position: "relative",
+                    width: 260,
+                  }}
+                >
+                  {/* Search icon inside input */}
+                  <SearchIcon
                     sx={{
-                      position: "relative",
-                      width: 260,
+                      position: "absolute",
+                      left: 12,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      fontSize: 20,
+                      color: "#666",
+                      zIndex: 1,
+                      pointerEvents: "none",
                     }}
-                  >
-                    {/* Search icon inside input */}
-                    <SearchIcon
-                      sx={{
-                        position: "absolute",
-                        left: 12,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        fontSize: 20,
-                        color: "#666",
-                        zIndex: 1,
-                        pointerEvents: "none",
-                      }}
-                    />
+                  />
 
-                    {/* Input field */}
-                    <InputBase
-                      placeholder="Search reservations..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      sx={{
-                        pl: 5.5,
-                        pr: 1.5,
-                        py: 0.7,
-                        width: "100%",
-                        borderRadius: "10px",
-                        border: "1px solid #ccc",
-                        backgroundColor: "#fff",
-                        fontSize: "0.9rem",
-                        transition: "border 0.2s ease, box-shadow 0.2s ease",
-                        "&:hover": {
-                          border: "1.5px solid #555",
-                        },
-                        "&:focus-within": {
-                          border: "2px solid #333",
-                        },
-                      }}
-                    />
-                  </MDBox>
-
-                  {/* Sync Button */}
-                  <MDButton
-                    variant="outlined"
-                    onClick={handleSync}
-                    disabled={syncing || cooldown > 0}
+                  {/* Input field */}
+                  <InputBase
+                    placeholder="Search reservations..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      textTransform: "none",
-                      fontWeight: "bold",
-                      fontSize: "1rem",
+                      pl: 5.5,
+                      pr: 1.5,
+                      py: 0.7,
+                      width: "100%",
                       borderRadius: "10px",
-                      px: 2,
-                      py: 0.6,
-                      border: "2px solid",
-                      borderColor: "primary.main",
-                      color: "primary.main",
-                      backgroundColor: "transparent",
-                      transition: "all 0.2s ease",
+                      border: "1px solid #ccc",
+                      backgroundColor: "#fff",
+                      fontSize: "0.9rem",
+                      transition: "border 0.2s ease, box-shadow 0.2s ease",
                       "&:hover": {
-                        borderColor: "primary.dark",
-                        color: "primary.dark",
+                        border: "1.5px solid #555",
                       },
-                      "&:disabled": {
-                        opacity: 1, // keep text readable
-                        color: "text.secondary", // visible text when disabled
-                        borderColor: "text.secondary",
+                      "&:focus-within": {
+                        border: "2px solid #333",
                       },
                     }}
-                  >
-                    <SyncIcon
-                      sx={{
-                        fontSize: 20,
-                        animation: syncing ? "spin 1s linear infinite" : "none",
-                        "@keyframes spin": {
-                          "0%": { transform: "rotate(0deg)" },
-                          "100%": { transform: "rotate(360deg)" },
-                        },
-                      }}
-                    />
-
-                    {syncing
-                      ? "Syncing..."
-                      : cooldown > 0
-                        ? `${Math.floor(cooldown / 60)}:${String(cooldown % 60).padStart(2, "0")}`
-                        : "Sync"}
-                  </MDButton>
+                  />
                 </MDBox>
-              </MDBox>
 
-              <MDBox
-                display="flex"
-                overflow="auto"
-                px={2}
-                pb={2}
-                sx={{
-                  "& > *:last-child": { mr: 0 },
-                  // Desktop view (xl and up): Keep original layout
-                  "@media (min-width: 1536px)": {
-                    flexDirection: "row",
-                    flexWrap: "nowrap",
-                  },
-                  // Laptop/Tablet view (lg and down): Single row layout
-                  "@media (max-width: 1535px)": {
-                    flexDirection: "row",
-                    flexWrap: "nowrap",
+                {/* Sync Button */}
+                <MDButton
+                  variant="outlined"
+                  onClick={handleSync}
+                  disabled={syncing || cooldown > 0}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
                     gap: 1,
-                    "& > div": {
-                      minWidth: "280px !important",
-                      maxWidth: "280px",
-                      flex: "0 0 280px",
+                    textTransform: "none",
+                    fontWeight: "bold",
+                    fontSize: "1rem",
+                    borderRadius: "10px",
+                    px: 2,
+                    py: 0.6,
+                    border: "2px solid",
+                    borderColor: "primary.main",
+                    color: "primary.main",
+                    backgroundColor: "transparent",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      borderColor: "primary.dark",
+                      color: "primary.dark",
                     },
-                  },
-                }}
-              >
-                {stacks.map((stack) => {
-                  // Get all guests in this stack
-                  const stackGuests = reservations.filter((guest) => guest.stack === stack);
+                    "&:disabled": {
+                      opacity: 1, // keep text readable
+                      color: "text.secondary", // visible text when disabled
+                      borderColor: "text.secondary",
+                    },
+                  }}
+                >
+                  <SyncIcon
+                    sx={{
+                      fontSize: 20,
+                      animation: syncing ? "spin 1s linear infinite" : "none",
+                      "@keyframes spin": {
+                        "0%": { transform: "rotate(0deg)" },
+                        "100%": { transform: "rotate(360deg)" },
+                      },
+                    }}
+                  />
 
-                  // Skip completely empty stacks
-                  if (stackGuests.length === 0) return null;
-
-                  // Filter guests by search term
-                  const filteredGuests = stackGuests.filter((guest) => matchesSearch(guest, searchTerm));
-
-                  // Skip stack if no guests match the search
-                  if (filteredGuests.length === 0) return null;
-
-                  return (
-                    <MDBox
-                      key={stack}
-                      minWidth={360}
-                      mr={2}
-                      sx={{
-                        "@media (min-width: 1536px)": { minWidth: 335, marginRight: 2 },
-                        "@media (max-width: 1535px)": { minWidth: "280px !important", maxWidth: "280px", marginRight: 1, flex: "0 0 280px" }
-                      }}
-                    >
-                      <Card sx={{ ...(stackStyles[stack] || {}) }}>
-                        <MDBox p={2}>
-                          <MDBox display="flex" justifyContent="space-between" alignItems="center">
-                            <MDTypography variant="h6">{stack}</MDTypography>
-                            <Chip label={filteredGuests.length} color="primary" size="small" sx={{ fontWeight: "bold", backgroundColor: "#28282B" }} />
-                          </MDBox>
-                        </MDBox>
-
-                        <MDBox px={2} pb={2} sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", maxHeight: "calc(100vh - 350px)" }}>
-                          {filteredGuests.map((guest) => (
-                            <ReservationCard key={guest.id} guest={guest} searchTerm={searchTerm} />
-                          ))}
-                        </MDBox>
-                      </Card>
-                    </MDBox>
-                  );
-                })}
+                  {syncing
+                    ? "Syncing..."
+                    : cooldown > 0
+                      ? `${Math.floor(cooldown / 60)}:${String(cooldown % 60).padStart(2, "0")}`
+                      : "Sync"}
+                </MDButton>
               </MDBox>
-            </Card>
-          </Grid>
+            </MDBox>
+
+            <MDBox
+              display="flex"
+              overflow="auto"
+              px={2}
+              pb={2}
+              sx={{
+                "& > *:last-child": { mr: 0 },
+                // Desktop view (xl and up): Keep original layout
+                "@media (min-width: 1536px)": {
+                  flexDirection: "row",
+                  flexWrap: "nowrap",
+                },
+                // Laptop/Tablet view (lg and down): Single row layout
+                "@media (max-width: 1535px)": {
+                  flexDirection: "row",
+                  flexWrap: "nowrap",
+                  gap: 1,
+                  "& > div": {
+                    minWidth: "280px !important",
+                    maxWidth: "280px",
+                    flex: "0 0 280px",
+                  },
+                },
+              }}
+            >
+              {stacks.map((stack) => {
+                // Get all guests in this stack
+                const stackGuests = reservations.filter((guest) => guest.stack === stack);
+
+                // Skip completely empty stacks
+                if (stackGuests.length === 0) return null;
+
+                // Filter guests by search term
+                const filteredGuests = stackGuests.filter((guest) => matchesSearch(guest, searchTerm));
+
+                // Skip stack if no guests match the search
+                if (filteredGuests.length === 0) return null;
+
+                return (
+                  <MDBox
+                    key={stack}
+                    minWidth={360}
+                    mr={2}
+                    sx={{
+                      "@media (min-width: 1536px)": { minWidth: 335, marginRight: 2 },
+                      "@media (max-width: 1535px)": { minWidth: "280px !important", maxWidth: "280px", marginRight: 1, flex: "0 0 280px" }
+                    }}
+                  >
+                    <Card sx={{ ...(stackStyles[stack] || {}) }}>
+                      <MDBox p={2}>
+                        <MDBox display="flex" justifyContent="space-between" alignItems="center">
+                          <MDTypography variant="h6">{stack}</MDTypography>
+                          <Chip label={filteredGuests.length} color="primary" size="small" sx={{ fontWeight: "bold", backgroundColor: "#28282B" }} />
+                        </MDBox>
+                      </MDBox>
+
+                      <MDBox px={2} pb={2} sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", maxHeight: "calc(100vh - 280px)" }}>
+                        {filteredGuests.map((guest) => (
+                          <ReservationCard key={guest.id} guest={guest} setSnackbar={setSnackbar} searchTerm={searchTerm} />
+                        ))}
+                      </MDBox>
+                    </Card>
+                  </MDBox>
+                );
+              })}
+              {/* ✅ Show message if no stacks have any match */}
+              {stacks.every(stack => {
+                const stackGuests = reservations.filter(guest => guest.stack === stack);
+                const filteredGuests = stackGuests.filter(guest => matchesSearch(guest, searchTerm));
+                return filteredGuests.length === 0;
+              }) && (
+                  <MDTypography
+                    variant="body2"
+                    align="center"
+                    sx={{ color: "#dark", mt: 3, width: "100%" }}
+                  >
+                    No matches found
+                  </MDTypography>
+                )}
+            </MDBox>
+          </Card>
         </Grid>
-      </MDBox>
+      </Grid>
+    </MDBox>
   );
 
   // Return with appropriate layout based on user role
-  return user?.role === "user" ? (
-    mainContent
-  ) : (
-    <DashboardLayout>
-      <DashboardNavbar />
-      {mainContent}
-      <Footer />
-    </DashboardLayout>
+  return (
+    <>
+      {user?.role === "user" ? (
+        mainContent
+      ) : (
+        <DashboardLayout>
+          <DashboardNavbar />
+          {mainContent}
+          <Footer />
+        </DashboardLayout>
+      )}
+
+      {/* ✅ Snackbar placed outside layout with high z-index */}
+      {/* ✅ Global Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 9999 }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{
+            width: "100%",
+            borderRadius: "8px",
+            fontWeight: "bold",
+          }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      {/* ✅ Pass to all ReservationCards */}
+      {reservations.map((guest) => (
+        <ReservationCard key={guest.id} guest={guest} setSnackbar={setSnackbar} />
+      ))}
+    </>
   );
 }
 
