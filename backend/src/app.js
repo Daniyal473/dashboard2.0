@@ -13,9 +13,11 @@ const corsOptions = {
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:3001',
+      'http://128.199.0.150',
       'http://128.199.0.150:3000',
       'https://tested-1pln9mbk8-rana-talhas-projects.vercel.app',
       'https://tested-murex.vercel.app',
+      'https://portal.namuve.com',
       /\.vercel\.app$/ // Allow all Vercel domains
     ];
     
