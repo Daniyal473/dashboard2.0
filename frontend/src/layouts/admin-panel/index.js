@@ -12,6 +12,8 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import FormControl from "@mui/material/FormControl";
 import CircularProgress from "@mui/material/CircularProgress";
+import TextField from "@mui/material/TextField";
+import InputLabel from "@mui/material/InputLabel";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -47,11 +49,17 @@ function AdminPanel() {
   // Monthly Target state
   const [monthlyTarget, setMonthlyTarget] = useState({
     amount: "",
-    days: ""
+    days: "",
+    selectedMonth: new Date().getMonth() + 1, // Current month (1-12)
+    selectedYear: new Date().getFullYear(),
+    startDate: null,
+    endDate: null
   });
   const [calculatedTargets, setCalculatedTargets] = useState({
     dailyTarget: 0,
-    quarterlyTarget: 0
+    quarterlyTarget: 0,
+    monthlyTarget: 0,
+    workingDays: 0
   });
 
 
@@ -71,30 +79,95 @@ function AdminPanel() {
       [field]: value,
     };
     setMonthlyTarget(updatedTarget);
+    calculateTargets(updatedTarget);
+  };
+
+  // Handle date changes
+  const handleDateChange = (field, dateString) => {
+    const date = dateString ? new Date(dateString) : null;
+    const updatedTarget = {
+      ...monthlyTarget,
+      [field]: date,
+    };
+    setMonthlyTarget(updatedTarget);
+    calculateTargets(updatedTarget);
+  };
+
+  // Handle month/year changes
+  const handleMonthYearChange = (field, value) => {
+    const updatedTarget = {
+      ...monthlyTarget,
+      [field]: value,
+    };
     
-    // Calculate targets when both amount and days are provided
-    if (updatedTarget.amount && updatedTarget.days) {
-      const amount = parseFloat(updatedTarget.amount.replace(/,/g, ''));
-      const days = parseInt(updatedTarget.days);
+    // Auto-calculate days in selected month
+    if (field === 'selectedMonth' || field === 'selectedYear') {
+      const year = field === 'selectedYear' ? value : updatedTarget.selectedYear;
+      const month = field === 'selectedMonth' ? value : updatedTarget.selectedMonth;
+      const daysInMonth = new Date(year, month, 0).getDate();
+      updatedTarget.days = daysInMonth.toString();
       
-      if (!isNaN(amount) && !isNaN(days) && days > 0) {
-        const dailyTarget = amount / days;
-        const quarterlyTarget = amount * 3;
+      // Set default start and end dates for the month
+      updatedTarget.startDate = new Date(year, month - 1, 1);
+      updatedTarget.endDate = new Date(year, month - 1, daysInMonth);
+    }
+    
+    setMonthlyTarget(updatedTarget);
+    calculateTargets(updatedTarget);
+  };
+
+  // Calculate targets based on current data
+  const calculateTargets = (targetData) => {
+    if (targetData.amount) {
+      const amount = parseFloat(targetData.amount.replace(/,/g, ''));
+      
+      if (!isNaN(amount) && amount > 0) {
+        let workingDays = 0;
         
-        setCalculatedTargets({
-          dailyTarget: dailyTarget,
-          quarterlyTarget: quarterlyTarget
-        });
+        // Calculate working days based on date range or month selection
+        if (targetData.startDate && targetData.endDate) {
+          // Calculate days between start and end date
+          const timeDiff = targetData.endDate.getTime() - targetData.startDate.getTime();
+          workingDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+        } else if (targetData.days) {
+          workingDays = parseInt(targetData.days);
+        } else if (targetData.selectedMonth && targetData.selectedYear) {
+          // Calculate days in selected month
+          workingDays = new Date(targetData.selectedYear, targetData.selectedMonth, 0).getDate();
+        }
+        
+        if (workingDays > 0) {
+          const dailyTarget = amount / workingDays;
+          const quarterlyTarget = amount * 3;
+          
+          setCalculatedTargets({
+            dailyTarget: dailyTarget,
+            quarterlyTarget: quarterlyTarget,
+            monthlyTarget: amount,
+            workingDays: workingDays
+          });
+        } else {
+          setCalculatedTargets({
+            dailyTarget: 0,
+            quarterlyTarget: 0,
+            monthlyTarget: 0,
+            workingDays: 0
+          });
+        }
       } else {
         setCalculatedTargets({
           dailyTarget: 0,
-          quarterlyTarget: 0
+          quarterlyTarget: 0,
+          monthlyTarget: 0,
+          workingDays: 0
         });
       }
     } else {
       setCalculatedTargets({
         dailyTarget: 0,
-        quarterlyTarget: 0
+        quarterlyTarget: 0,
+        monthlyTarget: 0,
+        workingDays: 0
       });
     }
   };
@@ -112,30 +185,35 @@ function AdminPanel() {
   const handleMonthlyTargetSubmit = (event) => {
     event.preventDefault();
     
-    if (!monthlyTarget.amount || !monthlyTarget.days) {
-      setMessage({ type: "error", text: "Please enter both amount and days!" });
+    if (!monthlyTarget.amount) {
+      setMessage({ type: "error", text: "Please enter target amount!" });
       return;
     }
     
     const amount = parseFloat(monthlyTarget.amount.replace(/,/g, ''));
-    const days = parseInt(monthlyTarget.days);
     
     if (isNaN(amount) || amount <= 0) {
       setMessage({ type: "error", text: "Please enter a valid amount!" });
       return;
     }
     
-    if (isNaN(days) || days <= 0 || days > 31) {
-      setMessage({ type: "error", text: "Please enter valid days (1-31)!" });
+    if (calculatedTargets.workingDays <= 0) {
+      setMessage({ type: "error", text: "Please select valid dates or month!" });
       return;
     }
     
     // Store in localStorage for now (frontend only implementation)
     const targetData = {
       amount: amount,
-      days: days,
+      days: calculatedTargets.workingDays,
+      selectedMonth: monthlyTarget.selectedMonth,
+      selectedYear: monthlyTarget.selectedYear,
+      startDate: monthlyTarget.startDate?.toISOString(),
+      endDate: monthlyTarget.endDate?.toISOString(),
       dailyTarget: calculatedTargets.dailyTarget,
       quarterlyTarget: calculatedTargets.quarterlyTarget,
+      monthlyTarget: calculatedTargets.monthlyTarget,
+      workingDays: calculatedTargets.workingDays,
       createdAt: new Date().toISOString()
     };
     
@@ -382,12 +460,18 @@ function AdminPanel() {
       try {
         const targetData = JSON.parse(savedTargetData);
         setMonthlyTarget({
-          amount: targetData.amount.toString(),
-          days: targetData.days.toString()
+          amount: "",
+          days: "",
+          selectedMonth: targetData.selectedMonth || new Date().getMonth() + 1,
+          selectedYear: targetData.selectedYear || new Date().getFullYear(),
+          startDate: targetData.startDate ? new Date(targetData.startDate) : null,
+          endDate: targetData.endDate ? new Date(targetData.endDate) : null
         });
         setCalculatedTargets({
-          dailyTarget: targetData.dailyTarget,
-          quarterlyTarget: targetData.quarterlyTarget
+          dailyTarget: 0,
+          quarterlyTarget: 0,
+          monthlyTarget: 0,
+          workingDays: 0
         });
       } catch (error) {
         console.error('Error loading monthly target data:', error);
@@ -1260,125 +1344,523 @@ function AdminPanel() {
                 <Card
                   sx={{
                     p: 4,
-                    borderRadius: "20px",
-                    boxShadow: "0 25px 50px -12px rgba(30, 58, 138, 0.25)",
+                    borderRadius: "24px",
+                    backgroundColor: "#ffffff",
+                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                    border: "1px solid #f1f5f9",
                   }}
                 >
                   <MDBox
                     display="flex"
                     alignItems="center"
-                    gap={2}
-                    mb={4}
+                    gap={3}
+                    mb={5}
+                    p={3}
+                    sx={{
+                      backgroundColor: "#f8fafc",
+                      borderRadius: "16px",
+                      border: "1px solid #e2e8f0",
+                    }}
                   >
                     <MDBox
                       sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: "12px",
-                        backgroundColor: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        width: 56,
+                        height: 56,
+                        borderRadius: "16px",
                         background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         color: "white",
-                        fontSize: "1.25rem",
+                        fontSize: "1.5rem",
+                        boxShadow: "0 8px 16px rgba(102, 126, 234, 0.3)",
                       }}
                     >
                       🎯
                     </MDBox>
                     <MDBox>
-                      <MDTypography variant="h4" fontWeight="bold" mb={1}>
+                      <MDTypography 
+                        variant="h4" 
+                        fontWeight="bold" 
+                        mb={1}
+                        sx={{ color: "#1e293b" }}
+                      >
                         Monthly Target Setup
                       </MDTypography>
-                      <MDTypography variant="body2" color="text">
-                        Set monthly target amount and days to calculate daily and quarterly targets
+                      <MDTypography 
+                        variant="body1" 
+                        sx={{ color: "#64748b", fontSize: "1rem" }}
+                      >
+                        Set monthly target amount and calendar dates to calculate daily and quarterly targets
                       </MDTypography>
                     </MDBox>
                   </MDBox>
 
-                  <MDBox component="form" onSubmit={handleMonthlyTargetSubmit}>
-                    <Grid container spacing={3}>
-                      <Grid item xs={12} sm={6}>
-                        <MDBox mb={3}>
-                          <MDTypography
-                            variant="body2"
-                            fontWeight="600"
-                            sx={{
-                              color: "#374151",
-                              fontSize: "0.875rem",
-                              mb: 1.5,
-                            }}
-                          >
-                            Monthly Target Amount
-                          </MDTypography>
-                          <MDInput
-                            type="text"
-                            label=""
-                            fullWidth
-                            value={monthlyTarget.amount}
-                            onChange={handleMonthlyTargetChange("amount")}
-                            placeholder=""
-                            sx={{
-                              "& .MuiOutlinedInput-root": {
-                                borderRadius: "12px",
-                                backgroundColor: "#f8fafc",
-                              },
-                            }}
-                          />
-                        </MDBox>
-                      </Grid>
-                      
-                      <Grid item xs={12} sm={6}>
-                        <MDBox mb={3}>
-                          <MDTypography
-                            variant="body2"
-                            fontWeight="600"
-                            sx={{
-                              color: "#374151",
-                              fontSize: "0.875rem",
-                              mb: 1.5,
-                            }}
-                          >
-                            Days in Month
-                          </MDTypography>
-                          <MDInput
-                            type="number"
-                            label=""
-                            fullWidth
-                            value={monthlyTarget.days}
-                            onChange={handleMonthlyTargetChange("days")}
-                            placeholder=""
-                            inputProps={{ min: 1, max: 31 }}
-                            sx={{
-                              "& .MuiOutlinedInput-root": {
-                                borderRadius: "12px",
-                                backgroundColor: "#f8fafc",
-                              },
-                            }}
-                          />
-                        </MDBox>
-                      </Grid>
-                    </Grid>
+                    <MDBox component="form" onSubmit={handleMonthlyTargetSubmit}>
+                      <Grid container spacing={4}>
+                        {/* Left Column - Form Inputs */}
+                        <Grid item xs={12} lg={6}>
+                          <MDBox>
+                            {/* Monthly Target Amount */}
+                            <MDBox 
+                              mb={4}
+                              p={3}
+                              sx={{
+                                backgroundColor: "#ffffff",
+                                borderRadius: "16px",
+                                border: "2px solid #f1f5f9",
+                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+                              }}
+                            >
+                              <MDTypography
+                                variant="h6"
+                                fontWeight="700"
+                                sx={{
+                                  color: "#1e293b",
+                                  mb: 2,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                }}
+                              >
+                                💰 Monthly Target Amount
+                              </MDTypography>
+                              <MDInput
+                                type="text"
+                                label=""
+                                fullWidth
+                                value={monthlyTarget.amount}
+                                onChange={handleMonthlyTargetChange("amount")}
+                                placeholder=""
+                                sx={{
+                                  "& .MuiOutlinedInput-root": {
+                                    borderRadius: "12px",
+                                    backgroundColor: "#f8fafc",
+                                    border: "2px solid #e2e8f0",
+                                    fontSize: "1.1rem",
+                                    fontWeight: "600",
+                                    "&:hover": {
+                                      borderColor: "#3b82f6",
+                                    },
+                                    "&.Mui-focused": {
+                                      borderColor: "#3b82f6",
+                                      boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+                                    },
+                                  },
+                                }}
+                              />
+                            </MDBox>
 
-                    <MDButton
-                      type="submit"
-                      variant="gradient"
-                      color="success"
-                      fullWidth
-                      size="large"
-                      disabled={loading || !monthlyTarget.amount || !monthlyTarget.days}
-                      sx={{
-                        borderRadius: "12px",
-                        textTransform: "none",
-                        fontSize: "1.1rem",
-                        fontWeight: "600",
-                        py: 1.5,
-                        mt: 2,
-                      }}
-                    >
-                      Set Monthly Target
-                    </MDButton>
-                  </MDBox>
+                            {/* Month and Year Selection */}
+                            <MDBox 
+                              mb={4}
+                              p={3}
+                              sx={{
+                                backgroundColor: "#ffffff",
+                                borderRadius: "16px",
+                                border: "2px solid #f1f5f9",
+                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+                              }}
+                            >
+                              <MDTypography
+                                variant="h6"
+                                fontWeight="700"
+                                sx={{
+                                  color: "#1e293b",
+                                  mb: 3,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                }}
+                              >
+                                📅 Target Period
+                              </MDTypography>
+                              <Grid container spacing={3}>
+                                <Grid item xs={6}>
+                                  <MDTypography
+                                    variant="body2"
+                                    fontWeight="600"
+                                    sx={{
+                                      color: "#475569",
+                                      fontSize: "0.9rem",
+                                      mb: 1.5,
+                                    }}
+                                  >
+                                    Month
+                                  </MDTypography>
+                                  <FormControl fullWidth>
+                                    <Select
+                                      value={monthlyTarget.selectedMonth}
+                                      onChange={(e) => handleMonthYearChange('selectedMonth', e.target.value)}
+                                      sx={{
+                                        borderRadius: "12px",
+                                        backgroundColor: "#f8fafc",
+                                        border: "2px solid #e2e8f0",
+                                        "& .MuiOutlinedInput-notchedOutline": {
+                                          border: "none",
+                                        },
+                                        "&:hover": {
+                                          borderColor: "#3b82f6",
+                                        },
+                                        "&.Mui-focused": {
+                                          borderColor: "#3b82f6",
+                                          boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+                                        },
+                                      }}
+                                    >
+                                      {[
+                                        'January', 'February', 'March', 'April', 'May', 'June',
+                                        'July', 'August', 'September', 'October', 'November', 'December'
+                                      ].map((month, index) => (
+                                        <MenuItem key={index + 1} value={index + 1}>
+                                          <MDBox display="flex" alignItems="center" gap={1}>
+                                            <span>{month}</span>
+                                          </MDBox>
+                                        </MenuItem>
+                                      ))}
+                                    </Select>
+                                  </FormControl>
+                                </Grid>
+                                <Grid item xs={6}>
+                                  <MDTypography
+                                    variant="body2"
+                                    fontWeight="600"
+                                    sx={{
+                                      color: "#475569",
+                                      fontSize: "0.9rem",
+                                      mb: 1.5,
+                                    }}
+                                  >
+                                    Year
+                                  </MDTypography>
+                                  <FormControl fullWidth>
+                                    <Select
+                                      value={monthlyTarget.selectedYear}
+                                      onChange={(e) => handleMonthYearChange('selectedYear', e.target.value)}
+                                      sx={{
+                                        borderRadius: "12px",
+                                        backgroundColor: "#f8fafc",
+                                        border: "2px solid #e2e8f0",
+                                        "& .MuiOutlinedInput-notchedOutline": {
+                                          border: "none",
+                                        },
+                                        "&:hover": {
+                                          borderColor: "#3b82f6",
+                                        },
+                                        "&.Mui-focused": {
+                                          borderColor: "#3b82f6",
+                                          boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+                                        },
+                                      }}
+                                    >
+                                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i).map(year => (
+                                        <MenuItem key={year} value={year}>
+                                          {year}
+                                        </MenuItem>
+                                      ))}
+                                    </Select>
+                                  </FormControl>
+                                </Grid>
+                              </Grid>
+                            </MDBox>
+
+                            {/* Custom Date Range (Optional) */}
+                            <MDBox 
+                              mb={4}
+                              p={3}
+                              sx={{
+                                backgroundColor: "#ffffff",
+                                borderRadius: "16px",
+                                border: "2px solid #f1f5f9",
+                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+                              }}
+                            >
+                              <MDTypography
+                                variant="h6"
+                                fontWeight="700"
+                                sx={{
+                                  color: "#1e293b",
+                                  mb: 2,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                }}
+                              >
+                                🗓️ Custom Date Range
+                              </MDTypography>
+                              <MDTypography
+                                variant="caption"
+                                sx={{
+                                  color: "#64748b",
+                                  mb: 2,
+                                  display: "block",
+                                }}
+                              >
+                                Optional: Override month selection with specific dates
+                              </MDTypography>
+                              <Grid container spacing={3}>
+                                <Grid item xs={6}>
+                                  <TextField
+                                    type="date"
+                                    label="Start Date"
+                                    fullWidth
+                                    value={monthlyTarget.startDate ? monthlyTarget.startDate.toISOString().split('T')[0] : ''}
+                                    onChange={(e) => handleDateChange('startDate', e.target.value)}
+                                    InputLabelProps={{
+                                      shrink: true,
+                                    }}
+                                    sx={{
+                                      "& .MuiOutlinedInput-root": {
+                                        borderRadius: "12px",
+                                        backgroundColor: "#f8fafc",
+                                        border: "2px solid #e2e8f0",
+                                        "&:hover": {
+                                          borderColor: "#3b82f6",
+                                        },
+                                        "&.Mui-focused": {
+                                          borderColor: "#3b82f6",
+                                          boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+                                        },
+                                      },
+                                    }}
+                                  />
+                                </Grid>
+                                <Grid item xs={6}>
+                                  <TextField
+                                    type="date"
+                                    label="End Date"
+                                    fullWidth
+                                    value={monthlyTarget.endDate ? monthlyTarget.endDate.toISOString().split('T')[0] : ''}
+                                    onChange={(e) => handleDateChange('endDate', e.target.value)}
+                                    InputLabelProps={{
+                                      shrink: true,
+                                    }}
+                                    sx={{
+                                      "& .MuiOutlinedInput-root": {
+                                        borderRadius: "12px",
+                                        backgroundColor: "#f8fafc",
+                                        border: "2px solid #e2e8f0",
+                                        "&:hover": {
+                                          borderColor: "#3b82f6",
+                                        },
+                                        "&.Mui-focused": {
+                                          borderColor: "#3b82f6",
+                                          boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+                                        },
+                                      },
+                                    }}
+                                  />
+                                </Grid>
+                              </Grid>
+                            </MDBox>
+
+                            {/* Days in Month (Auto-calculated) */}
+                            <MDBox 
+                              mb={4}
+                              p={3}
+                              sx={{
+                                backgroundColor: "#ffffff",
+                                borderRadius: "16px",
+                                border: "2px solid #f1f5f9",
+                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+                              }}
+                            >
+                              <MDTypography
+                                variant="h6"
+                                fontWeight="700"
+                                sx={{
+                                  color: "#1e293b",
+                                  mb: 2,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                }}
+                              >
+                                📊 Days Count
+                              </MDTypography>
+                              <MDInput
+                                type="number"
+                                label=""
+                                fullWidth
+                                value={calculatedTargets.workingDays || monthlyTarget.days}
+                                onChange={handleMonthlyTargetChange("days")}
+                                placeholder="Auto-calculated or enter manually"
+                                inputProps={{ min: 1, max: 31 }}
+                                sx={{
+                                  "& .MuiOutlinedInput-root": {
+                                    borderRadius: "12px",
+                                    backgroundColor: "#f8fafc",
+                                    border: "2px solid #e2e8f0",
+                                    fontSize: "1.1rem",
+                                    fontWeight: "600",
+                                    "&:hover": {
+                                      borderColor: "#3b82f6",
+                                    },
+                                    "&.Mui-focused": {
+                                      borderColor: "#3b82f6",
+                                      boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.1)",
+                                    },
+                                  },
+                                }}
+                              />
+                            </MDBox>
+                          </MDBox>
+                        </Grid>
+
+                        {/* Right Column - Calculated Targets Display */}
+                        <Grid item xs={12} lg={6}>
+                          <MDBox>
+                            <MDTypography
+                              variant="h5"
+                              fontWeight="bold"
+                              mb={3}
+                              sx={{ color: "#1f2937" }}
+                            >
+                              Calculated Targets
+                            </MDTypography>
+
+                            {/* Monthly Target Display */}
+                            <MDBox
+                              mb={3}
+                              p={3}
+                              sx={{
+                                backgroundColor: "#ffffff",
+                                borderRadius: "16px",
+                                border: "2px solid #667eea",
+                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+                              }}
+                            >
+                              <MDBox display="flex" alignItems="center" gap={2} mb={1}>
+                                <MDBox
+                                  sx={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: "8px",
+                                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "white",
+                                    fontSize: "1rem",
+                                  }}
+                                >
+                                  🎯
+                                </MDBox>
+                                <MDTypography variant="h6" fontWeight="600" sx={{ color: "#667eea" }}>
+                                  Monthly Target
+                                </MDTypography>
+                              </MDBox>
+                              <MDTypography variant="h4" fontWeight="bold" sx={{ color: "#1e293b" }}>
+                                {formatNumber(calculatedTargets.monthlyTarget)}
+                              </MDTypography>
+                              <MDTypography variant="caption" sx={{ color: "#64748b" }}>
+                                {monthlyTarget.selectedMonth && monthlyTarget.selectedYear ? 
+                                  `${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][monthlyTarget.selectedMonth - 1]} ${monthlyTarget.selectedYear}` : 
+                                  'Select month and year'
+                                }
+                              </MDTypography>
+                            </MDBox>
+
+                            {/* Daily Target Display */}
+                            <MDBox
+                              mb={3}
+                              p={3}
+                              sx={{
+                                backgroundColor: "#ffffff",
+                                borderRadius: "16px",
+                                border: "2px solid #16a34a",
+                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+                              }}
+                            >
+                              <MDBox display="flex" alignItems="center" gap={2} mb={1}>
+                                <MDBox
+                                  sx={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: "8px",
+                                    backgroundColor: "#16a34a",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "white",
+                                    fontSize: "1rem",
+                                  }}
+                                >
+                                  📅
+                                </MDBox>
+                                <MDTypography variant="h6" fontWeight="600" sx={{ color: "#16a34a" }}>
+                                  Daily Target
+                                </MDTypography>
+                              </MDBox>
+                              <MDTypography variant="h4" fontWeight="bold" sx={{ color: "#1e293b" }}>
+                                {formatNumber(calculatedTargets.dailyTarget)}
+                              </MDTypography>
+                              <MDTypography variant="caption" sx={{ color: "#64748b" }}>
+                                Based on {calculatedTargets.workingDays} days
+                              </MDTypography>
+                            </MDBox>
+
+                            {/* Quarterly Target Display */}
+                            <MDBox
+                              mb={3}
+                              p={3}
+                              sx={{
+                                backgroundColor: "#ffffff",
+                                borderRadius: "16px",
+                                border: "2px solid #f59e0b",
+                                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+                              }}
+                            >
+                              <MDBox display="flex" alignItems="center" gap={2} mb={1}>
+                                <MDBox
+                                  sx={{
+                                    width: 32,
+                                    height: 32,
+                                    borderRadius: "8px",
+                                    backgroundColor: "#f59e0b",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "white",
+                                    fontSize: "1rem",
+                                  }}
+                                >
+                                  📊
+                                </MDBox>
+                                <MDTypography variant="h6" fontWeight="600" sx={{ color: "#f59e0b" }}>
+                                  Quarterly Target
+                                </MDTypography>
+                              </MDBox>
+                              <MDTypography variant="h4" fontWeight="bold" sx={{ color: "#1e293b" }}>
+                                {formatNumber(calculatedTargets.quarterlyTarget)}
+                              </MDTypography>
+                              <MDTypography variant="caption" sx={{ color: "#64748b" }}>
+                                3 months projection
+                              </MDTypography>
+                            </MDBox>
+                          </MDBox>
+                        </Grid>
+                      </Grid>
+
+                      <MDButton
+                        type="submit"
+                        variant="gradient"
+                        color="success"
+                        fullWidth
+                        size="large"
+                        disabled={loading || !monthlyTarget.amount || calculatedTargets.workingDays <= 0}
+                        sx={{
+                          borderRadius: "12px",
+                          textTransform: "none",
+                          fontSize: "1.1rem",
+                          fontWeight: "600",
+                          py: 1.5,
+                          mt: 3,
+                        }}
+                      >
+                        Set Monthly Target
+                      </MDButton>
+                    </MDBox>
                 </Card>
               </Grid>
             </Grid>

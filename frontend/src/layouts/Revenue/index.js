@@ -1381,24 +1381,18 @@ function Revenue() {
 
     return [
       {
-        title: "ACTUAL REVENUE",
-        amount: formatCurrency(actualRevenue), // API Actual Revenue: 175480.55 PKR
-        progress: actualRevenueProgress || 25, // Test with 25% if no data
+        title: "REVENUE",
+        amount: {
+          type: "revenue_combined",
+          actual: formatCurrency(actualRevenue), // API Actual Revenue: 175480.55 PKR
+          expected: formatCurrency(expectedRevenue), // Dynamic Expected Revenue from backend
+        },
+        progress: (actualRevenueProgress + expectedRevenueProgress) / 2 || 35, // Average progress
         color: "success",
         icon: "trending_up",
         gradient: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
         target: formatCurrency(targetRevenue),
-        description: `${(actualRevenueProgress || 25).toFixed(2)}% of daily target achieved`,
-      },
-      {
-        title: "EXPECTED REVENUE",
-        amount: formatCurrency(expectedRevenue), // Dynamic Expected Revenue from backend
-        progress: expectedRevenueProgress || 45, // Test with 45% if no data
-        color: "info",
-        icon: "schedule",
-        gradient: "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
-        target: formatCurrency(targetRevenue),
-        description: `${(expectedRevenueProgress || 45).toFixed(2)}% of daily target expected`,
+        description: `${((actualRevenueProgress + expectedRevenueProgress) / 2).toFixed(2)}% of actual and expected revenue`,
       },
       {
         title: "Daily Target",
@@ -1624,27 +1618,27 @@ function Revenue() {
             zIndex: 2,
             width: "100%",
             display: "grid",
-            gap: 3,
+            gap: 4,
 
-            // Default: 5 columns for large screens
-            gridTemplateColumns: "repeat(5, 1fr)",
+            // Default: 4 columns for large screens (better space utilization)
+            gridTemplateColumns: "repeat(4, 1fr)",
 
-            // Large laptops and desktops: 5 columns (all cards in one row)
+            // Large laptops and desktops: 4 columns (better card size)
             "@media (min-width: 1200px)": {
-              gridTemplateColumns: "repeat(5, 1fr)",
+              gridTemplateColumns: "repeat(4, 1fr)",
+              gap: 4,
+            },
+
+            // Standard laptops: 4 columns with proper spacing
+            "@media (max-width: 1199px) and (min-width: 1024px)": {
+              gridTemplateColumns: "repeat(4, 1fr)",
               gap: 3,
             },
 
-            // Standard laptops: 5 columns with proper spacing
-            "@media (max-width: 1199px) and (min-width: 1024px)": {
-              gridTemplateColumns: "repeat(5, 1fr)",
-              gap: 1.5,
-            },
-
-            // Small laptops and large tablets: 3 columns, 2 rows
+            // Small laptops and large tablets: 2 columns, 2 rows
             "@media (max-width: 1023px) and (min-width: 768px)": {
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: 2,
+              gridTemplateColumns: "repeat(2, 1fr)",
+              gap: 3,
             },
 
             // Tablets: 2 columns
@@ -1664,9 +1658,9 @@ function Revenue() {
             <Card
               key={index}
               sx={{
-                height: "320px",
-                minHeight: "320px",
-                maxHeight: "320px",
+                height: "420px",
+                minHeight: "420px",
+                maxHeight: "420px",
                 background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
                 border: "1px solid #e2e8f0",
                 borderRadius: 6,
@@ -1680,16 +1674,16 @@ function Revenue() {
 
                 // Responsive card sizing for better laptop fit
                 "@media (max-width: 1199px) and (min-width: 1024px)": {
-                  height: "300px",
-                  minHeight: "300px",
-                  maxHeight: "300px",
+                  height: "400px",
+                  minHeight: "400px",
+                  maxHeight: "400px",
                 },
 
-                // Smaller cards for small laptops and tablets
+                // Larger cards for small laptops and tablets
                 "@media (max-width: 1023px) and (min-width: 768px)": {
-                  height: "280px",
-                  minHeight: "280px",
-                  maxHeight: "280px",
+                  height: "380px",
+                  minHeight: "380px",
+                  maxHeight: "380px",
                 },
                 "&:hover": {
                   transform: "translateY(-10px) scale(1.02)",
@@ -1728,7 +1722,7 @@ function Revenue() {
               }}
             >
               <MDBox
-                p={2}
+                p={3}
                 sx={{
                   flex: 1,
                   display: "flex",
@@ -1740,12 +1734,12 @@ function Revenue() {
 
                   // Responsive padding for better laptop fit
                   "@media (max-width: 1199px) and (min-width: 1024px)": {
-                    p: 1.5,
+                    p: 2.5,
                   },
 
-                  // Smaller padding for small laptops and tablets
+                  // Better padding for small laptops and tablets
                   "@media (max-width: 1023px) and (min-width: 768px)": {
-                    p: 1.2,
+                    p: 2,
                   },
                 }}
               >
@@ -1783,37 +1777,30 @@ function Revenue() {
                             fontWeight: 800,
                             textTransform: "uppercase",
                             letterSpacing: "0.1em",
-                            fontSize: "1.3rem",
+                            fontSize: "1rem",
                             display: "block",
-                            whiteSpace: "pre-line",
+                            whiteSpace: "nowrap",
+                            textAlign: "center",
+                            lineHeight: 1.2,
 
                             // Responsive font sizing for laptop screens
                             "@media (max-width: 1199px) and (min-width: 1024px)": {
-                              fontSize: "0.75rem",
-                              letterSpacing: "0.02em",
-                              whiteSpace: "normal",
+                              fontSize: "0.9rem",
+                              letterSpacing: "0.08em",
+                              whiteSpace: "nowrap",
                               display: "block",
                               textAlign: "center",
                               lineHeight: 1.2,
                             },
 
                             "@media (max-width: 1023px) and (min-width: 768px)": {
-                              fontSize: "1.1rem",
+                              fontSize: "0.85rem",
                               letterSpacing: "0.06em",
+                              whiteSpace: "nowrap",
                             },
                           }}
                         >
-                          <div style={{ 
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            alignItems: 'center',
-                            gap: '2px'
-                          }}>
-                            <div>{item.title.split(' ')[0]}</div>
-                            {item.title.split(' ').length > 1 && (
-                              <div>{item.title.split(' ').slice(1).join(' ')}</div>
-                            )}
-                          </div>
+                          {item.title}
                         </MDTypography>
                       </MDBox>
                       <MDBox
@@ -1827,7 +1814,109 @@ function Revenue() {
                         }}
                       />
                     </MDBox>
-                    {typeof item.amount === "object" && item.amount.type === "custom" ? (
+                    {typeof item.amount === "object" && item.amount.type === "revenue_combined" ? (
+                      <MDBox>
+                        <MDBox mb={2}>
+                          <MDBox
+                            display="grid"
+                            gridTemplateColumns="1fr 1fr"
+                            gap={2}
+                            width="100%"
+                            mb={1}
+                          >
+                            <MDBox textAlign="center">
+                              <MDTypography
+                                sx={{
+                                  fontSize: "0.75rem",
+                                  fontWeight: 600,
+                                  color: "#64748b",
+                                  mb: 1,
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.5px",
+
+                                  // Responsive font sizing for laptop screens
+                                  "@media (max-width: 1199px) and (min-width: 1024px)": {
+                                    fontSize: "0.7rem",
+                                    mb: 0.8,
+                                  },
+
+                                  "@media (max-width: 1023px) and (min-width: 768px)": {
+                                    fontSize: "0.68rem",
+                                    mb: 0.6,
+                                  },
+                                }}
+                              >
+                                Actual
+                              </MDTypography>
+                              <MDTypography
+                                sx={{
+                                  fontSize: "1.6rem",
+                                  fontWeight: 700,
+                                  color: "#1e293b",
+                                  lineHeight: 1.2,
+
+                                  // Responsive font sizing for laptop screens
+                                  "@media (max-width: 1199px) and (min-width: 1024px)": {
+                                    fontSize: "1.5rem",
+                                  },
+
+                                  "@media (max-width: 1023px) and (min-width: 768px)": {
+                                    fontSize: "1.4rem",
+                                  },
+                                }}
+                              >
+                                {item.amount.actual}
+                              </MDTypography>
+                            </MDBox>
+
+                            <MDBox textAlign="center">
+                              <MDTypography
+                                sx={{
+                                  fontSize: "0.75rem",
+                                  fontWeight: 600,
+                                  color: "#64748b",
+                                  mb: 1,
+                                  textTransform: "uppercase",
+                                  letterSpacing: "0.5px",
+
+                                  // Responsive font sizing for laptop screens
+                                  "@media (max-width: 1199px) and (min-width: 1024px)": {
+                                    fontSize: "0.7rem",
+                                    mb: 0.8,
+                                  },
+
+                                  "@media (max-width: 1023px) and (min-width: 768px)": {
+                                    fontSize: "0.68rem",
+                                    mb: 0.6,
+                                  },
+                                }}
+                              >
+                                Expected 
+                              </MDTypography>
+                              <MDTypography
+                                sx={{
+                                  fontSize: "1.6rem",
+                                  fontWeight: 700,
+                                  color: "#1e293b",
+                                  lineHeight: 1.2,
+
+                                  // Responsive font sizing for laptop screens
+                                  "@media (max-width: 1199px) and (min-width: 1024px)": {
+                                    fontSize: "1.5rem",
+                                  },
+
+                                  "@media (max-width: 1023px) and (min-width: 768px)": {
+                                    fontSize: "1.4rem",
+                                  },
+                                }}
+                              >
+                                {item.amount.expected}
+                              </MDTypography>
+                            </MDBox>
+                          </MDBox>
+                        </MDBox>
+                      </MDBox>
+                    ) : typeof item.amount === "object" && item.amount.type === "custom" ? (
                       <MDBox>
                         <MDBox mb={2}>
                           <MDBox
@@ -1871,24 +1960,22 @@ function Revenue() {
                                 </MDTypography>
                                 <MDTypography
                                   sx={{
-                                    fontSize: "1.4rem",
+                                    fontSize: "1.6rem",
                                     fontWeight: 700,
                                     color: "#1e293b",
                                     lineHeight: 1.2,
 
                                     // Responsive font sizing for laptop screens
                                     "@media (max-width: 1199px) and (min-width: 1024px)": {
-                                      fontSize: "1.3rem",
+                                      fontSize: "1.5rem",
                                     },
 
                                     "@media (max-width: 1023px) and (min-width: 768px)": {
-                                      fontSize: "1.2rem",
+                                      fontSize: "1.4rem",
                                     },
                                   }}
                                 >
-                                  {item.title === "ACTUAL REVENUE"
-                                    ? "Actual Revenue"
-                                    : item.amount.actual}
+                                  {item.amount.actual}
                                 </MDTypography>
                               </MDBox>
 
@@ -1918,18 +2005,18 @@ function Revenue() {
                                 </MDTypography>
                                 <MDTypography
                                   sx={{
-                                    fontSize: "1.4rem",
+                                    fontSize: "1.6rem",
                                     fontWeight: 700,
                                     color: "#1e293b",
                                     lineHeight: 1.2,
 
                                     // Responsive font sizing for laptop screens
                                     "@media (max-width: 1199px) and (min-width: 1024px)": {
-                                      fontSize: "1.3rem",
+                                      fontSize: "1.5rem",
                                     },
 
                                     "@media (max-width: 1023px) and (min-width: 768px)": {
-                                      fontSize: "1.2rem",
+                                      fontSize: "1.4rem",
                                     },
                                   }}
                                 >
@@ -1940,316 +2027,214 @@ function Revenue() {
                           </MDBox>
                         </MDBox>
                       </MDBox>
-                    ) : typeof item.amount === "object" && item.amount.type === "category" ? (
-                      <MDBox>
-                        {/* Improved 5-Column Layout for All Categories */}
-                        <MDBox display="grid" gridTemplateColumns="repeat(5, 1fr)" gap={1} mb={0.5}>
-                          {/* Studio */}
-                          {(() => {
-                            const revenue = item.amount.categories.Studio || 0;
-                            const categoryTarget = 0; // No hardcoded targets - use dynamic only
-                            const categoryProgress = Math.min(
-                              (parseFloat(revenue) / categoryTarget) * 100,
-                              100
-                            );
-                            const color = "#3b82f6";
+        ) : typeof item.amount === "object" && item.amount.type === "category" ? (
+          <MDBox>
+            {/* Improved 5-Column Layout for All Categories */}
+            <MDBox display="grid" gridTemplateColumns="repeat(5, 1fr)" gap={1} mb={0.5}>
+              {/* Studio */}
+              {(() => {
+                const revenue = item.amount.categories.Studio || 0;
+                const categoryTarget = 0; // No hardcoded targets - use dynamic only
+                const categoryProgress = Math.min(
+                  (parseFloat(revenue) / categoryTarget) * 100,
+                  100
+                );
+                const color = "#3b82f6";
 
-                            return (
-                              <MDBox
-                                p={0.8}
-                                sx={{
-                                  background: `linear-gradient(135deg, ${color}15 0%, ${color}08 100%)`,
-                                  borderRadius: 2,
-                                  border: `2px solid ${color}30`,
-                                  boxShadow: `0 4px 12px ${color}20`,
-                                  transition: "all 0.3s ease-in-out",
-                                  position: "relative",
-                                  overflow: "hidden",
-                                  "&:hover": {
-                                    transform: "translateY(-2px)",
-                                    boxShadow: `0 8px 20px ${color}30`,
-                                    border: `2px solid ${color}50`,
-                                  },
-                                  "&::before": {
-                                    content: '""',
-                                    position: "absolute",
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    height: "2px",
-                                    background: `linear-gradient(90deg, ${color}, ${color}dd)`,
-                                    borderRadius: "2px 2px 0 0",
-                                  },
-                                }}
-                              >
-                                <MDBox textAlign="center" mb={0.5}>
-                                  <MDTypography
-                                    sx={{
-                                      fontSize: "0.7rem",
-                                      fontWeight: 700,
-                                      color: "#1e293b",
-                                      textTransform: "uppercase",
-                                      letterSpacing: "0.3px",
-                                      mb: 0.3,
-                                    }}
-                                  >
-                                    Studio
-                                  </MDTypography>
-                                  <MDTypography
-                                    sx={{
-                                      fontSize: "0.85rem",
-                                      fontWeight: 800,
-                                      color: color,
-                                      textShadow: `0 2px 4px ${color}30`,
-                                    }}
-                                  >
-                                    {formatCurrency(parseFloat(revenue) || 0)}
-                                  </MDTypography>
-                                </MDBox>
-                                <MDBox
-                                  sx={{
-                                    height: 4,
-                                    borderRadius: 2,
-                                    background: "#e2e8f0",
-                                    overflow: "hidden",
-                                    mb: 0.5,
-                                    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.1)",
-                                  }}
-                                >
-                                  <MDBox
-                                    sx={{
-                                      height: "100%",
-                                      width: `${categoryProgress}%`,
-                                      background: `linear-gradient(90deg, ${color}, ${color}dd)`,
-                                      borderRadius: 2,
-                                      transition: "width 2s ease-in-out",
-                                      boxShadow: `0 0 6px ${color}50`,
-                                    }}
-                                  />
-                                </MDBox>
-                                <MDBox textAlign="center">
-                                  <MDTypography
-                                    sx={{
-                                      fontSize: "0.6rem",
-                                      fontWeight: 700,
-                                      color: "#3b82f6",
-                                      background: "#3b82f615",
-                                      padding: "1px 6px",
-                                      borderRadius: 1,
-                                      display: "inline-block",
-                                    }}
-                                  >
-                                    {categoryProgress.toFixed(1)}%
-                                  </MDTypography>
-                                </MDBox>
-                              </MDBox>
-                            );
-                          })()}
+                return (
+                  <MDBox
+                    p={0.8}
+                    sx={{
+                      background: `linear-gradient(135deg, ${color}15 0%, ${color}08 100%)`,
+                      borderRadius: 2,
+                      border: `2px solid ${color}30`,
+                      boxShadow: `0 4px 12px ${color}20`,
+                      transition: "all 0.3s ease-in-out",
+                      position: "relative",
+                      overflow: "hidden",
+                      "&:hover": {
+                        transform: "translateY(-2px)",
+                        boxShadow: `0 8px 20px ${color}30`,
+                        border: `2px solid ${color}50`,
+                      },
+                      "&::before": {
+                        content: '""',
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: "2px",
+                        background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+                        borderRadius: "2px 2px 0 0",
+                      },
+                    }}
+                  >
+                    <MDBox textAlign="center" mb={0.5}>
+                      <MDTypography
+                        sx={{
+                          fontSize: "0.7rem",
+                          fontWeight: 700,
+                          color: "#1e293b",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.3px",
+                          mb: 0.3,
+                        }}
+                      >
+                        Studio
+                      </MDTypography>
+                      <MDTypography
+                        sx={{
+                          fontSize: "0.85rem",
+                          fontWeight: 800,
+                          color: color,
+                          textShadow: `0 2px 4px ${color}30`,
+                        }}
+                      >
+                        {formatCurrency(parseFloat(revenue) || 0)}
+                      </MDTypography>
+                    </MDBox>
+                    <MDBox
+                      sx={{
+                        height: 4,
+                        borderRadius: 2,
+                        background: "#e2e8f0",
+                        overflow: "hidden",
+                        mb: 0.5,
+                        boxShadow: "inset 0 1px 2px rgba(0,0,0,0.1)",
+                      }}
+                    >
+                      <MDBox
+                        sx={{
+                          height: "100%",
+                          width: `${categoryProgress}%`,
+                          background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+                          borderRadius: 2,
+                          transition: "width 2s ease-in-out",
+                          boxShadow: `0 0 6px ${color}50`,
+                        }}
+                      />
+                    </MDBox>
+                    <MDBox textAlign="center">
+                      <MDTypography
+                        sx={{
+                          fontSize: "0.6rem",
+                          fontWeight: 700,
+                          color: "#3b82f6",
+                          background: "#3b82f615",
+                          padding: "1px 6px",
+                          borderRadius: 1,
+                          display: "inline-block",
+                        }}
+                      >
+                        {categoryProgress.toFixed(1)}%
+                      </MDTypography>
+                    </MDBox>
+                  </MDBox>
+                );
+              })()}
 
-                          {/* 2BR */}
-                          {(() => {
-                            const revenue = item.amount.categories["2BR"] || 0;
-                            const categoryTarget = 0; // No hardcoded targets - use dynamic only
-                            const categoryProgress = Math.min(
-                              (parseFloat(revenue) / categoryTarget) * 100,
-                              100
-                            );
-                            const color = "#06d6a0";
+              {/* 2BR */}
+              {(() => {
+                const revenue = item.amount.categories["2BR"] || 0;
+                const categoryTarget = 0; // No hardcoded targets - use dynamic only
+                const categoryProgress = Math.min(
+                  (parseFloat(revenue) / categoryTarget) * 100,
+                  100
+                );
+                const color = "#06d6a0";
 
-                            return (
-                              <MDBox
-                                p={0.8}
-                                sx={{
-                                  background: `linear-gradient(135deg, ${color}15 0%, ${color}08 100%)`,
-                                  borderRadius: 2,
-                                  border: `2px solid ${color}30`,
-                                  boxShadow: `0 4px 12px ${color}20`,
-                                  transition: "all 0.3s ease-in-out",
-                                  position: "relative",
-                                  overflow: "hidden",
-                                  "&:hover": {
-                                    transform: "translateY(-2px)",
-                                    boxShadow: `0 8px 20px ${color}30`,
-                                    border: `2px solid ${color}50`,
-                                  },
-                                  "&::before": {
-                                    content: '""',
-                                    position: "absolute",
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    height: "2px",
-                                    background: `linear-gradient(90deg, ${color}, ${color}dd)`,
-                                    borderRadius: "2px 2px 0 0",
-                                  },
-                                }}
-                              >
-                                <MDBox textAlign="center" mb={0.5}>
-                                  <MDTypography
-                                    sx={{
-                                      fontSize: "0.7rem",
-                                      fontWeight: 700,
-                                      color: "#1e293b",
-                                      textTransform: "uppercase",
-                                      letterSpacing: "0.3px",
-                                      mb: 0.3,
-                                    }}
-                                  >
-                                    2BR
-                                  </MDTypography>
-                                  <MDTypography
-                                    sx={{
-                                      fontSize: "0.85rem",
-                                      fontWeight: 800,
-                                      color: color,
-                                      textShadow: `0 2px 4px ${color}30`,
-                                    }}
-                                  >
-                                    {formatCurrency(parseFloat(revenue) || 0)}
-                                  </MDTypography>
-                                </MDBox>
-                                <MDBox
-                                  sx={{
-                                    height: 4,
-                                    borderRadius: 2,
-                                    background: "#e2e8f0",
-                                    overflow: "hidden",
-                                    mb: 0.5,
-                                    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.1)",
-                                  }}
-                                >
-                                  <MDBox
-                                    sx={{
-                                      height: "100%",
-                                      width: `${categoryProgress}%`,
-                                      background: `linear-gradient(90deg, ${color}, ${color}dd)`,
-                                      borderRadius: 2,
-                                      transition: "width 2s ease-in-out",
-                                      boxShadow: `0 0 6px ${color}50`,
-                                    }}
-                                  />
-                                </MDBox>
-                                <MDBox textAlign="center">
-                                  <MDTypography
-                                    sx={{
-                                      fontSize: "0.6rem",
-                                      fontWeight: 700,
-                                      color: "#8b5cf6",
-                                      background: "#8b5cf615",
-                                      padding: "1px 6px",
-                                      borderRadius: 1,
-                                      display: "inline-block",
-                                    }}
-                                  >
-                                    {categoryProgress.toFixed(1)}%
-                                  </MDTypography>
-                                </MDBox>
-                              </MDBox>
-                            );
-                          })()}
-
-                          {/* 1BR */}
-                          {(() => {
-                            const revenue = item.amount.categories["1BR"] || 0;
-                            const categoryTarget = 0; // No hardcoded targets - use dynamic only
-                            const categoryProgress = Math.min(
-                              (parseFloat(revenue) / categoryTarget) * 100,
-                              100
-                            );
-                            const color = "#8b5cf6";
-
-                            return (
-                              <MDBox
-                                p={0.8}
-                                sx={{
-                                  background: `linear-gradient(135deg, ${color}15 0%, ${color}08 100%)`,
-                                  borderRadius: 2,
-                                  border: `2px solid ${color}30`,
-                                  boxShadow: `0 4px 12px ${color}20`,
-                                  transition: "all 0.3s ease-in-out",
-                                  position: "relative",
-                                  overflow: "hidden",
-                                  "&:hover": {
-                                    transform: "translateY(-2px)",
-                                    boxShadow: `0 8px 20px ${color}30`,
-                                    border: `2px solid ${color}50`,
-                                  },
-                                  "&::before": {
-                                    content: '""',
-                                    position: "absolute",
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    height: "2px",
-                                    background: `linear-gradient(90deg, ${color}, ${color}dd)`,
-                                    borderRadius: "2px 2px 0 0",
-                                  },
-                                }}
-                              >
-                                <MDBox textAlign="center" mb={0.5}>
-                                  <MDTypography
-                                    sx={{
-                                      fontSize: "0.7rem",
-                                      fontWeight: 700,
-                                      color: "#1e293b",
-                                      textTransform: "uppercase",
-                                      letterSpacing: "0.3px",
-                                      mb: 0.3,
-                                    }}
-                                  >
-                                    1BR
-                                  </MDTypography>
-                                  <MDTypography
-                                    sx={{
-                                      fontSize: "0.85rem",
-                                      fontWeight: 800,
-                                      color: color,
-                                      textShadow: `0 2px 4px ${color}30`,
-                                    }}
-                                  >
-                                    {formatCurrency(parseFloat(revenue) || 0)}
-                                  </MDTypography>
-                                </MDBox>
-                                <MDBox
-                                  sx={{
-                                    height: 4,
-                                    borderRadius: 2,
-                                    background: "#e2e8f0",
-                                    overflow: "hidden",
-                                    mb: 0.5,
-                                    boxShadow: "inset 0 1px 2px rgba(0,0,0,0.1)",
-                                  }}
-                                >
-                                  <MDBox
-                                    sx={{
-                                      height: "100%",
-                                      width: `${categoryProgress}%`,
-                                      background: `linear-gradient(90deg, ${color}, ${color}dd)`,
-                                      borderRadius: 2,
-                                      transition: "width 2s ease-in-out",
-                                      boxShadow: `0 0 6px ${color}50`,
-                                    }}
-                                  />
-                                </MDBox>
-                                <MDBox textAlign="center">
-                                  <MDTypography
-                                    sx={{
-                                      fontSize: "0.6rem",
-                                      fontWeight: 700,
-                                      color: "#06d6a0",
-                                      background: "#06d6a015",
-                                      padding: "1px 6px",
-                                      borderRadius: 1,
-                                      display: "inline-block",
-                                    }}
-                                  >
-                                    {categoryProgress.toFixed(1)}%
-                                  </MDTypography>
-                                </MDBox>
-                              </MDBox>
-                            );
-                          })()}
-                        </MDBox>
+                return (
+                  <MDBox
+                    p={0.8}
+                    sx={{
+                      background: `linear-gradient(135deg, ${color}15 0%, ${color}08 100%)`,
+                      borderRadius: 2,
+                      border: `2px solid ${color}30`,
+                      boxShadow: `0 4px 12px ${color}20`,
+                      transition: "all 0.3s ease-in-out",
+                      position: "relative",
+                      overflow: "hidden",
+                      "&:hover": {
+                        transform: "translateY(-2px)",
+                        boxShadow: `0 8px 20px ${color}30`,
+                        border: `2px solid ${color}50`,
+                      },
+                      "&::before": {
+                        content: '""',
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: "2px",
+                        background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+                        borderRadius: "2px 2px 0 0",
+                      },
+                    }}
+                  >
+                    <MDBox textAlign="center" mb={0.5}>
+                      <MDTypography
+                        sx={{
+                          fontSize: "0.7rem",
+                          fontWeight: 700,
+                          color: "#1e293b",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.3px",
+                          mb: 0.3,
+                        }}
+                      >
+                        2BR
+                      </MDTypography>
+                      <MDTypography
+                        sx={{
+                          fontSize: "0.85rem",
+                          fontWeight: 800,
+                          color: color,
+                          textShadow: `0 2px 4px ${color}30`,
+                        }}
+                      >
+                        {formatCurrency(parseFloat(revenue) || 0)}
+                      </MDTypography>
+                    </MDBox>
+                    <MDBox
+                      sx={{
+                        height: 4,
+                        borderRadius: 2,
+                        background: "#e2e8f0",
+                        overflow: "hidden",
+                        mb: 0.5,
+                        boxShadow: "inset 0 1px 2px rgba(0,0,0,0.1)",
+                      }}
+                    >
+                      <MDBox
+                        sx={{
+                          height: "100%",
+                          width: `${categoryProgress}%`,
+                          background: `linear-gradient(90deg, ${color}, ${color}dd)`,
+                          borderRadius: 2,
+                          transition: "width 2s ease-in-out",
+                          boxShadow: `0 0 6px ${color}50`,
+                        }}
+                      />
+                    </MDBox>
+                    <MDBox textAlign="center">
+                      <MDTypography
+                        sx={{
+                          fontSize: "0.6rem",
+                          fontWeight: 700,
+                          color: "#06d6a0",
+                          background: "#06d6a015",
+                          padding: "1px 6px",
+                          borderRadius: 1,
+                          display: "inline-block",
+                        }}
+                      >
+                        {categoryProgress.toFixed(1)}%
+                      </MDTypography>
+                    </MDBox>
+                  </MDBox>
+                );
+              })()}
+            </MDBox>
 
                         {/* Second row with 2BR Premium and 3BR */}
                         <MDBox display="grid" gridTemplateColumns="1fr 1fr 1fr" gap={1} mb={0.5}>
@@ -2674,13 +2659,13 @@ function Revenue() {
                                  index === 2 ? "#06d6a0" : 
                                  index === 3 ? "#f59e0b" : "#ef4444",
                           fontWeight: 500,
-                          fontSize: "1.2rem",
+                          fontSize: "1.4rem",
                           position: "relative",
                           zIndex: 1,
                           letterSpacing: "1px",
                           fontFamily: "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
                           background: "#ffffff",
-                          padding: "8px 16px",
+                          padding: "10px 18px",
                           borderRadius: "8px",
                           border: "1px solid #e2e8f0",
                           boxShadow: "0 2px 8px rgba(0,0,0,0.1)",

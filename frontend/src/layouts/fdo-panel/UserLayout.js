@@ -7,7 +7,7 @@ import { AppBar, Toolbar, Typography, Box, Avatar, Chip } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PersonIcon from "@mui/icons-material/Person";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import customLogo from "assets/images/custom-logo.png";
+import customLogoImg from "assets/images/custom-logo.png";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -44,21 +44,7 @@ function UserLayout({ children }) {
         <Toolbar sx={{ justifyContent: "space-between", px: 4, py: 1 }}>
           {/* Left Side - Logo and Title */}
           <Box display="flex" alignItems="center" gap={2}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 80,
-                height: 80,
-                borderRadius: "20px",
-                backgroundColor: "white",
-                border: "1px solid #e2e8f0",
-                color: "white",
-              }}
-            >
-              <img src={customLogo} alt="Logo" style={{ width: 70, height: 70, borderRadius: "16px" }} />
-            </Box>
+            <img src={customLogoImg} alt="Custom Logo" style={{ width: 100, height: 100 }} />
             <Box>
               <Typography
                 variant="h5"

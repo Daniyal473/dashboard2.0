@@ -35,6 +35,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import Alert from "@mui/material/Alert";
+import CircularProgress from "@mui/material/CircularProgress";
 
 // @mui icons
 import FacebookIcon from "@mui/icons-material/Facebook";
@@ -65,6 +66,11 @@ function Basic() {
     showPassword: false,
     loading: false,
     error: "",
+  });
+  const [loginState, setLoginState] = useState({
+    loading: false,
+    error: "",
+    success: false,
   });
 
   const handleInputChange = (field) => (event) => {
@@ -156,9 +162,22 @@ function Basic() {
     }
   };
 
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     console.log("Form submitted:", formData);
+
+    // Validation
+    if (!formData.username.trim()) {
+      setLoginState({ ...loginState, error: "Username is required" });
+      return;
+    }
+    if (!formData.password.trim()) {
+      setLoginState({ ...loginState, error: "Password is required" });
+      return;
+    }
+
+    setLoginState({ loading: true, error: "", success: false });
 
     try {
       // Call authentication API
@@ -182,22 +201,28 @@ function Basic() {
         console.log("✅ Login successful:", result.message);
         console.log("👤 User role:", result.user.role);
 
-        // Navigate based on user role
-        if (result.user.role === "user") {
-          navigate("/fdo-panel");
-        } else if (result.user.role === "admin") {
-          navigate("/dashboard");
-        } else {
-          // Default fallback
-          navigate("/fdo-panel");
-        }
+        setLoginState({ loading: false, error: "", success: true });
+
+        // Small delay to show success message
+        setTimeout(() => {
+          // Navigate based on user role
+          if (result.user.role === "user") {
+            navigate("/fdo-panel");
+          } else if (result.user.role === "admin") {
+            navigate("/dashboard");
+          } else {
+            // Default fallback
+            navigate("/fdo-panel");
+          }
+        }, 1000);
       } else {
         console.error("❌ Login failed:", result.message);
-        alert(result.message);
+        setLoginState({ loading: false, error: result.message, success: false });
       }
     } catch (error) {
       console.error("❌ Login error:", error);
-      alert("Login failed. Please check your connection and try again.");
+      const errorMessage = "Login failed. Please check your connection and try again.";
+      setLoginState({ loading: false, error: errorMessage, success: false });
     }
   };
 
@@ -247,9 +272,9 @@ function Basic() {
                   src={require("../../../assets/images/custom-logo.png")}
                   alt="Custom Logo"
                   sx={{
-                    height: "150px", // Much larger logo
+                    height: "150px",
                     width: "auto",
-                    maxWidth: "350px", // Increased max width for larger logos
+                    maxWidth: "350px",
                   }}
                 />
               </MDBox>
@@ -267,6 +292,43 @@ function Basic() {
                 Sign into your account
               </MDTypography>
             </MDBox>
+
+
+
+            {/* Error Alert */}
+            {loginState.error && (
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 3,
+                  borderRadius: "8px",
+                  "& .MuiAlert-message": {
+                    fontSize: "0.875rem",
+                    fontWeight: "500",
+                  },
+                }}
+                onClose={() => setLoginState({ ...loginState, error: "" })}
+              >
+                {loginState.error}
+              </Alert>
+            )}
+
+            {/* Success Alert */}
+            {loginState.success && (
+              <Alert 
+                severity="success" 
+                sx={{ 
+                  mb: 3,
+                  borderRadius: "8px",
+                  "& .MuiAlert-message": {
+                    fontSize: "0.875rem",
+                    fontWeight: "500",
+                  },
+                }}
+              >
+                Login successful! Redirecting...
+              </Alert>
+            )}
 
             {/* Form */}
             <MDBox component="form" onSubmit={handleSubmit}>
@@ -396,8 +458,9 @@ function Basic() {
                   type="submit"
                   fullWidth
                   size="large"
+                  disabled={loginState.loading}
                   sx={{
-                    background: "#8a8a8a !important", // Lighter gray to match logo
+                    background: loginState.loading ? "#d1d5db !important" : "#8a8a8a !important",
                     borderRadius: "6px",
                     textTransform: "none",
                     fontSize: "0.875rem",
@@ -405,25 +468,39 @@ function Basic() {
                     py: 1.5,
                     color: "#ffffff !important",
                     boxShadow: "none !important",
-                    transition: "none !important", // Disable all transitions
+                    transition: "none !important",
+                    position: "relative",
                     "&:hover": {
-                      background: "#8a8a8a !important", // Force same color on hover
-                      backgroundColor: "#8a8a8a !important",
+                      background: loginState.loading ? "#d1d5db !important" : "#8a8a8a !important",
+                      backgroundColor: loginState.loading ? "#d1d5db !important" : "#8a8a8a !important",
                       boxShadow: "none !important",
                       transform: "none !important",
                       filter: "none !important",
                     },
                     "&:active": {
-                      background: "#8a8a8a !important",
-                      backgroundColor: "#8a8a8a !important",
+                      background: loginState.loading ? "#d1d5db !important" : "#8a8a8a !important",
+                      backgroundColor: loginState.loading ? "#d1d5db !important" : "#8a8a8a !important",
                     },
                     "&:focus": {
-                      background: "#8a8a8a !important",
-                      backgroundColor: "#8a8a8a !important",
+                      background: loginState.loading ? "#d1d5db !important" : "#8a8a8a !important",
+                      backgroundColor: loginState.loading ? "#d1d5db !important" : "#8a8a8a !important",
+                    },
+                    "&.Mui-disabled": {
+                      color: "#ffffff !important",
                     },
                   }}
                 >
-                  Login
+                  {loginState.loading ? (
+                    <MDBox display="flex" alignItems="center" gap={1}>
+                      <CircularProgress 
+                        size={16} 
+                        sx={{ color: "#ffffff" }} 
+                      />
+                      Signing in...
+                    </MDBox>
+                  ) : (
+                    "Login"
+                  )}
                 </MDButton>
               </MDBox>
 
@@ -635,6 +712,7 @@ function Basic() {
           </MDButton>
         </DialogActions>
       </Dialog>
+
     </MDBox>
   );
 }
