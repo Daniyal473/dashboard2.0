@@ -78,7 +78,6 @@ function ReservationCard({ guest, setSnackbar }) {
   const [cooldown, setCooldown] = useState(false);
   const [cooldownTime, setCooldownTime] = useState(0);
 
-
   const HOSTAWAY_API = "https://api.hostaway.com/v1/reservations";
   const HOSTAWAY_TOKEN =
     "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI4MDA2NiIsImp0aSI6ImNhYzRlNzlkOWVmZTBiMmZmOTBiNzlkNTEzYzIyZTU1MDhiYWEwNWM2OGEzYzNhNzJhNTU1ZmMzNDI4OTQ1OTg2YWI0NTVjNmJjOWViZjFkIiwiaWF0IjoxNzM2MTY3ODExLjgzNTUyNCwibmJmIjoxNzM2MTY3ODExLjgzNTUyNiwiZXhwIjoyMDUxNzAwNjExLjgzNTUzMSwic3ViIjoiIiwic2NvcGVzIjpbImdlbmVyYWwiXSwic2VjcmV0SWQiOjUzOTUyfQ.Mmqfwt5R4CK5AHwNQFfe-m4PXypLLbAPtzCD7CxgjmagGa0AWfLzPM_panH9fCbYbC1ilNpQ-51KOQjRtaFT3vR6YKEJAUkUSOKjZupQTwQKf7QE8ZbLQDi0F951WCPl9uKz1nELm73V30a8rhDN-97I43FWfrGyqBgt7F8wPkE";
@@ -1479,7 +1478,7 @@ ${CheckOutSecurityDeposit !== "0"
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            reservation_id: reservationId,
+            reservation_id: guest.reservationId,
             "Today Date": today,
           }),
         }
@@ -1524,15 +1523,22 @@ ${CheckOutSecurityDeposit !== "0"
       <MDBox p={2}>
         {/* Reservation ID at top */}
         <MDBox display="flex" justifyContent="space-between" alignItems="center" sx={{ gap: 0.5 }}>
-          <MDTypography variant="body2" sx={{ fontSize: "0.85rem", margin: 0 }}>
-            Reservation ID
-          </MDTypography>
+          <MDBox display="flex" alignItems="center" sx={{ gap: 0.5 }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="4" y1="9" x2="20" y2="9" />
+              <line x1="4" y1="15" x2="20" y2="15" />
+              <line x1="10" y1="3" x2="8" y2="21" />
+              <line x1="16" y1="3" x2="14" y2="21" />
+            </svg>
+            <MDTypography variant="body2" fontWeight="bold" sx={{ fontSize: "0.85rem", margin: 1 }}>
+              Reservation ID
+            </MDTypography>
+          </MDBox>
           <MDTypography variant="body2" sx={{ fontSize: "0.85rem", margin: 0 }}>
             {guest.reservationId ? (
               <MDTypography
                 component="span"
                 color="dark"
-                fontWeight="bold"
                 sx={{
                   cursor: "pointer",
                   display: "inline-flex",
@@ -1563,7 +1569,7 @@ ${CheckOutSecurityDeposit !== "0"
           </MDBox>
           <MDBox display="flex" alignItems="center">
             <ApartmentIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
-            <MDTypography variant="body2" fontWeight="medium" sx={{ fontSize: "0.85rem" }}>
+            <MDTypography variant="body2" fontWeight="small" sx={{ fontSize: "0.85rem" }}>
               {guest.listingName || "N/A"}
             </MDTypography>
           </MDBox>
@@ -1603,8 +1609,8 @@ ${CheckOutSecurityDeposit !== "0"
         <MDBox mt={0}>
           {guest.actualCheckin && guest.actualCheckin !== "N/A" && (
             <MDBox display="flex" alignItems="center" mb={0.5}>
-              <CheckCircleIcon fontSize="small" sx={{ mr: 1, color: "success.main" }} />
-              <MDTypography variant="body2" sx={{ fontSize: "0.85rem", color: "success.main" }}>
+              <CheckCircleIcon fontSize="small" sx={{ mr: 1, color: "#17621B" }} />
+              <MDTypography variant="body2" sx={{ fontSize: "0.85rem", color: "#17621B", fontWeight: 500 }}>
                 Check-In: {guest.actualCheckin}
               </MDTypography>
             </MDBox>
@@ -1612,8 +1618,8 @@ ${CheckOutSecurityDeposit !== "0"
 
           {guest.actualCheckout && guest.actualCheckout !== "N/A" && (
             <MDBox display="flex" alignItems="center">
-              <ExitToAppIcon fontSize="small" sx={{ mr: 1, color: "error.main" }} />
-              <MDTypography variant="body2" sx={{ fontSize: "0.85rem", color: "primary.main" }}>
+              <ExitToAppIcon fontSize="small" sx={{ mr: 1, color: "#951718" }} />
+              <MDTypography variant="body2" sx={{ fontSize: "0.85rem", color: "#951718", fontWeight: 500 }}>
                 Check-Out: {guest.actualCheckout}
               </MDTypography>
             </MDBox>
@@ -1622,7 +1628,7 @@ ${CheckOutSecurityDeposit !== "0"
 
         {/* Tags */}
         {guest.tags?.length > 0 && (
-          <MDBox display="flex" flexWrap="wrap" mt={1}>
+          <MDBox display="flex" flexWrap="wrap" mt={3}>
             {guest.tags.map((tag, index) => (
               <Chip
                 key={index}
@@ -1715,20 +1721,20 @@ ${CheckOutSecurityDeposit !== "0"
                   textTransform: "none",
                   fontWeight: "bold",
                   boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                  color: "success.main",
-                  borderColor: "success.main",
+                  color: "#17621B", // ✅ custom green text
+                  border: "2px solid #17621B", // ✅ green border
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "success.light", // ✅ lighter green hover
-                    borderColor: "success.dark",
-                    color: "#fff", // ✅ readable text on green bg
+                    backgroundColor: "#1e7a20", // ✅ lighter green hover
+                    borderColor: "#145517",
+                    color: "#fff", // ✅ white text on hover
                   },
                   "&:focus": {
-                    backgroundColor: "success.dark", // ✅ deeper green on focus
+                    backgroundColor: "#145517", // ✅ darker focus
                     color: "#fff",
                   },
                   "&:active": {
-                    backgroundColor: "success.dark", // ✅ consistent active tone
+                    backgroundColor: "#145517",
                     color: "#fff",
                   },
                 }}
@@ -1745,20 +1751,20 @@ ${CheckOutSecurityDeposit !== "0"
                   textTransform: "none",
                   fontWeight: "bold",
                   boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                  color: "success.main",
-                  borderColor: "success.main",
+                  color: "#17621B",
+                  border: "2px solid #17621B",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "success.light",
-                    borderColor: "success.dark",
+                    backgroundColor: "#1e7a20",
+                    borderColor: "#145517",
                     color: "#fff",
                   },
                   "&:focus": {
-                    backgroundColor: "success.dark",
+                    backgroundColor: "#145517",
                     color: "#fff",
                   },
                   "&:active": {
-                    backgroundColor: "success.dark",
+                    backgroundColor: "#145517",
                     color: "#fff",
                   },
                 }}
@@ -1772,7 +1778,6 @@ ${CheckOutSecurityDeposit !== "0"
             (!guest.actualCheckout || guest.actualCheckout === "N/A") &&
             (!isCheckedOut ? (
               <Button
-                variant="outlined"
                 size="small"
                 onClick={handleMarkCheckOut}
                 sx={{
@@ -1780,20 +1785,20 @@ ${CheckOutSecurityDeposit !== "0"
                   textTransform: "none",
                   fontWeight: "bold",
                   boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                  color: "primary.main",
-                  borderColor: "primary.main",
+                  color: "#951718", // ✅ custom red text                  
+                  border: "2px solid #951718",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "primary.light", // ✅ lighter blue on hover
-                    borderColor: "primary.dark",
-                    color: "#fff", // ✅ white text for contrast
+                    backgroundColor: "#b21c1d", // ✅ lighter red on hover
+                    borderColor: "#831415ff",
+                    color: "#fff", // white text for contrast
                   },
                   "&:focus": {
-                    backgroundColor: "primary.dark", // ✅ darker blue on focus
+                    backgroundColor: "#7a1213", // ✅ darker red on focus
                     color: "#fff",
                   },
                   "&:active": {
-                    backgroundColor: "primary.dark",
+                    backgroundColor: "#7a1213",
                     color: "#fff",
                   },
                 }}
@@ -1802,7 +1807,6 @@ ${CheckOutSecurityDeposit !== "0"
               </Button>
             ) : (
               <Button
-                variant="outlined"
                 size="small"
                 onClick={handlePrintCheckOut}
                 sx={{
@@ -1810,20 +1814,20 @@ ${CheckOutSecurityDeposit !== "0"
                   textTransform: "none",
                   fontWeight: "bold",
                   boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                  color: "primary.main",
-                  borderColor: "primary.main",
+                  color: "#951718", // ✅ custom red text
+                  border: "2px solid #951718",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "primary.light",
-                    borderColor: "primary.dark",
+                    backgroundColor: "#b21c1d", // lighter red hover
+                    borderColor: "#7a1213",
                     color: "#fff",
                   },
                   "&:focus": {
-                    backgroundColor: "primary.dark",
+                    backgroundColor: "#7a1213",
                     color: "#fff",
                   },
                   "&:active": {
-                    backgroundColor: "primary.dark",
+                    backgroundColor: "#7a1213",
                     color: "#fff",
                   },
                 }}
@@ -1831,7 +1835,7 @@ ${CheckOutSecurityDeposit !== "0"
                 Print Check Out
               </Button>
             ))}
-            
+
           {/* ✅ Checked Out Label */}
           {guest.actualCheckin && guest.actualCheckin !== "N/A" &&
             guest.actualCheckout && guest.actualCheckout !== "N/A" && (
@@ -1870,8 +1874,20 @@ ${CheckOutSecurityDeposit !== "0"
         </DialogTitle>
         <DialogContent dividers>
           {loadingDetails ? (
-            <MDBox display="flex" justifyContent="center" alignItems="center" py={2}>
+            <MDBox
+              display="flex"
+              flexDirection="column"
+              justifyContent="center"
+              alignItems="center"
+              py={4}
+            >
               <CircularProgress />
+              <MDTypography
+                variant="body2"
+                sx={{ marginTop: 2, color: "#555", fontWeight: 500 }}
+              >
+                Loading...
+              </MDTypography>
             </MDBox>
           ) : error ? (
             <MDTypography variant="body2" color="error">
@@ -2057,7 +2073,7 @@ ${CheckOutSecurityDeposit !== "0"
                 </Col>
               </Row>
               {/* ✅ Full-width row at the end */}
-              <Row className="mt-0">
+              <Row style={{ marginTop: "-16px" }}>
                 <Col md={12}>
                   <Table striped bordered hover size="sm">
                     <tbody>
@@ -2804,11 +2820,6 @@ function KanbanView() {
           {snackbar.message}
         </Alert>
       </Snackbar>
-
-      {/* ✅ Pass to all ReservationCards */}
-      {reservations.map((guest) => (
-        <ReservationCard key={guest.id} guest={guest} setSnackbar={setSnackbar} />
-      ))}
     </>
   );
 }
