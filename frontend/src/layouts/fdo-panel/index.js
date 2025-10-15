@@ -768,7 +768,7 @@ ul li {
   <div class="info-fields">
   <div class="field-group">
     <span class="field-label">Vehicle Number:</span>
-    <span class="field-value" style="text-transform: uppercase;">${vehicleNumber || "N/A"}</span>
+    <span class="field-value" >${vehicleNumber || "N/A"}</span>
   </div>
 
   <div class="field-group">
@@ -1778,6 +1778,7 @@ ${CheckOutSecurityDeposit !== "0"
             (!guest.actualCheckout || guest.actualCheckout === "N/A") &&
             (!isCheckedOut ? (
               <Button
+                variant="outlined"
                 size="small"
                 onClick={handleMarkCheckOut}
                 sx={{
@@ -1807,6 +1808,7 @@ ${CheckOutSecurityDeposit !== "0"
               </Button>
             ) : (
               <Button
+                variant="outlined"
                 size="small"
                 onClick={handlePrintCheckOut}
                 sx={{
