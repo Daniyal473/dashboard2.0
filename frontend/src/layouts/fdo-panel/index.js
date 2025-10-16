@@ -77,6 +77,8 @@ function ReservationCard({ guest, setSnackbar }) {
   const [isCheckedOut, setIsCheckedOut] = useState(false);
   const [cooldown, setCooldown] = useState(false);
   const [cooldownTime, setCooldownTime] = useState(0);
+  const [canPrintCheckIn, setCanPrintCheckIn] = useState(false);
+  const [canPrintCheckOut, setCanPrintCheckOut] = useState(false);
 
   const HOSTAWAY_API = "https://api.hostaway.com/v1/reservations";
   const HOSTAWAY_TOKEN =
@@ -492,6 +494,35 @@ ul li {
       formWindow.document.open();
       formWindow.document.write(htmlContent);
       formWindow.document.close();
+
+      // ✅ After printing, update Hostaway custom field (ID 84716)
+      const updatePayload = {
+        customFieldValues: [
+          {
+            customFieldId: 84716,
+            value: "Yes",
+          },
+        ],
+      };
+
+      const updateResponse = await fetch(`${HOSTAWAY_API}/${guest.reservationId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${HOSTAWAY_TOKEN}`,
+        },
+        body: JSON.stringify(updatePayload),
+      });
+
+      const updateResult = await updateResponse.json();
+
+      if (!updateResponse.ok || updateResult.status === "fail") {
+        console.error("❌ Failed to update Print Check In field:", updateResult);
+      } else {
+        console.log("✅ Successfully marked Print Check In as 'Yes' in Hostaway.");
+        setCanPrintCheckIn(false);
+      }
+
     } catch (err) {
       console.error("Error preparing check-in form:", err);
       alert("Could not load reservation for printing.");
@@ -1510,6 +1541,46 @@ ${CheckOutSecurityDeposit !== "0"
     }
   };
 
+  const fetchPrintButtonStatus = async (reservationId) => {
+    try {
+      const response = await fetch(`${HOSTAWAY_API}/${guest.reservationId}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${HOSTAWAY_TOKEN}` },
+      });
+      const data = await response.json();
+
+      const fieldArray = data?.result?.customFieldValues || [];
+
+      // Find the "Print Check In" field by its ID
+      const printField = fieldArray.find(
+        (field) => field.customFieldId === 84716
+      );
+
+      const printValue = printField?.value?.trim().toLowerCase() || "";
+      const isPrinted = printValue === "yes";
+
+      // ✅ "Print Check Out" (ID: 84717)
+      const printCheckOutField = fieldArray.find(
+        (field) => field.customFieldId === 84717
+      );
+      const printCheckOutValue = printCheckOutField?.value?.trim().toLowerCase() || "";
+      const isCheckOutPrinted = printCheckOutValue === "yes";
+
+      setCanPrintCheckIn(!isPrinted); // only show button if NOT printed
+      setCanPrintCheckOut(!isCheckOutPrinted); // same for checkout
+    } catch (error) {
+      console.error("Failed to fetch Print Check In status:", error);
+      setCanPrintCheckIn(false);
+      setCanPrintCheckOut(false);
+    }
+  };
+
+  // Fetch when component mounts or guest changes
+  useEffect(() => {
+    if (guest?.reservationId) {
+      fetchPrintButtonStatus(guest.reservationId);
+    }
+  }, [guest]);
 
   return (
     <Card
@@ -1629,21 +1700,36 @@ ${CheckOutSecurityDeposit !== "0"
         {/* Tags */}
         {guest.tags?.length > 0 && (
           <MDBox display="flex" flexWrap="wrap" mt={3}>
-            {guest.tags.map((tag, index) => (
-              <Chip
-                key={index}
-                label={tag}
-                size="small"
-                sx={{
-                  mr: 0.5,
-                  mb: 0.5,
-                  bgcolor: "dark.light",
-                  color: "white",
-                  fontWeight: "bold",
-                  fontSize: "0.71rem",
-                }}
-              />
-            ))}
+            {guest.tags.map((tag, index) => {
+              // Define the background colors for each tag
+              const tagColors = {
+                "Urgent": "#007bff",
+                "Normal": "#ffec99",
+                "Paid": "#28a745",
+                "Partially paid": "#a3cca3",
+                "Due": "#ae0814",
+                "Unknown": "#404040",
+                "Not Cleaned ❌": "#c4c4c4",
+                "Cleaned ✅": "#a3cca3",
+                "Unpaid": "#ccaa2f"
+              };
+
+              return (
+                <Chip
+                  key={index}
+                  label={tag}
+                  size="small"
+                  sx={{
+                    mr: 0.5,
+                    mb: 0.5,
+                    bgcolor: tagColors[tag] || "#808080", // fallback color
+                    color: "#fff", // text color
+                    fontWeight: "bold",
+                    fontSize: "0.71rem",
+                  }}
+                />
+              );
+            })}
           </MDBox>
         )}
 
@@ -1710,38 +1796,38 @@ ${CheckOutSecurityDeposit !== "0"
           </MDBox>
 
           {/* Mark Check in Button - only show in Upcoming Stay */}
-          {(!guest.actualCheckin || guest.actualCheckin === "N/A") &&
-            (!isCheckedIn ? (
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleMarkCheckIn}
-                sx={{
-                  borderRadius: "12px",
-                  textTransform: "none",
-                  fontWeight: "bold",
-                  boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                  color: "#17621B", // ✅ custom green text
-                  border: "2px solid #17621B", // ✅ green border
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    backgroundColor: "#1e7a20", // ✅ lighter green hover
-                    borderColor: "#145517",
-                    color: "#fff", // ✅ white text on hover
-                  },
-                  "&:focus": {
-                    backgroundColor: "#145517", // ✅ darker focus
-                    color: "#fff",
-                  },
-                  "&:active": {
-                    backgroundColor: "#145517",
-                    color: "#fff",
-                  },
-                }}
-              >
-                Mark Check In
-              </Button>
-            ) : (
+          {(!guest.actualCheckin || guest.actualCheckin === "N/A") ? (
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleMarkCheckIn}
+              sx={{
+                borderRadius: "12px",
+                textTransform: "none",
+                fontWeight: "bold",
+                boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+                color: "#17621B",
+                border: "2px solid #17621B",
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  backgroundColor: "#1e7a20",
+                  borderColor: "#145517",
+                  color: "#fff",
+                },
+                "&:focus": {
+                  backgroundColor: "#145517",
+                  color: "#fff",
+                },
+                "&:active": {
+                  backgroundColor: "#145517",
+                  color: "#fff",
+                },
+              }}
+            >
+              Mark Check In
+            </Button>
+          ) : (
+            canPrintCheckIn && (
               <Button
                 variant="outlined"
                 size="small"
@@ -1771,12 +1857,15 @@ ${CheckOutSecurityDeposit !== "0"
               >
                 Print Check In
               </Button>
-            ))}
+            )
+          )}
 
           {/* Mark Check Out Button - show in all stacks apart from Upcoming Stay */}
-          {guest.actualCheckin && guest.actualCheckin !== "N/A" &&
+          {/* ✅ MARK CHECK OUT BUTTON */}
+          {guest.actualCheckin &&
+            guest.actualCheckin !== "N/A" &&
             (!guest.actualCheckout || guest.actualCheckout === "N/A") &&
-            (!isCheckedOut ? (
+            !canPrintCheckIn && (
               <Button
                 variant="outlined"
                 size="small"
@@ -1786,16 +1875,16 @@ ${CheckOutSecurityDeposit !== "0"
                   textTransform: "none",
                   fontWeight: "bold",
                   boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                  color: "#951718", // ✅ custom red text                  
+                  color: "#951718",
                   border: "2px solid #951718",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "#b21c1d", // ✅ lighter red on hover
+                    backgroundColor: "#b21c1d",
                     borderColor: "#831415ff",
-                    color: "#fff", // white text for contrast
+                    color: "#fff",
                   },
                   "&:focus": {
-                    backgroundColor: "#7a1213", // ✅ darker red on focus
+                    backgroundColor: "#7a1213",
                     color: "#fff",
                   },
                   "&:active": {
@@ -1806,7 +1895,13 @@ ${CheckOutSecurityDeposit !== "0"
               >
                 Mark Check Out
               </Button>
-            ) : (
+            )}
+
+          {/* ✅ PRINT CHECK OUT BUTTON */}
+          {guest.actualCheckout &&
+            guest.actualCheckout !== "N/A" &&
+            !canPrintCheckIn &&
+            canPrintCheckOut && (
               <Button
                 variant="outlined"
                 size="small"
@@ -1816,11 +1911,11 @@ ${CheckOutSecurityDeposit !== "0"
                   textTransform: "none",
                   fontWeight: "bold",
                   boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                  color: "#951718", // ✅ custom red text
+                  color: "#951718",
                   border: "2px solid #951718",
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "#b21c1d", // lighter red hover
+                    backgroundColor: "#b21c1d",
                     borderColor: "#7a1213",
                     color: "#fff",
                   },
@@ -1836,11 +1931,12 @@ ${CheckOutSecurityDeposit !== "0"
               >
                 Print Check Out
               </Button>
-            ))}
+            )}
 
           {/* ✅ Checked Out Label */}
           {guest.actualCheckin && guest.actualCheckin !== "N/A" &&
-            guest.actualCheckout && guest.actualCheckout !== "N/A" && (
+            guest.actualCheckout && guest.actualCheckout !== "N/A" &&
+            !canPrintCheckOut && (
               <Button
                 variant="outlined"
                 size="small"
@@ -2042,7 +2138,27 @@ ${CheckOutSecurityDeposit !== "0"
                         <td>
                           <strong>Payment Status</strong>
                         </td>
-                        <td>
+                        <td
+                          style={{
+                            color: (() => {
+                              const statusColors = {
+                                "Paid": "#28a745",
+                                "Partially paid": "#a3cca3",
+                                "Due": "#ae0814",
+                                "Unpaid": "#ccaa2f",
+                              };
+
+                              // Determine the displayed status text
+                              const status =
+                                reservationDetails?.paymentStatus === "Unknown"
+                                  ? "Due"
+                                  : reservationDetails?.paymentStatus || "N/A";
+
+                              return statusColors[status] || "#000"; // fallback black color
+                            })(),
+                            fontWeight: "bold",
+                          }}
+                        >
                           {reservationDetails?.paymentStatus === "Unknown"
                             ? "Due"
                             : reservationDetails?.paymentStatus || "N/A"}
@@ -2843,6 +2959,34 @@ function KanbanView() {
             width: "100%",
             borderRadius: "8px",
             fontWeight: "bold",
+            backgroundColor: (() => {
+              switch (snackbar.severity) {
+                case "error":
+                  return "#F8D7DA"; // light red
+                case "warning":
+                  return "#FFF3CD"; // light yellow
+                case "info":
+                  return "#CCE5FF"; // light blue
+                case "success":
+                  return "#D4EDDA"; // light green
+                default:
+                  return undefined;
+              }
+            })(),
+            color: (() => {
+              switch (snackbar.severity) {
+                case "error":
+                  return "#842029"; // dark red text
+                case "warning":
+                  return "#856404"; // dark yellow text
+                case "info":
+                  return "#084298"; // dark blue text
+                case "success":
+                  return "#155724"; // dark green text
+                default:
+                  return undefined;
+              }
+            })(),
           }}
         >
           {snackbar.message}
