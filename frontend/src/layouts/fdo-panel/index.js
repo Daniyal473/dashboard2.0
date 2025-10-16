@@ -1319,7 +1319,7 @@ ${CheckOutSecurityDeposit !== "0"
 
       if (totalPrice && totalPaid >= 0) {
         const balance = totalPrice - totalPaid;
-        remainingBalance = balance > 0 ? balance.toFixed(2) : "0";
+        remainingBalance = balance > 0 ? balance.toFixed(2) : "0.00";
       }
 
       setReservationDetails({
@@ -1841,9 +1841,24 @@ ${CheckOutSecurityDeposit !== "0"
           {/* ✅ Checked Out Label */}
           {guest.actualCheckin && guest.actualCheckin !== "N/A" &&
             guest.actualCheckout && guest.actualCheckout !== "N/A" && (
-              <MDTypography variant="body2" fontWeight="bold" sx={{ textDecoration: "underline" }}>
-                Checked Out
-              </MDTypography>
+              <Button
+                variant="outlined"
+                size="small"
+                disabled
+                sx={{
+                  borderRadius: "12px",
+                  textTransform: "none",
+                  fontWeight: "bold",
+                  boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+                  color: "#808080",
+                  border: "2px solid #808080",
+                  backgroundColor: "#f5f5f5", // ✅ light gray background for disabled look
+                  opacity: 0.6,               // ✅ faded to look inactive
+                  cursor: "not-allowed",      // ✅ cursor indicates not clickable
+                }}
+              >
+                Check Out Form Printed
+              </Button>
             )}
         </MDBox>
       </MDBox>
@@ -1941,7 +1956,9 @@ ${CheckOutSecurityDeposit !== "0"
                           <strong>Total Amount</strong>
                         </td>
                         <td>
-                          {reservationDetails?.totalPrice || "N/A"}{" "}
+                          {reservationDetails?.totalPrice != null
+                            ? Number(reservationDetails.totalPrice).toFixed(2)
+                            : "N/A"}{" "}
                           {reservationDetails?.currency || ""}
                         </td>
                       </tr>
@@ -1959,7 +1976,11 @@ ${CheckOutSecurityDeposit !== "0"
                           <strong>Early Check-in</strong>
                         </td>
                         <td>
-                          {Number(reservationDetails?.earlyCheckinCharges) || 0} {reservationDetails?.currency || ""}
+                          {reservationDetails?.earlyCheckinCharges &&
+                            !isNaN(Number(reservationDetails.earlyCheckinCharges))
+                            ? Number(reservationDetails.earlyCheckinCharges).toFixed(2)
+                            : "0.00"}{" "}
+                          {reservationDetails?.currency || ""}
                         </td>
                       </tr>
                       <tr>
@@ -1967,7 +1988,9 @@ ${CheckOutSecurityDeposit !== "0"
                           <strong>Price/Night</strong>
                         </td>
                         <td>
-                          {reservationDetails?.pricePerNight || "N/A"}{" "}
+                          {reservationDetails?.pricePerNight != null
+                            ? Number(reservationDetails.pricePerNight).toFixed(2)
+                            : "N/A"}{" "}
                           {reservationDetails?.currency || ""}
                         </td>
                       </tr>
@@ -2066,7 +2089,10 @@ ${CheckOutSecurityDeposit !== "0"
                           <strong>Security Deposit</strong>
                         </td>
                         <td>
-                          {Number(reservationDetails?.securityDeposit) || "0"}{" "}
+                          {reservationDetails?.securityDeposit &&
+                            !isNaN(Number(reservationDetails.securityDeposit))
+                            ? Number(reservationDetails.securityDeposit).toFixed(2)
+                            : "0.00"}{" "}
                           {reservationDetails?.currency || ""}
                         </td>
                       </tr>
