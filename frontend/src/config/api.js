@@ -5,8 +5,8 @@ const getApiBaseUrl = () => {
     return "http://localhost:5000";
   }
 
-  // In production, use the current domain with /api prefix
-  return window.location.origin;
+  // In production, use specific backend URL
+  return "http://128.199.0.150:5000";
 };
 
 export const API_BASE_URL = getApiBaseUrl();
