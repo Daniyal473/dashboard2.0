@@ -30,6 +30,7 @@ import { alpha } from "@mui/material/styles";
 import CloseIcon from "@mui/icons-material/Close";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
+import PrintIcon from "@mui/icons-material/Print";
 
 // Authentication context
 import { useAuth } from "context/AuthContext";
@@ -68,7 +69,7 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
-function ReservationCard({ guest, setSnackbar }) {
+function ReservationCard({ guest, setSnackbar, stack, }) {
   const [open, setOpen] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [reservationDetails, setReservationDetails] = useState({});
@@ -1060,6 +1061,33 @@ ${CheckOutSecurityDeposit !== "0"
       formWindow.document.open();
       formWindow.document.write(htmlContent);
       formWindow.document.close();
+
+      // ✅ 3. After printing, update Hostaway custom field (ID 84717)
+      const updatePayload = {
+        customFieldValues: [
+          {
+            customFieldId: 84717,
+            value: "Yes",
+          },
+        ],
+      };
+
+      const updateResponse = await fetch(`${HOSTAWAY_API}/${guest.reservationId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${HOSTAWAY_TOKEN}`,
+        },
+        body: JSON.stringify(updatePayload),
+      });
+
+      if (!updateResponse.ok) {
+        const errText = await updateResponse.text();
+        console.error("❌ Failed to update Print Check Out field:", errText);
+      } else {
+        console.log("✅ Successfully marked Print Check Out as 'Yes' in Hostaway.");
+        setCanPrintCheckOut(false); // disable button if you have such state
+      }
     } catch (err) {
       console.error("Error preparing check-in form:", err);
       alert("Could not load reservation for printing.");
@@ -1793,6 +1821,59 @@ ${CheckOutSecurityDeposit !== "0"
                 <SyncIcon sx={{ fontSize: "1rem" }} />
               )}
             </IconButton>
+            {/* 🖨️ Reprint Check-In (only show if in Checked In stack) */}
+            {stack === "Checked In" && (
+              <IconButton
+                onClick={handlePrintCheckIn}
+                sx={{
+                color: "#28282B",
+                border: "1.5px solid #28282B",
+                borderRadius: "12px",
+                padding: "6px 9px",
+                fontWeight: "bold",
+                fontSize: "0.85rem",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+                transition: "all 0.25s ease-in-out",
+                "&:hover": {
+                  transform: "scale(1.05)",
+                  backgroundColor: "rgba(0, 0, 0, 0.05)",
+                },
+                "&:disabled": {
+                  opacity: 0.6,
+                  cursor: "not-allowed",
+                },
+              }}
+              >
+                <PrintIcon sx={{ fontSize: "1rem" }} />
+              </IconButton>
+            )}
+
+            {/* 🖨️ Reprint Check-Out (only show if in Checked Out stack) */}
+            {stack === "Checked Out" && (
+              <IconButton
+                onClick={handlePrintCheckOut}
+                sx={{
+                color: "#28282B",
+                border: "1.5px solid #28282B",
+                borderRadius: "12px",
+                padding: "6px 9px",
+                fontWeight: "bold",
+                fontSize: "0.85rem",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+                transition: "all 0.25s ease-in-out",
+                "&:hover": {
+                  transform: "scale(1.05)",
+                  backgroundColor: "rgba(0, 0, 0, 0.05)",
+                },
+                "&:disabled": {
+                  opacity: 0.6,
+                  cursor: "not-allowed",
+                },
+              }}
+              >
+                <PrintIcon sx={{ fontSize: "1rem" }} />
+              </IconButton>
+            )}
           </MDBox>
 
           {/* Mark Check in Button - only show in Upcoming Stay */}
@@ -2901,7 +2982,7 @@ function KanbanView() {
 
                       <MDBox px={2} pb={2} sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", maxHeight: "calc(100vh - 280px)" }}>
                         {filteredGuests.map((guest) => (
-                          <ReservationCard key={guest.id} guest={guest} setSnackbar={setSnackbar} searchTerm={searchTerm} />
+                          <ReservationCard key={guest.id} guest={guest} setSnackbar={setSnackbar} searchTerm={searchTerm} stack={stack}/>
                         ))}
                       </MDBox>
                     </Card>
