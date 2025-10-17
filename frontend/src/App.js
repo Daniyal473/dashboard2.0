@@ -194,7 +194,7 @@ function AppContent() {
     }
 
     if (user?.role === "admin") {
-      return "/dashboard";
+      return "/fdo-panel";
     }
 
     return "/authentication/sign-in";
