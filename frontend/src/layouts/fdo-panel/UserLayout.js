@@ -7,11 +7,12 @@ import { AppBar, Toolbar, Typography, Box, Avatar, Chip } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PersonIcon from "@mui/icons-material/Person";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import customLogoImg from "assets/images/custom-logo.png";
+// Logo will be loaded from public folder
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDButton from "components/MDButton";
+import Logo from "components/Logo";
 
 function UserLayout({ children }) {
   const { logout, user } = useAuth();
@@ -44,7 +45,7 @@ function UserLayout({ children }) {
         <Toolbar sx={{ justifyContent: "space-between", px: 4, py: 1 }}>
           {/* Left Side - Logo and Title */}
           <Box display="flex" alignItems="center" gap={2}>
-            <img src={customLogoImg} alt="Custom Logo" style={{ width: 100, height: 100 }} />
+            <Logo width="100px" height="100px" />
             <Box>
               <Typography
                 variant="h5"
@@ -156,7 +157,7 @@ function UserLayout({ children }) {
       </AppBar>
 
       {/* Main Content */}
-      <MDBox sx={{ p: 3 }}>{children}</MDBox>
+      <MDBox sx={{ pt: 0, pb: 3, px: 3 }}>{children}</MDBox>
     </MDBox>
   );
 }

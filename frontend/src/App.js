@@ -199,29 +199,8 @@ function AppContent() {
 
     return "/authentication/sign-in";
   };
-  const configsButton = (
-    <MDBox
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      width="3.25rem"
-      height="3.25rem"
-      bgColor="white"
-      shadow="sm"
-      borderRadius="50%"
-      position="fixed"
-      right="2rem"
-      bottom="2rem"
-      zIndex={99}
-      color="dark"
-      sx={{ cursor: "pointer" }}
-      onClick={handleConfiguratorOpen}
-    >
-      <Icon fontSize="small" color="inherit">
-        settings
-      </Icon>
-    </MDBox>
-  );
+  // Settings button hidden
+  const configsButton = null;
 
   return direction === "rtl" ? (
     <CacheProvider value={rtlCache}>
@@ -237,11 +216,11 @@ function AppContent() {
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}
             />
-            <Configurator />
+            {/* <Configurator /> */}
             {configsButton}
           </>
         )}
-        {layout === "vr" && <Configurator />}
+        {/* {layout === "vr" && <Configurator />} */}
         {user?.role === "user" && isAuthenticated && !isAuthPage ? (
           <UserLayout>
             <Routes>
@@ -272,11 +251,11 @@ function AppContent() {
             onMouseEnter={handleOnMouseEnter}
             onMouseLeave={handleOnMouseLeave}
           />
-          <Configurator />
+          {/* <Configurator /> */}
           {configsButton}
         </>
       )}
-      {layout === "vr" && <Configurator />}
+      {/* {layout === "vr" && <Configurator />} */}
       {user?.role === "user" && isAuthenticated && !isAuthPage ? (
         <UserLayout>
           <Routes>

@@ -50,6 +50,7 @@ import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDInput from "components/MDInput";
 import MDButton from "components/MDButton";
+import Logo from "components/Logo";
 
 function Basic() {
   const navigate = useNavigate();
@@ -205,15 +206,8 @@ function Basic() {
 
         // Small delay to show success message
         setTimeout(() => {
-          // Navigate based on user role
-          if (result.user.role === "user") {
-            navigate("/fdo-panel");
-          } else if (result.user.role === "admin") {
-            navigate("/dashboard");
-          } else {
-            // Default fallback
-            navigate("/fdo-panel");
-          }
+          // Always navigate to FDO panel regardless of role
+          navigate("/fdo-panel");
         }, 1000);
       } else {
         console.error("❌ Login failed:", result.message);
@@ -267,15 +261,9 @@ function Basic() {
                 }}
               >
                 {/* Custom Logo */}
-                <MDBox
-                  component="img"
-                  src={require("../../../assets/images/custom-logo.png")}
-                  alt="Custom Logo"
-                  sx={{
-                    height: "150px",
-                    width: "auto",
-                    maxWidth: "350px",
-                  }}
+                <Logo
+                  height="150px"
+                  maxWidth="350px"
                 />
               </MDBox>
 

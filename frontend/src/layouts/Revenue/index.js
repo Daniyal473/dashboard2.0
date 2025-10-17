@@ -19,6 +19,22 @@ import LinearProgress from "@mui/material/LinearProgress";
 import Icon from "@mui/material/Icon";
 import { keyframes } from "@mui/system";
 import { useTheme } from "@mui/material/styles";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
+import Chip from "@mui/material/Chip";
+import Alert from "@mui/material/Alert";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import ViewListIcon from "@mui/icons-material/ViewList";
+import ViewModuleIcon from "@mui/icons-material/ViewModule";
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import Avatar from "@mui/material/Avatar";
+import Tooltip from "@mui/material/Tooltip";
 
 // React
 import React, { Component, useState, useEffect } from "react";
@@ -757,12 +773,53 @@ RevenueChartComponent.propTypes = {
 
 // New Improved Listing Revenue Component
 function ImprovedListingRevenue({ revenueData, formatCurrency }) {
+  const [hoveredCategory, setHoveredCategory] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
   const categories = revenueData?.categoryRevenue || {
     Studio: 0,
     "1BR": 0,
     "2BR": 0,
     "2BR Premium": 0,
     "3BR": 0,
+  };
+
+  // Sample apartment data - replace with actual API data
+  const apartmentData = {
+    "Studio": {
+      available: ["GF-09", "1F-10 (A)", "1F-10 (C)", "4F-44", "5F-53"],
+      reserved: ["8F-80", "GF-01"]
+    },
+    "1BR": {
+      available: ["1F-15", "1F-10 (B)", "3F-27", "4F-37", "7F-64", "7F-63", "9F-82", "6F-54"],
+      reserved: ["3F-28", "8f-73"]
+    },
+    "2BR": {
+      available: ["GF-04", "GF-06", "1F-12", "2F-25", "3F-34", "4F-42", "6F-60", "6F-57", "7F-70", "8F-79", "8F-77"],
+      reserved: ["1F-14", "2F-24", "4F-41", "8f-74", "9F-88"]
+    },
+    "2BR Premium": {
+      available: ["3F-30", "3F-31", "4F-40", "4F-41"],
+      reserved: []
+    },
+    "3BR": {
+      available: ["1F-13", "2F-22", "5F-49", "6F-60"],
+      reserved: []
+    }
+  };
+
+  const handleMouseEnter = (categoryName, event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setTooltipPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.top - 200 // Move tooltip higher to ensure visibility
+    });
+    setHoveredCategory(categoryName);
+    console.log('Hovering over:', categoryName); // Debug log
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredCategory(null);
   };
 
   const categoryData = [
@@ -919,6 +976,8 @@ function ImprovedListingRevenue({ revenueData, formatCurrency }) {
           {categoryData.map((category, index) => (
             <MDBox
               key={category.name}
+              onMouseEnter={(e) => handleMouseEnter(category.name, e)}
+              onMouseLeave={handleMouseLeave}
               sx={{
                 background: `linear-gradient(135deg, ${category.color}15 0%, ${category.color}08 100%)`,
                 borderRadius: "16px",
@@ -1003,14 +1062,15 @@ function ImprovedListingRevenue({ revenueData, formatCurrency }) {
                   {category.name}
                 </MDTypography>
               </MDBox>
-
+              
+              <MDBox mb={2} />
               {/* Revenue Amount */}
               <MDBox
                 sx={{
-                  background: "#ffffff",
+                  background: `linear-gradient(135deg, ${category.color}20, ${category.color}10)`,
                   borderRadius: "12px",
                   p: 1.5,
-                  border: `1px solid ${category.color}20`,
+                  border: `1px solid ${category.color}30`,
                   boxShadow: `0 4px 12px ${category.color}15`,
 
                   "@media (max-width: 600px)": {
@@ -1040,6 +1100,74 @@ function ImprovedListingRevenue({ revenueData, formatCurrency }) {
           ))}
         </MDBox>
       </MDBox>
+
+      {/* Apartment Tooltip */}
+      {hoveredCategory && apartmentData[hoveredCategory] && (
+        <MDBox
+          sx={{
+            position: 'fixed',
+            left: `${tooltipPosition.x}px`,
+            top: `${tooltipPosition.y}px`,
+            transform: 'translateX(-50%)',
+            backgroundColor: '#1e293b',
+            color: 'white',
+            padding: '16px 20px',
+            borderRadius: '12px',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+            zIndex: 99999,
+            fontSize: '14px',
+            fontFamily: 'Inter, sans-serif',
+            pointerEvents: 'none',
+            maxWidth: '300px',
+            minWidth: '250px',
+            border: '2px solid rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          <MDTypography variant="body2" fontWeight="bold" color="inherit" mb={1}>
+            {hoveredCategory} Apartments
+          </MDTypography>
+          
+          {apartmentData[hoveredCategory].available.length > 0 && (
+            <MDBox mb={1}>
+              {apartmentData[hoveredCategory].available.map((apt, index) => (
+                <MDTypography 
+                  key={index}
+                  variant="caption" 
+                  color="inherit" 
+                  display="block"
+                  sx={{ mb: 0.5 }}
+                >
+                  {apt} <span style={{ color: '#4caf50' }}>Available</span>
+                </MDTypography>
+              ))}
+            </MDBox>
+          )}
+          
+          {apartmentData[hoveredCategory].reserved.length > 0 && (
+            <MDBox>
+              {apartmentData[hoveredCategory].reserved.map((apt, index) => (
+                <MDTypography 
+                  key={index}
+                  variant="caption" 
+                  color="inherit" 
+                  display="block"
+                  sx={{ mb: 0.5 }}
+                >
+                  {apt} <span style={{ color: '#f44336' }}>Reserved</span>
+                </MDTypography>
+              ))}
+            </MDBox>
+          )}
+          
+          {apartmentData[hoveredCategory].available.length === 0 && 
+           apartmentData[hoveredCategory].reserved.length === 0 && (
+            <MDTypography variant="caption" color="inherit">
+              No apartments available
+            </MDTypography>
+          )}
+        </MDBox>
+      )}
     </Card>
   );
 }
@@ -1050,6 +1178,420 @@ ImprovedListingRevenue.propTypes = {
   formatCurrency: PropTypes.func.isRequired,
 };
 
+// Mobile Responsive Payment Details Card Component
+function MobilePaymentCard({ reservation, index }) {
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Paid': return 'success';
+      case 'Partially paid': return 'warning';
+      case 'Unpaid': return 'error';
+      case 'Unknown': return 'secondary';
+      default: return 'default';
+    }
+  };
+
+  const getReservationStatusColor = (status) => {
+    switch (status) {
+      case 'new': return 'primary';
+      case 'modified': return 'secondary';
+      case 'confirmed': return 'success';
+      case 'cancelled': return 'error';
+      default: return 'default';
+    }
+  };
+
+  return (
+    <Card
+      sx={{
+        mb: 2,
+        p: 2,
+        borderRadius: 3,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+        border: '1px solid #e2e8f0',
+        background: index % 2 === 0 ? '#f8fafc' : 'white',
+        '&:hover': {
+          boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+          transform: 'translateY(-2px)',
+          transition: 'all 0.2s ease'
+        }
+      }}
+    >
+      {/* Header with ID and Status */}
+      <MDBox display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <MDBox>
+          <MDTypography variant="h6" fontWeight="bold" color="primary">
+            #{reservation.reservationId}
+          </MDTypography>
+          <MDTypography variant="caption" color="text.secondary">
+            Reservation ID
+          </MDTypography>
+        </MDBox>
+        <MDBox display="flex" flexDirection="column" alignItems="flex-end" gap={0.5}>
+          <Chip 
+            label={reservation.paymentStatus === 'Unknown' ? 'Due' : reservation.paymentStatus}
+            color={getStatusColor(reservation.paymentStatus)}
+            size="small"
+            sx={{ fontWeight: 600, fontSize: '0.7rem' }}
+          />
+          <Chip 
+            label={reservation.status || 'Unknown'}
+            color={getReservationStatusColor(reservation.status)}
+            size="small"
+            sx={{ fontWeight: 600, fontSize: '0.7rem', textTransform: 'capitalize' }}
+          />
+        </MDBox>
+      </MDBox>
+
+      {/* Guest and Listing Info */}
+      <MDBox mb={2}>
+        <MDBox display="flex" alignItems="center" gap={1} mb={1}>
+          <Icon sx={{ color: '#64748b', fontSize: '1.2rem' }}>person</Icon>
+          <MDTypography variant="body2" fontWeight="medium">
+            {reservation.guestName}
+          </MDTypography>
+        </MDBox>
+        <MDBox display="flex" alignItems="center" gap={1}>
+          <Icon sx={{ color: '#64748b', fontSize: '1.2rem' }}>home</Icon>
+          <MDTypography variant="body2" color="text.secondary">
+            {reservation.listingName}
+          </MDTypography>
+        </MDBox>
+      </MDBox>
+
+      {/* Dates and Amount */}
+      <MDBox 
+        display="grid" 
+        gridTemplateColumns="1fr 1fr" 
+        gap={2} 
+        sx={{
+          p: 1.5,
+          backgroundColor: 'rgba(25, 118, 210, 0.05)',
+          borderRadius: 2,
+          border: '1px solid rgba(25, 118, 210, 0.1)'
+        }}
+      >
+        <MDBox>
+          <MDTypography variant="caption" color="text.secondary" fontWeight="bold">
+            Check In
+          </MDTypography>
+          <MDTypography variant="body2" fontWeight="medium">
+            {reservation.checkInDate}
+          </MDTypography>
+        </MDBox>
+        <MDBox>
+          <MDTypography variant="caption" color="text.secondary" fontWeight="bold">
+            Check Out
+          </MDTypography>
+          <MDTypography variant="body2" fontWeight="medium">
+            {reservation.checkOutDate}
+          </MDTypography>
+        </MDBox>
+        <MDBox>
+          <MDTypography variant="caption" color="text.secondary" fontWeight="bold">
+            Amount
+          </MDTypography>
+          <MDTypography variant="body2" fontWeight="bold" color="success.main">
+            {reservation.currency} {reservation.baseRate?.toLocaleString() || '0'}
+          </MDTypography>
+        </MDBox>
+        <MDBox>
+          <MDTypography variant="caption" color="text.secondary" fontWeight="bold">
+            Check In Time
+          </MDTypography>
+          <MDTypography 
+            variant="body2" 
+            fontWeight="medium"
+            sx={{
+              color: reservation.actualCheckInTime === 'N/A' ? '#9ca3af' : '#374151',
+              fontStyle: reservation.actualCheckInTime === 'N/A' ? 'italic' : 'normal'
+            }}
+          >
+            {reservation.actualCheckInTime}
+          </MDTypography>
+        </MDBox>
+      </MDBox>
+    </Card>
+  );
+}
+
+MobilePaymentCard.propTypes = {
+  reservation: PropTypes.object.isRequired,
+  index: PropTypes.number.isRequired,
+};
+
+// Kanban View Component
+function PaymentKanbanView({ reservations }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // Group reservations by payment status
+  const groupedReservations = {
+    'Paid': reservations.filter(r => r.paymentStatus === 'Paid'),
+    'Partially paid': reservations.filter(r => r.paymentStatus === 'Partially paid'),
+    'Unpaid': reservations.filter(r => r.paymentStatus === 'Unpaid'),
+    'Due': reservations.filter(r => r.paymentStatus === 'Unknown'),
+  };
+
+  const columnConfig = {
+    'Paid': { color: '#4caf50', bgColor: '#e8f5e8', icon: '✅' },
+    'Partially paid': { color: '#ff9800', bgColor: '#fff3e0', icon: '⏳' },
+    'Unpaid': { color: '#9e9e9e', bgColor: '#f5f5f5', icon: '❌' },
+    'Due': { color: '#9c27b0', bgColor: '#f3e5f5', icon: '⚠️' },
+  };
+
+  return (
+    <MDBox
+      sx={{
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        borderRadius: 4,
+        p: 3,
+        mb: 4,
+        boxShadow: '0 10px 40px rgba(0,0,0,0.1)'
+      }}
+    >
+      <MDBox display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <MDTypography 
+          variant="h5" 
+          fontWeight="bold"
+          sx={{
+            color: '#1e293b',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2
+          }}
+        >
+          📋 Payment Status Kanban ({reservations.length} Total)
+        </MDTypography>
+      </MDBox>
+
+      <MDBox
+        display="grid"
+        gridTemplateColumns={isMobile ? '1fr' : 'repeat(4, 1fr)'}
+        gap={3}
+        sx={{ minHeight: '400px' }}
+      >
+        {Object.entries(groupedReservations).map(([status, statusReservations]) => (
+          <Card
+            key={status}
+            sx={{
+              p: 2,
+              backgroundColor: columnConfig[status].bgColor,
+              border: `2px solid ${columnConfig[status].color}25`,
+              borderRadius: 3,
+              minHeight: '350px'
+            }}
+          >
+            {/* Column Header */}
+            <MDBox
+              display="flex"
+              alignItems="center"
+              justifyContent="space-between"
+              mb={2}
+              p={1.5}
+              sx={{
+                backgroundColor: columnConfig[status].color,
+                borderRadius: 2,
+                color: 'white'
+              }}
+            >
+              <MDBox display="flex" alignItems="center" gap={1}>
+                <span style={{ fontSize: '1.2rem' }}>{columnConfig[status].icon}</span>
+                <MDTypography variant="h6" fontWeight="bold" color="inherit">
+                  {status}
+                </MDTypography>
+              </MDBox>
+              <Chip
+                label={statusReservations.length}
+                sx={{
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontSize: '0.8rem'
+                }}
+                size="small"
+              />
+            </MDBox>
+
+            {/* Reservation Cards */}
+            <MDBox sx={{ maxHeight: '300px', overflowY: 'auto' }}>
+              {statusReservations.map((reservation, index) => (
+                <Card
+                  key={reservation.id}
+                  sx={{
+                    mb: 1.5,
+                    p: 2.5,
+                    backgroundColor: 'white',
+                    borderRadius: 3,
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+                    border: '1px solid #e2e8f0',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+                      transform: 'translateY(-2px)',
+                      transition: 'all 0.2s ease'
+                    }
+                  }}
+                >
+                  {/* Header with Reservation ID and Status Chips */}
+                  <MDBox display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
+                    <MDBox>
+                      <MDTypography 
+                        variant="h6" 
+                        fontWeight="bold" 
+                        sx={{ 
+                          color: '#e91e63',
+                          fontSize: '1.1rem',
+                          mb: 0.5
+                        }}
+                      >
+                        #{reservation.reservationId}
+                      </MDTypography>
+                      <MDTypography variant="caption" color="text.secondary">
+                        Reservation ID
+                      </MDTypography>
+                    </MDBox>
+                    <MDBox display="flex" flexDirection="column" gap={0.5}>
+                      <Chip 
+                        label={reservation.paymentStatus === 'Unknown' ? 'Due' : reservation.paymentStatus}
+                        sx={{
+                          backgroundColor: 
+                            reservation.paymentStatus === 'Paid' ? '#4caf50' :
+                            reservation.paymentStatus === 'Partially paid' ? '#ff9800' :
+                            reservation.paymentStatus === 'Unpaid' ? '#9e9e9e' :
+                            reservation.paymentStatus === 'Unknown' ? '#9c27b0' :
+                            '#9e9e9e',
+                          color: 'white',
+                          fontWeight: 600,
+                          fontSize: '0.7rem',
+                          height: '24px'
+                        }}
+                        size="small"
+                      />
+                      <Chip 
+                        label={reservation.status || 'Unknown'}
+                        sx={{
+                          backgroundColor: '#9e9e9e',
+                          color: 'white',
+                          fontWeight: 600,
+                          fontSize: '0.7rem',
+                          height: '24px',
+                          textTransform: 'capitalize'
+                        }}
+                        size="small"
+                      />
+                    </MDBox>
+                  </MDBox>
+
+                  {/* Guest Name with Icon */}
+                  <MDBox display="flex" alignItems="center" gap={1} mb={1.5}>
+                    <Icon sx={{ color: '#64748b', fontSize: '1.2rem' }}>person</Icon>
+                    <MDTypography variant="body1" fontWeight="600" color="#374151">
+                      {reservation.guestName}
+                    </MDTypography>
+                  </MDBox>
+
+                  {/* Listing Name with Icon */}
+                  <MDBox display="flex" alignItems="center" gap={1} mb={2}>
+                    <Icon sx={{ color: '#64748b', fontSize: '1.2rem' }}>home</Icon>
+                    <MDTypography variant="body2" color="text.secondary">
+                      {reservation.listingName}
+                    </MDTypography>
+                  </MDBox>
+
+                  {/* Date and Amount Grid */}
+                  <MDBox 
+                    sx={{
+                      backgroundColor: '#f8fafc',
+                      borderRadius: 2,
+                      p: 2,
+                      border: '1px solid #e2e8f0'
+                    }}
+                  >
+                    <MDBox 
+                      display="grid" 
+                      gridTemplateColumns="1fr 1fr" 
+                      gap={2}
+                      mb={1.5}
+                    >
+                      <MDBox>
+                        <MDTypography variant="caption" color="text.secondary" fontWeight="600">
+                          Check In
+                        </MDTypography>
+                        <MDTypography variant="body2" fontWeight="bold" color="#374151">
+                          {reservation.checkInDate}
+                        </MDTypography>
+                      </MDBox>
+                      <MDBox>
+                        <MDTypography variant="caption" color="text.secondary" fontWeight="600">
+                          Check Out
+                        </MDTypography>
+                        <MDTypography variant="body2" fontWeight="bold" color="#374151">
+                          {reservation.checkOutDate}
+                        </MDTypography>
+                      </MDBox>
+                    </MDBox>
+                    
+                    <MDBox 
+                      display="grid" 
+                      gridTemplateColumns="1fr 1fr" 
+                      gap={2}
+                    >
+                      <MDBox>
+                        <MDTypography variant="caption" color="text.secondary" fontWeight="600">
+                          Amount
+                        </MDTypography>
+                        <MDTypography variant="body2" fontWeight="bold" color="#374151">
+                          {reservation.currency} {reservation.baseRate?.toLocaleString() || '0'}
+                        </MDTypography>
+                      </MDBox>
+                      <MDBox>
+                        <MDTypography variant="caption" color="text.secondary" fontWeight="600">
+                          Check In Time
+                        </MDTypography>
+                        <MDTypography 
+                          variant="body2" 
+                          fontWeight="bold" 
+                          sx={{
+                            color: reservation.actualCheckInTime === 'N/A' ? '#9ca3af' : '#374151'
+                          }}
+                        >
+                          {reservation.actualCheckInTime}
+                        </MDTypography>
+                      </MDBox>
+                    </MDBox>
+                  </MDBox>
+                </Card>
+              ))}
+              
+              {statusReservations.length === 0 && (
+                <MDBox
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  minHeight="100px"
+                  sx={{
+                    backgroundColor: 'rgba(255,255,255,0.5)',
+                    borderRadius: 2,
+                    border: '2px dashed rgba(0,0,0,0.1)'
+                  }}
+                >
+                  <MDTypography variant="body2" color="text.secondary" fontStyle="italic">
+                    No reservations
+                  </MDTypography>
+                </MDBox>
+              )}
+            </MDBox>
+          </Card>
+        ))}
+      </MDBox>
+    </MDBox>
+  );
+}
+
+PaymentKanbanView.propTypes = {
+  reservations: PropTypes.array.isRequired,
+};
+
 function Revenue() {
   const { user, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   const [revenueData, setRevenueData] = useState(null);
@@ -1057,6 +1599,14 @@ function Revenue() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [adminTargetData, setAdminTargetData] = useState({});
+  
+  // New reservation state
+  const [reservations, setReservations] = useState([]);
+  const [reservationLoading, setReservationLoading] = useState(false);
+  const [reservationError, setReservationError] = useState(null);
+  
+  // View toggle state for Payment Details
+  const [viewMode, setViewMode] = useState('table'); // 'table' or 'kanban'
 
   // Add mobile detection
   const theme = useTheme();
@@ -1135,6 +1685,39 @@ function Revenue() {
     const interval = setInterval(fetchData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch today's reservations
+  const fetchTodayReservations = async () => {
+    try {
+      setReservationLoading(true);
+      setReservationError(null);
+      
+      console.log('🔄 Fetching today\'s reservations...');
+      
+      const response = await fetch('/api/payment/today-reservations');
+      const data = await response.json();
+      
+      if (data.success) {
+        setReservations(data.data);
+        console.log(`✅ Loaded ${data.data.length} reservations for today`);
+      } else {
+        setReservationError(data.message || 'Failed to fetch reservations');
+        console.error('❌ Failed to fetch reservations:', data.error);
+      }
+    } catch (err) {
+      setReservationError(`Unable to connect to server: ${err.message}`);
+      console.error('❌ Reservation fetch error:', err);
+    } finally {
+      setReservationLoading(false);
+    }
+  };
+
+  // Fetch reservations when component mounts
+  useEffect(() => {
+    if (isAuthenticated && isAdmin()) {
+      fetchTodayReservations();
+    }
+  }, [isAuthenticated, isAdmin]);
 
   // Show loading while checking authentication
   if (authLoading) {
@@ -1609,6 +2192,565 @@ function Revenue() {
               Real-time insights and performance analytics
             </MDTypography>
           </MDBox>
+        </MDBox>
+
+        {/* Today's Reservations Section */}
+        <MDBox mb={4}>
+          <Card sx={{ p: 3, boxShadow: 3 }}>
+            <MDBox display="flex" justifyContent="space-between" alignItems="center" mb={2} 
+              sx={{ 
+                flexDirection: { xs: 'column', sm: 'row' }, 
+                gap: { xs: 2, sm: 0 } 
+              }}
+            >
+              <MDTypography variant="h5" fontWeight="bold" color="text.primary">
+                Payment Details
+              </MDTypography>
+              
+              {/* View Toggle Buttons - Only on desktop */}
+              {reservations.length > 0 && (
+                <MDBox sx={{ display: { xs: 'none', md: 'block' } }}>
+                  <ToggleButtonGroup
+                    value={viewMode}
+                    exclusive
+                    onChange={(event, newView) => {
+                      if (newView !== null) {
+                        setViewMode(newView);
+                      }
+                    }}
+                    sx={{
+                      '& .MuiToggleButton-root': {
+                        px: 2,
+                        py: 1,
+                        border: '1px solid #e0e0e0',
+                        '&.Mui-selected': {
+                          backgroundColor: '#1976d2',
+                          color: 'white',
+                          '&:hover': {
+                            backgroundColor: '#1565c0',
+                          }
+                        }
+                      }
+                    }}
+                  >
+                    <ToggleButton value="table" aria-label="table view">
+                      <ViewListIcon sx={{ mr: 1 }} />
+                      Table
+                    </ToggleButton>
+                    <ToggleButton value="kanban" aria-label="kanban view">
+                      <ViewModuleIcon sx={{ mr: 1 }} />
+                      Kanban
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </MDBox>
+              )}
+            </MDBox>
+            
+            {reservationError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {reservationError}
+              </Alert>
+            )}
+            
+            {reservationLoading ? (
+              <MDBox display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+                <CircularProgress />
+                <MDTypography variant="body2" color="text.secondary" ml={2}>
+                  Loading reservations...
+                </MDTypography>
+              </MDBox>
+            ) : reservations.length > 0 ? (
+              <>
+                {/* Mobile Card View - Always show on mobile */}
+                <MDBox sx={{ display: { xs: 'block', md: 'none' } }}>
+                  <MDTypography 
+                    variant="h5" 
+                    fontWeight="bold" 
+                    mb={3}
+                    sx={{
+                      color: '#1e293b',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2
+                    }}
+                  >
+                    📱 Today's Reservations ({reservations.length})
+                  </MDTypography>
+                  
+                  {reservations.map((reservation, index) => (
+                    <MobilePaymentCard 
+                      key={reservation.id || index}
+                      reservation={reservation}
+                      index={index}
+                    />
+                  ))}
+                </MDBox>
+                
+                {/* Desktop Conditional View Rendering */}
+                <MDBox sx={{ display: { xs: 'none', md: 'block' } }}>
+                  {viewMode === 'kanban' ? (
+                    <PaymentKanbanView reservations={reservations} />
+                  ) : (
+                  <>
+                    {/* Desktop Table View */}
+                    <MDBox 
+                      sx={{
+                        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                        borderRadius: 4,
+                        p: 3,
+                        mb: 4,
+                        boxShadow: '0 10px 40px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      <MDTypography 
+                        variant="h5" 
+                        fontWeight="bold" 
+                        mb={3}
+                        sx={{
+                          color: '#1e293b',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 2
+                        }}
+                      >
+                        📅 Today's Reservations ({reservations.length})
+                      </MDTypography>
+                      
+                      <MDBox 
+                        sx={{
+                          background: 'white',
+                          borderRadius: 3,
+                          overflow: 'hidden',
+                          boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+                        }}
+                      >
+                        {/* Table Header */}
+                        <MDBox 
+                          sx={{
+                            display: 'grid',
+                            gridTemplateColumns: '120px 200px 160px 120px 120px 150px 140px 130px 130px',
+                            backgroundColor: 'white',
+                            color: '#1e293b',
+                            fontWeight: 'bold',
+                            fontSize: '0.9rem',
+                            minHeight: '60px',
+                            borderBottom: '2px solid #e2e8f0'
+                          }}
+                        >
+                      <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                        Reservation ID
+                      </MDBox>
+                      <MDBox sx={{ display: 'flex', alignItems: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                        Guest Name
+                      </MDBox>
+                      <MDBox sx={{ display: 'flex', alignItems: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                        Listing Name
+                      </MDBox>
+                      <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                        Check In Date
+                      </MDBox>
+                      <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                        Check Out Date
+                      </MDBox>
+                      <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                        Actual Check In Time
+                      </MDBox>
+                      <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                        Amount
+                      </MDBox>
+                      <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                        Payment Status
+                      </MDBox>
+                      <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+                        Reservation Status
+                      </MDBox>
+                    </MDBox>
+                    
+                    {/* Table Body */}
+                    <MDBox sx={{ maxHeight: '600px', overflow: 'auto' }}>
+                      {reservations.map((reservation, index) => (
+                        <MDBox 
+                          key={reservation.id}
+                          sx={{
+                            display: 'grid',
+                            gridTemplateColumns: '120px 200px 160px 120px 120px 150px 140px 130px 130px',
+                            backgroundColor: index % 2 === 0 ? '#f8fafc' : 'white',
+                            borderBottom: '1px solid #e2e8f0',
+                            minHeight: '70px',
+                            '&:hover': {
+                              backgroundColor: '#e0f2fe',
+                              transform: 'scale(1.005)',
+                              transition: 'all 0.2s ease'
+                            }
+                          }}
+                        >
+                          {/* Reservation ID */}
+                          <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                            <MDTypography 
+                              variant="body2" 
+                              fontWeight="bold" 
+                              sx={{ color: '#1976d2', fontSize: '0.85rem' }}
+                            >
+                              {reservation.reservationId}
+                            </MDTypography>
+                          </MDBox>
+                          
+                          {/* Guest Name */}
+                          <MDBox sx={{ display: 'flex', alignItems: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                            <MDTypography 
+                              variant="body2" 
+                              fontWeight="medium"
+                              sx={{ 
+                                fontSize: '0.85rem',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                width: '100%'
+                              }}
+                            >
+                              {reservation.guestName}
+                            </MDTypography>
+                          </MDBox>
+                          
+                          {/* Listing Name */}
+                          <MDBox sx={{ display: 'flex', alignItems: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                            <MDTypography 
+                              variant="body2"
+                              sx={{ 
+                                fontSize: '0.85rem',
+                                color: '#64748b',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                width: '100%'
+                              }}
+                            >
+                              {reservation.listingName}
+                            </MDTypography>
+                          </MDBox>
+                          
+                          {/* Check In Date */}
+                          <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                            <MDTypography 
+                              variant="body2"
+                              sx={{ 
+                                fontSize: '0.85rem',
+                                fontFamily: 'monospace',
+                                color: '#374151'
+                              }}
+                            >
+                              {reservation.checkInDate}
+                            </MDTypography>
+                          </MDBox>
+                          
+                          {/* Check Out Date */}
+                          <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                            <MDTypography 
+                              variant="body2"
+                              sx={{ 
+                                fontSize: '0.85rem',
+                                fontFamily: 'monospace',
+                                color: '#374151'
+                              }}
+                            >
+                              {reservation.checkOutDate}
+                            </MDTypography>
+                          </MDBox>
+                          
+                          {/* Actual Check In Time */}
+                          <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                            <MDTypography 
+                              variant="body2"
+                              sx={{ 
+                                fontSize: '0.85rem',
+                                color: reservation.actualCheckInTime === 'N/A' ? '#9ca3af' : '#374151',
+                                fontStyle: reservation.actualCheckInTime === 'N/A' ? 'italic' : 'normal'
+                              }}
+                            >
+                              {reservation.actualCheckInTime}
+                            </MDTypography>
+                          </MDBox>
+                          
+                          {/* Base Rate */}
+                          <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                            <MDTypography 
+                              variant="body2"
+                              fontWeight="bold"
+                              sx={{ 
+                                fontSize: '0.85rem',
+                                color: '#059669'
+                              }}
+                            >
+                              {reservation.currency} {reservation.baseRate?.toLocaleString() || '0'}
+                            </MDTypography>
+                          </MDBox>
+                          
+                          {/* Payment Status */}
+                          <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
+                            <Chip 
+                              label={reservation.paymentStatus === 'Unknown' ? 'Due' : reservation.paymentStatus}
+                              color={
+                                reservation.paymentStatus === 'Paid' ? 'success' :
+                                reservation.paymentStatus === 'Partially paid' ? 'warning' :
+                                reservation.paymentStatus === 'Unpaid' ? 'error' :
+                                reservation.paymentStatus === 'Unknown' ? 'secondary' :
+                                'default'
+                              }
+                              size="small"
+                              sx={{
+                                fontWeight: 600,
+                                fontSize: '0.75rem',
+                                minWidth: '90px'
+                              }}
+                            />
+                          </MDBox>
+                          
+                          {/* Reservation Status */}
+                          <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+                            <Chip 
+                              label={reservation.status || 'Unknown'}
+                              color={
+                                reservation.status === 'new' ? 'primary' :
+                                reservation.status === 'modified' ? 'secondary' :
+                                reservation.status === 'confirmed' ? 'success' :
+                                reservation.status === 'cancelled' ? 'error' :
+                                'default'
+                              }
+                              size="small"
+                              sx={{
+                                textTransform: 'capitalize',
+                                fontWeight: 600,
+                                fontSize: '0.75rem',
+                                minWidth: '90px'
+                              }}
+                            />
+                          </MDBox>
+                        </MDBox>
+                      ))}
+                    </MDBox>
+                  </MDBox>
+                </MDBox>
+                    
+                  </>
+                  )}
+                </MDBox>
+                
+                {/* Revenue Summary Cards */}
+                <MDBox mt={4}>
+                  <MDTypography 
+                    variant="h4" 
+                    fontWeight="bold" 
+                    color="text.primary" 
+                    mb={3}
+                    sx={{
+                      background: 'linear-gradient(45deg, #1976d2, #42a5f5)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      fontSize: '2rem'
+                    }}
+                  >
+                    Payment Details
+                  </MDTypography>
+                  <MDBox 
+                    display="grid" 
+                    gridTemplateColumns="repeat(auto-fit, minmax(240px, 1fr))" 
+                    gap={3}
+                  >
+                    {/* Total Reservations */}
+                    <Card sx={{ 
+                      p: 3, 
+                      background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+                      boxShadow: '0 8px 32px rgba(25, 118, 210, 0.15)',
+                      borderRadius: 3,
+                      border: '1px solid rgba(25, 118, 210, 0.1)',
+                      transition: 'transform 0.2s ease-in-out',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 12px 40px rgba(25, 118, 210, 0.2)'
+                      }
+                    }}>
+                      <MDBox display="flex" alignItems="center" justifyContent="space-between">
+                        <MDBox>
+                          <MDTypography variant="body2" color="text.secondary" fontWeight="500">
+                            Total Reservations
+                          </MDTypography>
+                          <MDTypography variant="h3" fontWeight="bold" color="primary" mt={1}>
+                            {reservations.length}
+                          </MDTypography>
+                        </MDBox>
+                        <MDBox 
+                          sx={{
+                            backgroundColor: '#1976d2',
+                            borderRadius: '50%',
+                            p: 2,
+                            color: 'white'
+                          }}
+                        >
+                          📋
+                        </MDBox>
+                      </MDBox>
+                    </Card>
+                    
+                    {/* Paid Reservations */}
+                    <Card sx={{ 
+                      p: 3, 
+                      background: 'linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)',
+                      boxShadow: '0 8px 32px rgba(76, 175, 80, 0.15)',
+                      borderRadius: 3,
+                      border: '1px solid rgba(76, 175, 80, 0.1)',
+                      transition: 'transform 0.2s ease-in-out',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 12px 40px rgba(76, 175, 80, 0.2)'
+                      }
+                    }}>
+                      <MDBox display="flex" alignItems="center" justifyContent="space-between">
+                        <MDBox>
+                          <MDTypography variant="body2" color="text.secondary" fontWeight="500">
+                            Paid Reservations
+                          </MDTypography>
+                          <MDTypography variant="h3" fontWeight="bold" color="success" mt={1}>
+                            {reservations.filter(r => r.paymentStatus === 'Paid').length}
+                          </MDTypography>
+                        </MDBox>
+                        <MDBox 
+                          sx={{
+                            backgroundColor: '#4caf50',
+                            borderRadius: '50%',
+                            p: 2,
+                            color: 'white'
+                          }}
+                        >
+                          ✅
+                        </MDBox>
+                      </MDBox>
+                    </Card>
+                    
+                    {/* Partially Paid Reservations */}
+                    <Card sx={{ 
+                      p: 3, 
+                      background: 'linear-gradient(135deg, #fff3e0 0%, #ffcc80 100%)',
+                      boxShadow: '0 8px 32px rgba(255, 152, 0, 0.15)',
+                      borderRadius: 3,
+                      border: '1px solid rgba(255, 152, 0, 0.1)',
+                      transition: 'transform 0.2s ease-in-out',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 12px 40px rgba(255, 152, 0, 0.2)'
+                      }
+                    }}>
+                      <MDBox display="flex" alignItems="center" justifyContent="space-between">
+                        <MDBox>
+                          <MDTypography variant="body2" color="text.secondary" fontWeight="500">
+                            Partially Paid Reservations
+                          </MDTypography>
+                          <MDTypography variant="h3" fontWeight="bold" color="warning" mt={1}>
+                            {reservations.filter(r => r.paymentStatus === 'Partially paid').length}
+                          </MDTypography>
+                        </MDBox>
+                        <MDBox 
+                          sx={{
+                            backgroundColor: '#ff9800',
+                            borderRadius: '50%',
+                            p: 2,
+                            color: 'white'
+                          }}
+                        >
+                          ⏳
+                        </MDBox>
+                      </MDBox>
+                    </Card>
+                    
+                    {/* Unpaid Reservations */}
+                    <Card sx={{ 
+                      p: 3, 
+                      background: 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)',
+                      boxShadow: '0 8px 32px rgba(97, 97, 97, 0.15)',
+                      borderRadius: 3,
+                      border: '1px solid rgba(97, 97, 97, 0.1)',
+                      transition: 'transform 0.2s ease-in-out',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 12px 40px rgba(97, 97, 97, 0.2)'
+                      }
+                    }}>
+                      <MDBox display="flex" alignItems="center" justifyContent="space-between">
+                        <MDBox>
+                          <MDTypography variant="body2" color="text.secondary" fontWeight="500">
+                            Unpaid Reservations
+                          </MDTypography>
+                          <MDTypography variant="h3" fontWeight="bold" sx={{ color: '#616161' }} mt={1}>
+                            {reservations.filter(r => r.paymentStatus === 'Unpaid').length}
+                          </MDTypography>
+                        </MDBox>
+                        <MDBox 
+                          sx={{
+                            backgroundColor: '#616161',
+                            borderRadius: '50%',
+                            p: 2,
+                            color: 'white'
+                          }}
+                        >
+                          ⏸️
+                        </MDBox>
+                      </MDBox>
+                    </Card>
+                    
+                    {/* Due Reservations */}
+                    <Card sx={{ 
+                      p: 3, 
+                      background: 'linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%)',
+                      boxShadow: '0 8px 32px rgba(156, 39, 176, 0.15)',
+                      borderRadius: 3,
+                      border: '1px solid rgba(156, 39, 176, 0.1)',
+                      transition: 'transform 0.2s ease-in-out',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 12px 40px rgba(156, 39, 176, 0.2)'
+                      }
+                    }}>
+                      <MDBox display="flex" alignItems="center" justifyContent="space-between">
+                        <MDBox>
+                          <MDTypography variant="body2" color="text.secondary" fontWeight="500">
+                            Due Reservations
+                          </MDTypography>
+                          <MDTypography variant="h3" fontWeight="bold" color="secondary" mt={1}>
+                            {reservations.filter(r => r.paymentStatus === 'Unknown').length}
+                          </MDTypography>
+                        </MDBox>
+                        <MDBox 
+                          sx={{
+                            backgroundColor: '#9c27b0',
+                            borderRadius: '50%',
+                            p: 2,
+                            color: 'white'
+                          }}
+                        >
+                          💰
+                        </MDBox>
+                      </MDBox>
+                    </Card>
+                  </MDBox>
+                </MDBox>
+              </>
+            ) : (
+              <MDBox 
+                display="flex" 
+                justifyContent="center" 
+                alignItems="center" 
+                minHeight="200px"
+                flexDirection="column"
+              >
+                <MDTypography variant="h6" color="text.secondary" mb={1}>
+                  No Reservations Found
+                </MDTypography>
+                <MDTypography variant="body2" color="text.secondary" textAlign="center">
+                  No new or modified reservations for today.
+                </MDTypography>
+              </MDBox>
+            )}
+          </Card>
         </MDBox>
 
         {/* Revenue Metrics Grid */}

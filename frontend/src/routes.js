@@ -44,7 +44,7 @@ const routes = [
     component: <FDOPanel />,
   },
   {
-    type: "collapse",
+    type: "hidden",
     name: "Dashboard",
     key: "dashboard",
     icon: <Icon fontSize="small">dashboard</Icon>,
@@ -52,7 +52,7 @@ const routes = [
     component: <Dashboard />,
   },
   {
-    type: "collapse",
+    type: "hidden",
     name: "Tables",
     key: "tables",
     icon: <Icon fontSize="small">table_view</Icon>,
@@ -68,7 +68,7 @@ const routes = [
     component: <Revenue />,
   },
   {
-    type: "collapse",
+    type: "hidden",
     name: "RTL",
     key: "rtl",
     icon: <Icon fontSize="small">format_textdirection_r_to_l</Icon>,
@@ -77,10 +77,10 @@ const routes = [
   },
   {
     type: "collapse",
-    name: "Profile",
-    key: "profile",
-    icon: <Icon fontSize="small">person</Icon>,
-    route: "/profile",
+    name: "Rooms",
+    key: "rooms",
+    icon: <Icon fontSize="small">meeting_room</Icon>,
+    route: "/rooms",
     component: <Profile />,
   },
   {

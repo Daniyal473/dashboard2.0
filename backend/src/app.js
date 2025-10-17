@@ -4,44 +4,101 @@ const config = require("./config/config");
 
 const app = express();
 
-// CORS configuration
+// Environment-based CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    console.log(`🔍 CORS check for origin: "${origin}"`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     
-    const allowedOrigins = [
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      console.log('✅ CORS: Allowing request with no origin');
+      return callback(null, true);
+    }
+    
+    // Development Origins
+    const developmentOrigins = [
       'http://localhost:3000',
       'http://localhost:3001',
+      'http://localhost:5173', // Vite dev server
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001', 
+      'http://127.0.0.1:5173', // Vite dev server
+      /^http:\/\/localhost:\d+$/, // Allow any localhost port
+      /^http:\/\/127\.0\.0\.1:\d+$/ // Allow any 127.0.0.1 port
+    ];
+    
+    // Production Origins
+    const productionOrigins = [
       'http://128.199.0.150',
       'http://128.199.0.150:3000',
+      'http://128.199.0.150/authentication/sign-in',
       'https://tested-1pln9mbk8-rana-talhas-projects.vercel.app',
       'https://tested-murex.vercel.app',
       'https://portal.namuve.com',
-      /\.vercel\.app$/ // Allow all Vercel domains
+      /\.vercel\.app$/, // Allow all Vercel domains
     ];
+    
+    // Choose origins based on environment
+    const allowedOrigins = process.env.NODE_ENV === 'production' 
+      ? productionOrigins 
+      : [...developmentOrigins, ...productionOrigins]; // Dev includes both for testing
     
     const isAllowed = allowedOrigins.some(allowedOrigin => {
       if (typeof allowedOrigin === 'string') {
-        return allowedOrigin === origin;
+        const match = allowedOrigin === origin;
+        if (match) console.log(`✅ CORS: Matched string origin "${allowedOrigin}"`);
+        return match;
       }
       if (allowedOrigin instanceof RegExp) {
-        return allowedOrigin.test(origin);
+        const match = allowedOrigin.test(origin);
+        if (match) console.log(`✅ CORS: Matched regex pattern "${allowedOrigin}" for origin "${origin}"`);
+        return match;
       }
       return false;
     });
     
     if (isAllowed) {
+      console.log(`✅ CORS: Origin "${origin}" is allowed in ${process.env.NODE_ENV || 'development'} mode`);
       callback(null, true);
     } else {
+      console.log(`❌ CORS: Origin "${origin}" is NOT allowed in ${process.env.NODE_ENV || 'development'} mode`);
+      console.log(`❌ Available origins:`, allowedOrigins.filter(o => typeof o === 'string'));
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
 };
 
+// Use CORS with options, but also add a fallback for development
 app.use(cors(corsOptions));
+
+// Additional CORS headers for development
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  console.log(`🔍 Additional CORS middleware - Origin: "${origin}"`);
+  
+  // Allow all localhost origins in development
+  if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
+    console.log(`✅ Additional CORS: Allowing localhost origin "${origin}"`);
+  }
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    console.log(`✅ Handling OPTIONS preflight request for ${req.path}`);
+    return res.status(200).end();
+  }
+  
+  next();
+});
+
 app.use(express.json());
 
 // Trust proxy for accurate IP addresses
@@ -52,6 +109,9 @@ const userRoutes = require("./routes/userRoutes");
 const revenueRoutes = require("./routes/revenueRoutes");
 const teableRoutes = require("./routes/teableRoutes");
 const authRoutes = require("./routes/authRoutes");
+const occupancyRoutes = require("./routes/occupancyRoutes");
+const roomRoutes = require("../api/Room");
+const paymentRoutes = require("../api/payment");
 const monthlyTargetHandler = require("../api/monthly-target");
 
 // Import and start scheduler
@@ -74,7 +134,9 @@ app.get("/", (req, res) => {
       teable: "/api/teable",
       teableStatus: "/api/teable/status",
       monthlyTarget: "/api/monthly-target",
-      auth: "/api/auth"
+      auth: "/api/auth",
+      rooms: "/api/rooms",
+      occupancy: "/api/occupancy"
     }
   });
 });
@@ -84,6 +146,9 @@ app.use("/api/users", userRoutes);
 app.use("/api/revenue", revenueRoutes);
 app.use("/api/teable", teableRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/occupancy", occupancyRoutes);
+app.use("/api/rooms", roomRoutes);
+app.use("/api/payment", paymentRoutes);
 
 // Monthly target route
 app.all("/api/monthly-target", monthlyTargetHandler);

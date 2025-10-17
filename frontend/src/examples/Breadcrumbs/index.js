@@ -72,7 +72,7 @@ function Breadcrumbs({ icon, title, route, light }) {
           color={light ? "white" : "dark"}
           sx={{ lineHeight: 0 }}
         >
-          {title.replace("-", " ")}
+          {title === "profile" ? "Rooms" : title.replace("-", " ")}
         </MDTypography>
       </MuiBreadcrumbs>
     </MDBox>
