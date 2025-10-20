@@ -80,10 +80,14 @@ function ReservationCard({ guest, setSnackbar, stack, }) {
   const [cooldownTime, setCooldownTime] = useState(0);
   const [canPrintCheckIn, setCanPrintCheckIn] = useState(false);
   const [canPrintCheckOut, setCanPrintCheckOut] = useState(false);
+  const { user } = useAuth(); // ✅ get logged-in user
 
   const HOSTAWAY_API = "https://api.hostaway.com/v1/reservations";
   const HOSTAWAY_TOKEN =
     "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI4MDA2NiIsImp0aSI6ImNhYzRlNzlkOWVmZTBiMmZmOTBiNzlkNTEzYzIyZTU1MDhiYWEwNWM2OGEzYzNhNzJhNTU1ZmMzNDI4OTQ1OTg2YWI0NTVjNmJjOWViZjFkIiwiaWF0IjoxNzM2MTY3ODExLjgzNTUyNCwibmJmIjoxNzM2MTY3ODExLjgzNTUyNiwiZXhwIjoyMDUxNzAwNjExLjgzNTUzMSwic3ViIjoiIiwic2NvcGVzIjpbImdlbmVyYWwiXSwic2VjcmV0SWQiOjUzOTUyfQ.Mmqfwt5R4CK5AHwNQFfe-m4PXypLLbAPtzCD7CxgjmagGa0AWfLzPM_panH9fCbYbC1ilNpQ-51KOQjRtaFT3vR6YKEJAUkUSOKjZupQTwQKf7QE8ZbLQDi0F951WCPl9uKz1nELm73V30a8rhDN-97I43FWfrGyqBgt7F8wPkE";
+
+  const TEABLE_API_URL = "https://teable.namuve.com/api/table/tblQaO1sLn5llEOsBuf/record";
+  const TEABLE_API_TOKEN = "teable_accSkoTP5GM9CQvPm4u_csIKhbkyBkfGhWK+6GsEqCbzRDpxu/kJJAorC0dxkhE="; // 🔐 replace this
 
   const handlePrintCheckIn = async () => {
     try {
@@ -523,6 +527,36 @@ ul li {
         console.log("✅ Successfully marked Print Check In as 'Yes' in Hostaway.");
         setCanPrintCheckIn(false);
       }
+
+      // ✅ Prepare Teable record
+      const teablePayload = {
+        records: [
+          {
+            fields: {
+              User: user?.username,
+              "Button Clicked": "Print Check In",
+              "Date & Time": formattedDateTime,
+            },
+          },
+        ],
+      };
+
+      // ✅ Send record to Teable
+      const teableRes = await fetch(TEABLE_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${TEABLE_API_TOKEN}`,
+        },
+        body: JSON.stringify(teablePayload),
+      });
+
+      if (!teableRes.ok) {
+        const errText = await teableRes.text();
+        throw new Error(`Failed to log to Teable: ${errText}`);
+      }
+
+      console.log("✅ Logged Check-In action to Teable");
 
     } catch (err) {
       console.error("Error preparing check-in form:", err);
@@ -1081,6 +1115,36 @@ ${CheckOutSecurityDeposit !== "0"
         body: JSON.stringify(updatePayload),
       });
 
+      // ✅ Prepare Teable record
+      const teablePayload = {
+        records: [
+          {
+            fields: {
+              User: user?.username,
+              "Button Clicked": "Print Check Out",
+              "Date & Time": formattedDateTime,
+            },
+          },
+        ],
+      };
+
+      // ✅ Send record to Teable
+      const teableRes = await fetch(TEABLE_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${TEABLE_API_TOKEN}`,
+        },
+        body: JSON.stringify(teablePayload),
+      });
+
+      if (!teableRes.ok) {
+        const errText = await teableRes.text();
+        throw new Error(`Failed to log to Teable: ${errText}`);
+      }
+
+      console.log("✅ Logged Check-In action to Teable");
+
       if (!updateResponse.ok) {
         const errText = await updateResponse.text();
         console.error("❌ Failed to update Print Check Out field:", errText);
@@ -1179,6 +1243,89 @@ ${CheckOutSecurityDeposit !== "0"
         severity: "success",
       });
 
+      // ✅ Trigger webhook on n8n after successful check-in
+      const webhookBody = {
+        reservation_id: guest.reservationId,
+        guest_name: guest.guestName || "Unknown Guest",
+        room_number: guest.listingName || "Unknown Listing",
+        check_in_date: guest.arrivalDate
+          ? guest.arrivalDate.split("T")[0]
+          : "Unknown Date",
+        actual_check_in_local: formattedDateTime,
+        event: "Checked-In",
+      };
+
+      fetch("https://n8n.namuve.com/webhook/196e4e1e-4c7a-420b-8fe5-a3674403395b", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(webhookBody),
+      })
+        .then(async (response) => {
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.message || "Failed to trigger Webhook");
+          }
+          console.log("✅ Webhook triggered successfully:", data);
+        })
+        .catch((error) => {
+          console.error("❌ Error triggering Webhook:", error);
+        });
+
+      // ✅ Send message to Google Chat
+      {/*const chatMessage = `📥 Check-In Alert for ${guest.guestName }!\n👤 ${
+      guest.guestName || "Guest"
+    } has checked in to 🏠 ${guest.listingName || "Unknown Listing"} at 🕒 ${formattedDateTime}.\n\n🔗 https://dashboard.hostaway.com/reservations/${guest.reservationId}`;
+
+    fetch(
+      "https://chat.googleapis.com/v1/spaces/AAQANIuKBgw/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=oSxAMzHxA2VKi4AoEK_6Wf335vxr1H5Cd7XNxzeyS-o",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: chatMessage,
+        }),
+      }
+    )
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.message || "Failed to send Chat message");
+        console.log("✅ Google Chat message sent successfully:", data);
+      })
+      .catch((error) => {
+        console.error("❌ Error sending message to Google Chat:", error);
+      });*/}
+
+      // ✅ Prepare Teable record
+      const teablePayload = {
+        records: [
+          {
+            fields: {
+              User: user?.username,
+              "Button Clicked": "Mark Check In",
+              "Date & Time": formattedDateTime,
+            },
+          },
+        ],
+      };
+
+      // ✅ Send record to Teable
+      const teableRes = await fetch(TEABLE_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${TEABLE_API_TOKEN}`,
+        },
+        body: JSON.stringify(teablePayload),
+      });
+
+      if (!teableRes.ok) {
+        const errText = await teableRes.text();
+        throw new Error(`Failed to log to Teable: ${errText}`);
+      }
+
+      console.log("✅ Logged Check-In action to Teable");
       await handleWebhook();
     } catch (err) {
       console.error("❌ Error in handleMarkCheckIn:", err);
@@ -1191,7 +1338,6 @@ ${CheckOutSecurityDeposit !== "0"
       });
     }
   };
-
 
   // ✅ New function for Mark Check Out
   const handleMarkCheckOut = async () => {
@@ -1278,6 +1424,90 @@ ${CheckOutSecurityDeposit !== "0"
         });
       }
 
+      // ✅ Trigger webhook on n8n after successful check-out
+      const webhookBody = {
+        reservation_id: guest.reservationId,
+        guest_name: guest.guestName || "Unknown Guest",
+        room_number: guest.listingName || "Unknown Listing",
+        check_in_date: guest.arrivalDate
+          ? guest.arrivalDate.split("T")[0]
+          : "Unknown Date",
+        actual_check_out_local: formattedDateTime, // ✅ local check-out time
+        event: "Checked-Out", // ✅ event type
+      };
+
+      fetch("https://n8n.namuve.com/webhook/196e4e1e-4c7a-420b-8fe5-a3674403395b", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(webhookBody),
+      })
+        .then(async (response) => {
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(data.message || "Failed to trigger Webhook");
+          }
+          console.log("✅ Webhook triggered successfully:", data);
+        })
+        .catch((error) => {
+          console.error("❌ Error triggering Webhook:", error);
+        });
+
+      // ✅ Send message to Google Chat
+      {/*const chatMessage = `📤 Check-Out Alert for ${guest.guestName }!\n👤 ${
+      guest.guestName || "Guest"
+    } has checked out from 🏠 ${guest.listingName || "Unknown Listing"} at 🕒 ${formattedDateTime}.\n\n🔗 https://dashboard.hostaway.com/reservations/${guest.reservationId}`;
+
+    fetch(
+      "https://chat.googleapis.com/v1/spaces/AAQANIuKBgw/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=oSxAMzHxA2VKi4AoEK_6Wf335vxr1H5Cd7XNxzeyS-o",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: chatMessage,
+        }),
+      }
+    )
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.message || "Failed to send Chat message");
+        console.log("✅ Google Chat message sent successfully:", data);
+      })
+      .catch((error) => {
+        console.error("❌ Error sending message to Google Chat:", error);
+      });*/}
+
+      // ✅ Prepare Teable record
+      const teablePayload = {
+        records: [
+          {
+            fields: {
+              User: user?.username,
+              "Button Clicked": "Mark Check Out",
+              "Date & Time": formattedDateTime,
+            },
+          },
+        ],
+      };
+
+      // ✅ Send record to Teable
+      const teableRes = await fetch(TEABLE_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${TEABLE_API_TOKEN}`,
+        },
+        body: JSON.stringify(teablePayload),
+      });
+
+      if (!teableRes.ok) {
+        const errText = await teableRes.text();
+        throw new Error(`Failed to log to Teable: ${errText}`);
+      }
+
+      console.log("✅ Logged Check-In action to Teable");
+
       await handleWebhook();
     } catch (err) {
       console.error("❌ Error in handleMarkCheckOut:", err);
@@ -1291,6 +1521,17 @@ ${CheckOutSecurityDeposit !== "0"
       }
     }
   };
+
+  const now = new Date();
+  const formattedDateTime = now.toLocaleString("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
 
   const formatTime = (timeString) => {
     if (!timeString) return "N/A";
@@ -1826,23 +2067,23 @@ ${CheckOutSecurityDeposit !== "0"
               <IconButton
                 onClick={handlePrintCheckIn}
                 sx={{
-                color: "#28282B",
-                border: "1.5px solid #28282B",
-                borderRadius: "12px",
-                padding: "6px 9px",
-                fontWeight: "bold",
-                fontSize: "0.85rem",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-                transition: "all 0.25s ease-in-out",
-                "&:hover": {
-                  transform: "scale(1.05)",
-                  backgroundColor: "rgba(0, 0, 0, 0.05)",
-                },
-                "&:disabled": {
-                  opacity: 0.6,
-                  cursor: "not-allowed",
-                },
-              }}
+                  color: "#28282B",
+                  border: "1.5px solid #28282B",
+                  borderRadius: "12px",
+                  padding: "6px 9px",
+                  fontWeight: "bold",
+                  fontSize: "0.85rem",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+                  transition: "all 0.25s ease-in-out",
+                  "&:hover": {
+                    transform: "scale(1.05)",
+                    backgroundColor: "rgba(0, 0, 0, 0.05)",
+                  },
+                  "&:disabled": {
+                    opacity: 0.6,
+                    cursor: "not-allowed",
+                  },
+                }}
               >
                 <PrintIcon sx={{ fontSize: "1rem" }} />
               </IconButton>
@@ -1853,23 +2094,23 @@ ${CheckOutSecurityDeposit !== "0"
               <IconButton
                 onClick={handlePrintCheckOut}
                 sx={{
-                color: "#28282B",
-                border: "1.5px solid #28282B",
-                borderRadius: "12px",
-                padding: "6px 9px",
-                fontWeight: "bold",
-                fontSize: "0.85rem",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-                transition: "all 0.25s ease-in-out",
-                "&:hover": {
-                  transform: "scale(1.05)",
-                  backgroundColor: "rgba(0, 0, 0, 0.05)",
-                },
-                "&:disabled": {
-                  opacity: 0.6,
-                  cursor: "not-allowed",
-                },
-              }}
+                  color: "#28282B",
+                  border: "1.5px solid #28282B",
+                  borderRadius: "12px",
+                  padding: "6px 9px",
+                  fontWeight: "bold",
+                  fontSize: "0.85rem",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
+                  transition: "all 0.25s ease-in-out",
+                  "&:hover": {
+                    transform: "scale(1.05)",
+                    backgroundColor: "rgba(0, 0, 0, 0.05)",
+                  },
+                  "&:disabled": {
+                    opacity: 0.6,
+                    cursor: "not-allowed",
+                  },
+                }}
               >
                 <PrintIcon sx={{ fontSize: "1rem" }} />
               </IconButton>
@@ -2982,7 +3223,7 @@ function KanbanView() {
 
                       <MDBox px={2} pb={2} sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", maxHeight: "calc(98vh - 280px)" }}>
                         {filteredGuests.map((guest) => (
-                          <ReservationCard key={guest.id} guest={guest} setSnackbar={setSnackbar} searchTerm={searchTerm} stack={stack}/>
+                          <ReservationCard key={guest.id} guest={guest} setSnackbar={setSnackbar} searchTerm={searchTerm} stack={stack} />
                         ))}
                       </MDBox>
                     </Card>
