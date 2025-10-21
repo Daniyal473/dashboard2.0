@@ -210,6 +210,7 @@ async function getRevenueAndOccupancy() {
   let finalExpectedRevenue = 0; // Initialize finalExpectedRevenue for all code paths
   let anyGuestCheckedIn = false; // Initialize check-in tracking
   let occupancyRate = 0;
+  let actualCheckedInCount = 0; // Initialize actual checked-in count for occupancy calculation
   
   // Initialize category-wise revenue tracking
   let categoryRevenue = {
@@ -310,14 +311,15 @@ async function getRevenueAndOccupancy() {
   }
 
 
-  // Calculate occupancy rate
+  // Calculate occupancy rate - PLACEHOLDER (will be updated after processing reservations)
   let totalAvailable = 0, totalReserved = 0;
   Object.values(categoryAvailability).forEach(({ available, reserved }) => {
     totalAvailable += available;
     totalReserved += reserved;
   });
   const totalRooms = totalAvailable + totalReserved;
-  occupancyRate = totalRooms > 0 ? parseFloat(((totalReserved / totalRooms) * 100).toFixed(2)) : 0;
+  // Temporary occupancy rate - will be recalculated based on actual check-ins
+  occupancyRate = 0;
 
 
   // API endpoints - include resources in the response (single request)
@@ -812,6 +814,66 @@ async function getRevenueAndOccupancy() {
       console.log(`🏠 3BR: ${categoryRevenue['3BR'].toFixed(2)} PKR`);
       console.log(`=======================================`);
 
+      // CALCULATE CORRECT OCCUPANCY RATE BASED ON ACTUAL CHECK-INS
+      actualCheckedInCount = 0; // Reset counter
+      
+      // Re-process reservations to count only those with actual check-in time
+      for (const res of reservations) {
+        let updatedRes = res;
+        if (res.status === 'modified' || res.status === 'new') {
+          try {
+            const updatedResResponse = await axios.get(`https://api.hostaway.com/v1/reservations/${res.id}?includeResources=1`, {
+              headers: {
+                Authorization: authToken,
+                'Content-Type': 'application/json'
+              },
+              timeout: 30000
+            });
+            const updatedResData = updatedResResponse.data;
+            if (updatedResData && updatedResData.result) {
+              updatedRes = updatedResData.result;
+            }
+          } catch (updateError) {
+            // Silent error handling
+          }
+        }
+
+        const arrival = new Date(updatedRes.arrivalDate);
+        const departure = new Date(updatedRes.departureDate);
+        const todayDate = new Date(formattedToday);
+        
+        if (todayDate >= arrival && todayDate < departure) {
+          // Get custom fields from the correct property: customFieldValues
+          let customFields = [];
+          
+          if (updatedRes.customFieldValues && Array.isArray(updatedRes.customFieldValues)) {
+            customFields = updatedRes.customFieldValues;
+          }
+          
+          // Check for "Actual Check-in Time" field (ID: 76281)
+          const hasCheckedIn = customFields && 
+            customFields.some(fieldValue => {
+              return fieldValue.customFieldId === 76281 && 
+                fieldValue.customField?.name === "Actual Check-in Time" && 
+                fieldValue.value && 
+                fieldValue.value.trim() !== "";
+            });
+            
+          if (hasCheckedIn) {
+            actualCheckedInCount++;
+          }
+        }
+      }
+      
+      // Calculate final occupancy rate based on actual check-ins
+      occupancyRate = totalRooms > 0 ? parseFloat(((actualCheckedInCount / totalRooms) * 100).toFixed(2)) : 0;
+      
+      console.log(`\n=== OCCUPANCY CALCULATION RESULTS ===`);
+      console.log(`🏨 Total Rooms: ${totalRooms}`);
+      console.log(`✅ Actual Checked-In Count: ${actualCheckedInCount}`);
+      console.log(`📊 Occupancy Rate: ${occupancyRate}% (${actualCheckedInCount}/${totalRooms})`);
+      console.log(`=======================================`);
+
       // Update properties in memory
       properties.totalRevenue = totalRevenue.toString();
     }
@@ -905,6 +967,9 @@ async function getRevenueAndOccupancy() {
         monthlyAchievedRevenue: monthlyAchievedRevenue.toFixed(2), // Monthly achieved revenue
         quarterlyAchievedRevenue: quarterlyAchievedRevenue.toFixed(2), // Quarterly achieved revenue
         occupancyRate: occupancyRate,
+        totalRooms: totalRooms,
+        totalReserved: actualCheckedInCount, // Use actual checked-in count instead of reserved count
+        totalAvailable: totalRooms - actualCheckedInCount,
         categoryAvailability: categoryAvailability,
         categoryRevenue: categoryRevenue // Category-wise revenue breakdown
       };
@@ -918,6 +983,9 @@ async function getRevenueAndOccupancy() {
       monthlyAchievedRevenue: '0', // Monthly achieved revenue (error fallback)
       quarterlyAchievedRevenue: '0', // Quarterly achieved revenue (error fallback)
       occupancyRate: 0,
+      totalRooms: 0,
+      totalReserved: 0,
+      totalAvailable: 0,
       categoryAvailability: {},
       categoryRevenue: { 'Studio': 0, '1BR': 0, '2BR': 0, '2BR Premium': 0, '3BR': 0 }, // Category revenue fallback
       error: 'API temporarily unavailable',

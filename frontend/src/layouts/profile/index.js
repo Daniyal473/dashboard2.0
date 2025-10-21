@@ -432,54 +432,42 @@ function Overview() {
   
   // Get real listings filtered by room type
   const getRealListingsByRoomType = (roomType) => {
-    // Debug: Log all apartment names to see what we're working with
-    if (listings.length > 0) {
-      // console.log('🔍 Total listings:', listings.length);
-      // console.log('🔍 Sample apartment data:');
-      // listings.slice(0, 5).forEach((listing, index) => {
-      //   console.log(`  ${index + 1}. Name: "${listing.name || 'NO NAME'}"`);
-      //   console.log(`     Activity: "${listing.activity || 'NO ACTIVITY'}"`);
-      //   console.log(`     Guest: "${listing.guestName || 'NO GUEST'}"`);
-      //   console.log(`     Status: "${listing.cleaningStatus || 'NO STATUS'}"`);
-      //   console.log('     ---');
-      // });
-      // console.log('🔍 Filtering for room type:', roomType);
-    }
-    
     const filtered = listings.filter(listing => {
       const name = listing.name?.toLowerCase() || '';
+      const listingId = listing.id;
       
-      // Filter based on your apartment naming pattern: Floor-Unit (BedroomCode)
-      // Examples: "9F-85 (3B)", "1F-14 (2B)", "9F-82 (1B)"
+      // Define 2BR Premium listing IDs (same as backend)
+      const premiumListingIds = [305055, 309909, 323227, 288688];
+      
+      // Filter based on apartment naming pattern and listing IDs
       switch(roomType) {
         case 'Studio':
-          return name.includes('(sb)') || 
+          // Look for Studio patterns - check if any apartments actually have these patterns
+          return name.includes('(s)') || 
+                 name.includes('(sb)') || 
                  name.includes('(st)') || 
-                 name.includes('(studio)') ||
+                 name.includes('studio') ||
                  name.includes('(0b)');
                  
         case '1BR':
           return name.includes('(1b)');
                  
         case '2BR':
-          // Check for (2B) but exclude premium indicators
+          // Check for (2B) but exclude premium listings by ID
           const has2B = name.includes('(2b)');
-          const isPremium = name.includes('premium') || 
-                           name.includes('deluxe') || 
-                           name.includes('suite') ||
-                           name.includes('luxury') ||
-                           name.includes('prem');
-          return has2B && !isPremium;
+          const isPremiumById = listingId && premiumListingIds.includes(parseInt(listingId));
+          return has2B && !isPremiumById;
           
         case '2BR Premium':
-          // Check for (2B) with premium indicators
+          // Check for premium listings by ID first, then name patterns
+          const isPremiumByIdCheck = listingId && premiumListingIds.includes(parseInt(listingId));
           const has2BPrem = name.includes('(2b)');
-          const isPremiumSuite = name.includes('premium') || 
+          const isPremiumByName = name.includes('premium') || 
                                 name.includes('deluxe') || 
                                 name.includes('suite') ||
                                 name.includes('luxury') ||
                                 name.includes('prem');
-          return has2BPrem && isPremiumSuite;
+          return isPremiumByIdCheck || (has2BPrem && isPremiumByName);
           
         case '3BR':
           return name.includes('(3b)');
@@ -489,12 +477,6 @@ function Overview() {
       }
     });
     
-    // console.log(`🔍 Found ${filtered.length} apartments for ${roomType}`);
-    // if (filtered.length > 0) {
-    //   filtered.forEach((apt, index) => {
-    //     console.log(`  ${index + 1}. "${apt.name}"`);
-    //   });
-    // }
     return filtered;
   };
 
@@ -1203,7 +1185,7 @@ function Overview() {
         </MDBox>
       )}
 
-      {/* Daily Occupancy & Revenue Report - Enhanced White Background Design */}
+      {/* Daily Occupancy & Revenue Report - Redesigned Layout */}
       {occupancyData && !loading && !occupancyLoading && (
         <MDBox px={3} mb={3}>
           <Card sx={{ 
@@ -1214,15 +1196,16 @@ function Overview() {
             borderRadius: 3,
             border: '1px solid #f1f5f9'
           }}>
+            {/* Header */}
             <MDBox sx={{ 
               backgroundColor: '#ffffff',
               borderRadius: 2,
               p: 3,
               mb: 3,
-              border: '2px solid #e2e8f0'
+              border: '2px solid #e2e8f0',
+              textAlign: 'center'
             }}>
-              <MDTypography variant="h4" color="text.primary" mb={2} fontWeight="bold" sx={{ 
-                textAlign: 'center',
+              <MDTypography variant="h4" color="text.primary" mb={1} fontWeight="bold" sx={{ 
                 color: '#1e293b',
                 fontSize: '1.8rem'
               }}>
@@ -1233,11 +1216,11 @@ function Overview() {
                 backgroundColor: '#f8fafc',
                 borderRadius: 2,
                 p: 2,
-                mb: 2,
-                border: '1px solid #e2e8f0'
+                mt: 2,
+                border: '1px solid #e2e8f0',
+                display: 'inline-block'
               }}>
                 <MDTypography variant="h6" color="text.primary" sx={{ 
-                  textAlign: 'center',
                   color: '#475569',
                   fontWeight: 'medium'
                 }}>
@@ -1246,43 +1229,69 @@ function Overview() {
               </MDBox>
             </MDBox>
             
+            {/* Report Period and Occupancy Rate */}
             <MDBox sx={{ 
-              backgroundColor: '#ffffff',
+              backgroundColor: '#f8fafc',
               borderRadius: 2,
               p: 3,
               mb: 3,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
               border: '1px solid #e2e8f0'
             }}>
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
                   <MDBox sx={{ 
-                    backgroundColor: '#f0f9ff',
+                    backgroundColor: '#e0f2fe',
                     borderRadius: 2,
-                    p: 2,
-                    border: '1px solid #bae6fd',
-                    textAlign: 'center'
+                    p: 3,
+                    border: '1px solid #b3e5fc',
+                    textAlign: 'center',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center'
                   }}>
-                    <MDTypography variant="body1" color="text.primary" sx={{ color: '#0369a1', fontWeight: 'medium' }}>
+                    <MDTypography variant="body1" color="text.primary" sx={{ 
+                      color: '#0277bd', 
+                      fontWeight: 'bold',
+                      mb: 1,
+                      fontSize: '0.9rem'
+                    }}>
                       🕒 Report Period
                     </MDTypography>
-                    <MDTypography variant="h6" color="text.primary" sx={{ color: '#0c4a6e', fontWeight: 'bold' }}>
+                    <MDTypography variant="h6" color="text.primary" sx={{ 
+                      color: '#01579b', 
+                      fontWeight: 'bold',
+                      fontSize: '1rem'
+                    }}>
                       {occupancyData.reportDate}, 12:00 AM - {occupancyData.reportTime}
                     </MDTypography>
                   </MDBox>
                 </Grid>
                 <Grid item xs={12} md={6}>
                   <MDBox sx={{ 
-                    backgroundColor: '#f0fdf4',
+                    backgroundColor: '#e8f5e8',
                     borderRadius: 2,
-                    p: 2,
-                    border: '1px solid #bbf7d0',
-                    textAlign: 'center'
+                    p: 3,
+                    border: '1px solid #c8e6c9',
+                    textAlign: 'center',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center'
                   }}>
-                    <MDTypography variant="body1" color="text.primary" sx={{ color: '#166534', fontWeight: 'medium' }}>
+                    <MDTypography variant="body1" color="text.primary" sx={{ 
+                      color: '#2e7d32', 
+                      fontWeight: 'bold',
+                      mb: 1,
+                      fontSize: '0.9rem'
+                    }}>
                       📈 Occupancy Rate
                     </MDTypography>
-                    <MDTypography variant="h6" color="text.primary" sx={{ color: '#14532d', fontWeight: 'bold' }}>
+                    <MDTypography variant="h6" color="text.primary" sx={{ 
+                      color: '#1b5e20', 
+                      fontWeight: 'bold',
+                      fontSize: '1rem'
+                    }}>
                       {occupancyData.occupancyRate}% ({occupancyData.totalReserved}/{occupancyData.totalRooms})
                     </MDTypography>
                   </MDBox>
@@ -1290,6 +1299,7 @@ function Overview() {
               </Grid>
             </MDBox>
 
+            {/* Room Availability & Cleaning Status */}
             <MDBox sx={{ 
               backgroundColor: '#ffffff',
               borderRadius: 2,
@@ -1297,13 +1307,21 @@ function Overview() {
               mb: 3,
               border: '1px solid #e2e8f0'
             }}>
-              <MDTypography variant="h5" color="text.primary" mb={3} fontWeight="bold" sx={{ 
-                textAlign: 'center',
-                color: '#1e293b',
-                fontSize: '1.4rem'
+              <MDBox sx={{ 
+                backgroundColor: '#f0f9ff',
+                borderRadius: 2,
+                p: 2,
+                mb: 3,
+                border: '1px solid #bae6fd',
+                textAlign: 'center'
               }}>
-                🏨 Room Availability & Cleaning Status
-              </MDTypography>
+                <MDTypography variant="h5" color="text.primary" fontWeight="bold" sx={{ 
+                  color: '#0369a1',
+                  fontSize: '1.2rem'
+                }}>
+                  🏨 Room Availability & Cleaning Status
+                </MDTypography>
+              </MDBox>
             
             <Grid container spacing={2}>
               {['Studio', '1BR', '2BR', '2BR Premium', '3BR'].map((roomType) => {
@@ -1318,34 +1336,35 @@ function Overview() {
                       onClick={() => handleRoomTypeClick(roomType)}
                       sx={{ 
                         backgroundColor: '#ffffff', 
-                        borderRadius: 3, 
-                        p: 3,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                        border: '2px solid #f1f5f9',
-                        minHeight: '140px',
+                        borderRadius: 2, 
+                        p: 2,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                        border: '1px solid #e2e8f0',
+                        minHeight: '120px',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'center',
                         cursor: 'pointer',
-                        transition: 'all 0.3s ease',
+                        transition: 'all 0.2s ease',
                         '&:hover': {
-                          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                          border: '2px solid #e2e8f0',
-                          transform: 'translateY(-2px)'
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                          border: '1px solid #cbd5e1',
+                          transform: 'translateY(-1px)'
                         }
                       }}
                     >
                       <MDBox textAlign="center">
                         <MDBox sx={{ 
-                          backgroundColor: '#f8fafc',
-                          borderRadius: 2,
-                          p: 1.5,
+                          backgroundColor: '#ffffff',
+                          borderRadius: 1,
+                          p: 1,
                           mb: 2,
-                          border: '1px solid #e2e8f0'
+                          border: '2px solid #e2e8f0',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
                         }}>
                           <MDTypography variant="h6" fontWeight="bold" sx={{ 
                             color: '#1e293b',
-                            fontSize: '1.1rem'
+                            fontSize: '0.9rem'
                           }}>
                             {roomType} {isExpanded ? '▼' : '▶'}
                           </MDTypography>
@@ -1353,24 +1372,27 @@ function Overview() {
                         
                         <MDBox sx={{ 
                           backgroundColor: '#ffffff',
-                          borderRadius: 2,
+                          borderRadius: 1,
                           p: 1.5,
-                          border: '1px solid #f1f5f9'
+                          border: '1px solid #e2e8f0',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
                         }}>
                           <MDTypography variant="body2" sx={{ 
-                            lineHeight: 1.6,
-                            color: '#475569',
-                            fontWeight: 'medium'
-                          }}>
-                            Available: <strong style={{ color: '#059669', fontSize: '1rem' }}>{getRealListingsByRoomType(roomType).filter(l => l.activity === 'Vacant').length}</strong>
-                          </MDTypography>
-                          <MDTypography variant="body2" sx={{ 
-                            lineHeight: 1.6,
+                            lineHeight: 1.4,
                             color: '#475569',
                             fontWeight: 'medium',
-                            mt: 0.5
+                            fontSize: '0.8rem'
                           }}>
-                            Reserved: <strong style={{ color: '#dc2626', fontSize: '1rem' }}>{getRealListingsByRoomType(roomType).filter(l => l.activity === 'Occupied').length}</strong>
+                            Available: <strong style={{ color: '#059669' }}>{data.available}</strong>
+                          </MDTypography>
+                          <MDTypography variant="body2" sx={{ 
+                            lineHeight: 1.4,
+                            color: '#475569',
+                            fontWeight: 'medium',
+                            mt: 0.5,
+                            fontSize: '0.8rem'
+                          }}>
+                            Occupied: <strong style={{ color: '#dc2626' }}>{data.reserved}</strong>
                           </MDTypography>
                         </MDBox>
                       </MDBox>
@@ -1391,11 +1413,12 @@ function Overview() {
                         }}
                       >
                         <MDBox sx={{ 
-                          backgroundColor: '#f8fafc',
+                          backgroundColor: '#ffffff',
                           borderRadius: 2,
                           p: 2,
                           mb: 3,
-                          border: '1px solid #e2e8f0'
+                          border: '2px solid #e2e8f0',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
                         }}>
                           <MDTypography 
                             variant="h6" 
@@ -1451,10 +1474,18 @@ function Overview() {
                                 <MDBox sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                                   
                                   {/* Status Row */}
-                                  <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <MDBox sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'space-between',
+                                    backgroundColor: '#ffffff',
+                                    p: 1.5,
+                                    borderRadius: 1,
+                                    border: '1px solid #f1f5f9'
+                                  }}>
                                     <MDBox sx={{ display: 'flex', alignItems: 'center' }}>
                                       <MDBox sx={{ 
-                                        backgroundColor: '#f8fafc',
+                                        backgroundColor: '#ffffff',
                                         borderRadius: '50%',
                                         p: 0.5,
                                         mr: 1,
@@ -1462,7 +1493,8 @@ function Overview() {
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         minWidth: '24px',
-                                        height: '24px'
+                                        height: '24px',
+                                        border: '1px solid #e2e8f0'
                                       }}>
                                         <MDTypography sx={{ fontSize: '0.7rem' }}>📍</MDTypography>
                                       </MDBox>
@@ -1480,18 +1512,26 @@ function Overview() {
                                       sx={{ 
                                         fontSize: '0.75rem',
                                         fontWeight: 'bold',
-                                        backgroundColor: listing.activity === 'Vacant' ? '#dcfce7' : '#fee2e2',
-                                        color: listing.activity === 'Vacant' ? '#166534' : '#dc2626',
-                                        border: `1px solid ${listing.activity === 'Vacant' ? '#bbf7d0' : '#fecaca'}`
+                                        backgroundColor: getStatusColor('activity', listing.activity),
+                                        color: '#000000',
+                                        border: '1px solid #e2e8f0'
                                       }}
                                     />
                                   </MDBox>
 
                                   {/* Guest Row */}
-                                  <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <MDBox sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'space-between',
+                                    backgroundColor: '#ffffff',
+                                    p: 1.5,
+                                    borderRadius: 1,
+                                    border: '1px solid #f1f5f9'
+                                  }}>
                                     <MDBox sx={{ display: 'flex', alignItems: 'center' }}>
                                       <MDBox sx={{ 
-                                        backgroundColor: '#f0f9ff',
+                                        backgroundColor: '#ffffff',
                                         borderRadius: '50%',
                                         p: 0.5,
                                         mr: 1,
@@ -1499,7 +1539,8 @@ function Overview() {
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         minWidth: '24px',
-                                        height: '24px'
+                                        height: '24px',
+                                        border: '1px solid #e2e8f0'
                                       }}>
                                         <MDTypography sx={{ fontSize: '0.7rem' }}>👤</MDTypography>
                                       </MDBox>
@@ -1524,10 +1565,18 @@ function Overview() {
                                   </MDBox>
 
                                   {/* HW Status Row */}
-                                  <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <MDBox sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'space-between',
+                                    backgroundColor: '#ffffff',
+                                    p: 1.5,
+                                    borderRadius: 1,
+                                    border: '1px solid #f1f5f9'
+                                  }}>
                                     <MDBox sx={{ display: 'flex', alignItems: 'center' }}>
                                       <MDBox sx={{ 
-                                        backgroundColor: listing.hwStatus === 'Clean' ? '#f0fdf4' : '#fef2f2',
+                                        backgroundColor: '#ffffff',
                                         borderRadius: '50%',
                                         p: 0.5,
                                         mr: 1,
@@ -1535,7 +1584,8 @@ function Overview() {
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         minWidth: '24px',
-                                        height: '24px'
+                                        height: '24px',
+                                        border: '1px solid #e2e8f0'
                                       }}>
                                         <MDTypography sx={{ fontSize: '0.7rem' }}>🧹</MDTypography>
                                       </MDBox>
@@ -1553,18 +1603,26 @@ function Overview() {
                                       sx={{ 
                                         fontSize: '0.75rem',
                                         fontWeight: 'bold',
-                                        backgroundColor: listing.hwStatus === 'Clean' ? '#dcfce7' : '#fee2e2',
-                                        color: listing.hwStatus === 'Clean' ? '#166534' : '#dc2626',
-                                        border: `1px solid ${listing.hwStatus === 'Clean' ? '#bbf7d0' : '#fecaca'}`
+                                        backgroundColor: getStatusColor('hw', listing.hwStatus),
+                                        color: '#000000',
+                                        border: '1px solid #e2e8f0'
                                       }}
                                     />
                                   </MDBox>
 
                                   {/* HK Status Row */}
-                                  <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <MDBox sx={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'space-between',
+                                    backgroundColor: '#ffffff',
+                                    p: 1.5,
+                                    borderRadius: 1,
+                                    border: '1px solid #f1f5f9'
+                                  }}>
                                     <MDBox sx={{ display: 'flex', alignItems: 'center' }}>
                                       <MDBox sx={{ 
-                                        backgroundColor: listing.hkStatus === 'Clean' ? '#f3f4f6' : '#fdf2f8',
+                                        backgroundColor: '#ffffff',
                                         borderRadius: '50%',
                                         p: 0.5,
                                         mr: 1,
@@ -1572,7 +1630,8 @@ function Overview() {
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         minWidth: '24px',
-                                        height: '24px'
+                                        height: '24px',
+                                        border: '1px solid #e2e8f0'
                                       }}>
                                         <MDTypography sx={{ fontSize: '0.7rem' }}>🏠</MDTypography>
                                       </MDBox>
@@ -1590,19 +1649,27 @@ function Overview() {
                                       sx={{ 
                                         fontSize: '0.75rem',
                                         fontWeight: 'bold',
-                                        backgroundColor: listing.hkStatus === 'Clean' ? '#f3e8ff' : '#fdf2f8',
-                                        color: listing.hkStatus === 'Clean' ? '#7c3aed' : '#ec4899',
-                                        border: `1px solid ${listing.hkStatus === 'Clean' ? '#d8b4fe' : '#f9a8d4'}`
+                                        backgroundColor: getStatusColor('hk', listing.hkStatus),
+                                        color: '#000000',
+                                        border: '1px solid #e2e8f0'
                                       }}
                                     />
                                   </MDBox>
 
                                   {/* Check-in Row - Only show if exists */}
                                   {listing.checkInDate && (
-                                    <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <MDBox sx={{ 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      justifyContent: 'space-between',
+                                      backgroundColor: '#ffffff',
+                                      p: 1.5,
+                                      borderRadius: 1,
+                                      border: '1px solid #f1f5f9'
+                                    }}>
                                       <MDBox sx={{ display: 'flex', alignItems: 'center' }}>
                                         <MDBox sx={{ 
-                                          backgroundColor: '#e0f2fe',
+                                          backgroundColor: '#ffffff',
                                           borderRadius: '50%',
                                           p: 0.5,
                                           mr: 1,
@@ -1610,7 +1677,8 @@ function Overview() {
                                           alignItems: 'center',
                                           justifyContent: 'center',
                                           minWidth: '24px',
-                                          height: '24px'
+                                          height: '24px',
+                                          border: '1px solid #e2e8f0'
                                         }}>
                                           <MDTypography sx={{ fontSize: '0.7rem' }}>📅</MDTypography>
                                         </MDBox>
@@ -1639,19 +1707,47 @@ function Overview() {
                             <MDBox 
                               sx={{
                                 p: 3,
-                                backgroundColor: '#f8fafc',
+                                backgroundColor: '#ffffff',
                                 borderRadius: 2,
                                 textAlign: 'center',
-                                border: '1px solid #e2e8f0'
+                                border: '2px solid #e2e8f0',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
                               }}
                             >
                               <MDTypography variant="body2" sx={{ 
                                 color: '#64748b',
                                 fontWeight: 'medium',
-                                mb: 1
+                                mb: 2
                               }}>
                                 📭 No {roomType} apartments found in current listings
                               </MDTypography>
+                              
+                              {roomType === 'Studio' && (
+                                <MDBox sx={{
+                                  backgroundColor: '#fef3c7',
+                                  borderRadius: 1,
+                                  p: 2,
+                                  mb: 2,
+                                  border: '1px solid #f59e0b'
+                                }}>
+                                  <MDTypography variant="caption" sx={{ 
+                                    color: '#92400e',
+                                    fontWeight: 'bold',
+                                    display: 'block',
+                                    mb: 1
+                                  }}>
+                                    ⚠️ Data Source Mismatch
+                                  </MDTypography>
+                                  <MDTypography variant="caption" sx={{ 
+                                    color: '#92400e',
+                                    display: 'block',
+                                    lineHeight: 1.4
+                                  }}>
+                                    Occupancy data shows Studio apartments exist in Hostaway, but they're not available in the Teable listings database. This may indicate a data synchronization issue.
+                                  </MDTypography>
+                                </MDBox>
+                              )}
+                              
                               <MDTypography variant="caption" sx={{ 
                                 color: '#94a3b8', 
                                 display: 'block', 
@@ -1660,16 +1756,6 @@ function Overview() {
                               }}>
                                 Total listings available: {listings.length}
                               </MDTypography>
-                              {listings.length > 0 && (
-                                <MDTypography variant="caption" sx={{ 
-                                  color: '#cbd5e1', 
-                                  display: 'block', 
-                                  mt: 0.5,
-                                  fontStyle: 'italic'
-                                }}>
-                                  Check console for apartment names
-                                </MDTypography>
-                              )}
                             </MDBox>
                           )}
                         </MDBox>

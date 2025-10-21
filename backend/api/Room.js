@@ -314,6 +314,124 @@ async function fetchCleaningStatusFromTeable() {
 }
 
 /**
+ * Fetch actual check-ins from Hostaway reservations
+ */
+async function fetchActualCheckIns() {
+  try {
+    console.log('🏨 Fetching actual check-ins from Hostaway reservations...');
+    
+    // Get current date in Pakistan timezone (UTC+5)
+    const now = new Date();
+    const pakistanTime = new Date(now.getTime() + (5 * 60 * 60 * 1000));
+    const formattedToday = pakistanTime.getFullYear() + '-' + 
+      String(pakistanTime.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(pakistanTime.getDate()).padStart(2, '0');
+
+    const baseReservationsUrl = 'https://api.hostaway.com/v1/reservations?includeResources=1';
+    
+    const response = await fetch(baseReservationsUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `${process.env.HOSTAWAY_AUTH_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      console.log('❌ Failed to fetch reservations for check-in data');
+      return new Set(); // Return empty set if API fails
+    }
+
+    const data = await response.json();
+    const allReservations = data.result || [];
+    const checkedInListingIds = new Set();
+
+    if (allReservations && allReservations.length > 0) {
+      // Filter reservations for today's stays with actual check-ins
+      const reservations = allReservations.filter(res => {
+        if (!res.arrivalDate || !res.departureDate) return false;
+        if (!['new', 'modified'].includes(res.status)) return false;
+        
+        const arrival = new Date(res.arrivalDate);
+        const departure = new Date(res.departureDate);
+        const todayDate = new Date(formattedToday);
+        const isInStayPeriod = (todayDate >= arrival && todayDate < departure);
+        
+        if (!isInStayPeriod) return false;
+        
+        // Check for test guests
+        const guestName = res.guestName || res.firstName || res.lastName || 
+                         res.guest?.firstName || res.guest?.lastName || 
+                         res.guestFirstName || res.guestLastName || '';
+        const isTestGuest = !guestName ||
+          /test|testing|guests|new guest|test guest|new/i.test(guestName) ||
+          (res.comment && /test|testing|new guest/i.test(res.comment)) ||
+          (res.guestNote && /test|testing|new guest/i.test(res.guestNote));
+          
+        return !isTestGuest;
+      });
+
+      // Check each reservation for actual check-in time
+      for (const res of reservations) {
+        let updatedRes = res;
+        
+        // Fetch updated details if the reservation is new or modified
+        if (res.status === 'modified' || res.status === 'new') {
+          try {
+            const updatedResResponse = await fetch(`https://api.hostaway.com/v1/reservations/${res.id}?includeResources=1`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `${process.env.HOSTAWAY_AUTH_TOKEN}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            const updatedResData = await updatedResResponse.json();
+            if (updatedResData && updatedResData.result) {
+              updatedRes = updatedResData.result;
+            }
+          } catch (updateError) {
+            // Silent error handling
+          }
+        }
+
+        const arrival = new Date(updatedRes.arrivalDate);
+        const departure = new Date(updatedRes.departureDate);
+        const todayDate = new Date(formattedToday);
+        
+        if (todayDate >= arrival && todayDate < departure) {
+          // Get custom fields from the correct property: customFieldValues
+          let customFields = [];
+          
+          if (updatedRes.customFieldValues && Array.isArray(updatedRes.customFieldValues)) {
+            customFields = updatedRes.customFieldValues;
+          }
+          
+          // Check for "Actual Check-in Time" field (ID: 76281)
+          const hasCheckedIn = customFields && 
+            customFields.some(fieldValue => {
+              return fieldValue.customFieldId === 76281 && 
+                fieldValue.customField?.name === "Actual Check-in Time" && 
+                fieldValue.value && 
+                fieldValue.value.trim() !== "";
+            });
+            
+          if (hasCheckedIn) {
+            checkedInListingIds.add(String(updatedRes.listingMapId));
+          }
+        }
+      }
+    }
+
+    console.log(`✅ Found ${checkedInListingIds.size} listings with actual check-ins:`, Array.from(checkedInListingIds));
+    return checkedInListingIds;
+
+  } catch (error) {
+    console.error('❌ Error fetching actual check-ins:', error.message);
+    return new Set(); // Return empty set on error
+  }
+}
+
+/**
  * Fetch all listings from Hostaway
  */
 async function fetchHostawayListings(listingId = null) {
@@ -322,6 +440,11 @@ async function fetchHostawayListings(listingId = null) {
     console.log('🧹 Fetching cleaning status from Teable...');
     const cleaningStatusMap = await fetchCleaningStatusFromTeable();
     console.log('🧹 Received cleaning status map:', cleaningStatusMap);
+    
+    // Fetch actual check-ins from Hostaway
+    console.log('🏨 Fetching actual check-ins from Hostaway...');
+    const checkedInListingIds = await fetchActualCheckIns();
+    console.log('🏨 Received checked-in listing IDs:', Array.from(checkedInListingIds));
     
     const url = listingId 
       ? `https://api.hostaway.com/v1/listings/${listingId}`
@@ -453,7 +576,8 @@ async function fetchHostawayListings(listingId = null) {
           hkStatusRaw: (() => {
             const teableData = cleaningStatusMap[String(listing.id)];
             return teableData?.hkStatusRaw || '';
-          })()
+          })(),
+          actuallyOccupied: checkedInListingIds.has(String(listing.id))
         }];
       }
     } else {
@@ -536,7 +660,8 @@ async function fetchHostawayListings(listingId = null) {
         hkStatusRaw: (() => {
           const teableData = cleaningStatusMap[String(listing.id)];
           return teableData?.hkStatusRaw || '';
-        })()
+        })(),
+        actuallyOccupied: checkedInListingIds.has(String(listing.id))
       })) || [];
     }
 

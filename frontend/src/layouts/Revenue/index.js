@@ -773,53 +773,12 @@ RevenueChartComponent.propTypes = {
 
 // New Improved Listing Revenue Component
 function ImprovedListingRevenue({ revenueData, formatCurrency }) {
-  const [hoveredCategory, setHoveredCategory] = useState(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-
   const categories = revenueData?.categoryRevenue || {
     Studio: 0,
     "1BR": 0,
     "2BR": 0,
     "2BR Premium": 0,
     "3BR": 0,
-  };
-
-  // Sample apartment data - replace with actual API data
-  const apartmentData = {
-    "Studio": {
-      available: ["GF-09", "1F-10 (A)", "1F-10 (C)", "4F-44", "5F-53"],
-      reserved: ["8F-80", "GF-01"]
-    },
-    "1BR": {
-      available: ["1F-15", "1F-10 (B)", "3F-27", "4F-37", "7F-64", "7F-63", "9F-82", "6F-54"],
-      reserved: ["3F-28", "8f-73"]
-    },
-    "2BR": {
-      available: ["GF-04", "GF-06", "1F-12", "2F-25", "3F-34", "4F-42", "6F-60", "6F-57", "7F-70", "8F-79", "8F-77"],
-      reserved: ["1F-14", "2F-24", "4F-41", "8f-74", "9F-88"]
-    },
-    "2BR Premium": {
-      available: ["3F-30", "3F-31", "4F-40", "4F-41"],
-      reserved: []
-    },
-    "3BR": {
-      available: ["1F-13", "2F-22", "5F-49", "6F-60"],
-      reserved: []
-    }
-  };
-
-  const handleMouseEnter = (categoryName, event) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setTooltipPosition({
-      x: rect.left + rect.width / 2,
-      y: rect.top - 200 // Move tooltip higher to ensure visibility
-    });
-    setHoveredCategory(categoryName);
-    // console.log('Hovering over:', categoryName); // Debug log
-  };
-
-  const handleMouseLeave = () => {
-    setHoveredCategory(null);
   };
 
   const categoryData = [
@@ -976,8 +935,6 @@ function ImprovedListingRevenue({ revenueData, formatCurrency }) {
           {categoryData.map((category, index) => (
             <MDBox
               key={category.name}
-              onMouseEnter={(e) => handleMouseEnter(category.name, e)}
-              onMouseLeave={handleMouseLeave}
               sx={{
                 background: `linear-gradient(135deg, ${category.color}15 0%, ${category.color}08 100%)`,
                 borderRadius: "16px",
@@ -1101,73 +1058,6 @@ function ImprovedListingRevenue({ revenueData, formatCurrency }) {
         </MDBox>
       </MDBox>
 
-      {/* Apartment Tooltip */}
-      {hoveredCategory && apartmentData[hoveredCategory] && (
-        <MDBox
-          sx={{
-            position: 'fixed',
-            left: `${tooltipPosition.x}px`,
-            top: `${tooltipPosition.y}px`,
-            transform: 'translateX(-50%)',
-            backgroundColor: '#1e293b',
-            color: 'white',
-            padding: '16px 20px',
-            borderRadius: '12px',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
-            zIndex: 99999,
-            fontSize: '14px',
-            fontFamily: 'Inter, sans-serif',
-            pointerEvents: 'none',
-            maxWidth: '300px',
-            minWidth: '250px',
-            border: '2px solid rgba(255, 255, 255, 0.1)',
-            backdropFilter: 'blur(10px)'
-          }}
-        >
-          <MDTypography variant="body2" fontWeight="bold" color="inherit" mb={1}>
-            {hoveredCategory} Apartments
-          </MDTypography>
-          
-          {apartmentData[hoveredCategory].available.length > 0 && (
-            <MDBox mb={1}>
-              {apartmentData[hoveredCategory].available.map((apt, index) => (
-                <MDTypography 
-                  key={index}
-                  variant="caption" 
-                  color="inherit" 
-                  display="block"
-                  sx={{ mb: 0.5 }}
-                >
-                  {apt} <span style={{ color: '#4caf50' }}>Available</span>
-                </MDTypography>
-              ))}
-            </MDBox>
-          )}
-          
-          {apartmentData[hoveredCategory].reserved.length > 0 && (
-            <MDBox>
-              {apartmentData[hoveredCategory].reserved.map((apt, index) => (
-                <MDTypography 
-                  key={index}
-                  variant="caption" 
-                  color="inherit" 
-                  display="block"
-                  sx={{ mb: 0.5 }}
-                >
-                  {apt} <span style={{ color: '#f44336' }}>Reserved</span>
-                </MDTypography>
-              ))}
-            </MDBox>
-          )}
-          
-          {apartmentData[hoveredCategory].available.length === 0 && 
-           apartmentData[hoveredCategory].reserved.length === 0 && (
-            <MDTypography variant="caption" color="inherit">
-              No apartments available
-            </MDTypography>
-          )}
-        </MDBox>
-      )}
     </Card>
   );
 }
