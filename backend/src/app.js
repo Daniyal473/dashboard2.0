@@ -1,3 +1,11 @@
+// Global console override for silent mode
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+console.log = () => {}; // Suppress all console.log output
+console.error = () => {}; // Suppress all console.error output
+console.warn = () => {}; // Suppress all console.warn output
+
 const express = require("express");
 const cors = require("cors");
 const config = require("./config/config");

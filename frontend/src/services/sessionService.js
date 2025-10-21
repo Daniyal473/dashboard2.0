@@ -29,7 +29,7 @@ class SessionService {
     // Add activity listeners
     this.addActivityListeners();
     
-    console.log('🕐 Dynamic session started - logout after 1 hour of inactivity');
+    // console.log('🕐 Dynamic session started - logout after 1 hour of inactivity');
   }
 
   // Reset inactivity timer on user interaction
@@ -45,7 +45,7 @@ class SessionService {
     const currentTime = Date.now();
     localStorage.setItem('lastActivityTime', currentTime.toString());
     
-    console.log('🔄 Activity detected - inactivity timer reset (1 hour from now)');
+    // console.log('🔄 Activity detected - inactivity timer reset (1 hour from now)');
     
     // Set new inactivity timeout (1 hour from now)
     this.inactivityTimer = setTimeout(() => {
@@ -94,7 +94,7 @@ class SessionService {
 
   // Perform logout
   performLogout(reason) {
-    console.log(`🚪 ${reason}`);
+    // console.log(`🚪 ${reason}`);
     
     if (this.logoutCallback && typeof this.logoutCallback === 'function') {
       this.logoutCallback();
@@ -120,7 +120,7 @@ class SessionService {
     localStorage.removeItem('sessionStartTime');
     localStorage.removeItem('lastActivityTime');
     
-    console.log('🔒 Session ended and cleaned up');
+    // console.log('🔒 Session ended and cleaned up');
   }
 
   // Check if session is still valid (for page refresh scenarios)

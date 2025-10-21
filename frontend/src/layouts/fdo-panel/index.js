@@ -69,6 +69,9 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
+// Clear console on component load
+console.clear();
+
 function ReservationCard({ guest, setSnackbar, stack, isViewOnly, isCustom, hasPermission }) {
   const [open, setOpen] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -2785,7 +2788,7 @@ function KanbanView() {
         }
 
         const data = await response.json();
-        console.log("API Response:", data); // Debug: Log the raw API response
+        // console.log("API Response:", data); // Debug: Log the raw API response
 
         if (!data.records || !Array.isArray(data.records)) {
           throw new Error("Invalid API response: 'records' is missing or not an array");

@@ -111,16 +111,11 @@ function AppContent() {
 
   // Subscribe to offline/online status changes
   useEffect(() => {
-    console.log('App: Setting up offline service subscription');
-    console.log('App: Initial offline service status:', offlineService.getStatus());
-    
     const unsubscribe = offlineService.subscribe((online) => {
-      console.log('App: Received status update from offlineService:', online ? 'ONLINE' : 'OFFLINE');
       setIsOnline(online);
     });
 
     return () => {
-      console.log('App: Cleaning up offline service subscription');
       unsubscribe();
     };
   }, []);
@@ -130,24 +125,6 @@ function AppContent() {
 
   // Get role-based routes
   const roleBasedRoutes = getRoleBasedRoutes(user?.role, isAuthenticated, user?.permissions, user?.username);
-  
-  // Debug logging
-  console.log("🔍 Debug Info:", {
-    userRole: user?.role,
-    isAuthenticated,
-    isAuthPage,
-    pathname,
-    roleBasedRoutesCount: roleBasedRoutes?.length,
-    roleBasedRoutes: roleBasedRoutes?.map(r => ({ key: r.key, route: r.route, name: r.name, type: r.type }))
-  });
-  
-  // Additional routing debug
-  console.log("🚦 Routing Decision:", {
-    isUser: user?.role === "user",
-    isAdminOrViewOnly: user?.role === "admin" || user?.role === "view_only" || user?.role === "custom",
-    willUseUserLayout: user?.role === "user" && isAuthenticated && !isAuthPage,
-    willUseAdminRoutes: (user?.role === "admin" || user?.role === "view_only" || user?.role === "custom") && isAuthenticated && !isAuthPage
-  });
 
   // Show loading while checking authentication
   if (loading) {
@@ -168,7 +145,6 @@ function AppContent() {
 
   // Show No Internet component when offline
   if (!isOnline) {
-    console.log('App: Rendering NoInternet component because isOnline =', isOnline);
     return <NoInternet />;
   }
 
@@ -192,18 +168,14 @@ function AppContent() {
   const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
 
   const getRoutes = (allRoutes) => {
-    console.log("🛣️ Processing routes:", allRoutes?.map(r => ({ key: r.key, route: r.route, name: r.name })));
-    
     return allRoutes.map((route) => {
       if (route.collapse && Array.isArray(route.collapse)) {
         return getRoutes(route.collapse);
       }
 
       if (route.route) {
-        console.log("✅ Creating route:", { key: route.key, path: route.route, name: route.name });
         return <Route path={route.route} element={route.component} key={route.key} />;
       }
-      console.log("⚠️ Skipping route (no route property):", { key: route.key, name: route.name, type: route.type });
       return null;
     }).filter(Boolean);
   };

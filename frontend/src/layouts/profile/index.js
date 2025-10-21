@@ -195,7 +195,7 @@ function Overview() {
     
     // Check permissions - only allow users with complete access to rooms
     if (isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) {
-      console.log('❌ User does not have permission to modify HW/HK status');
+      // console.log('❌ User does not have permission to modify HW/HK status');
       alert('You do not have permission to modify room status. View-only access.');
       return;
     }
@@ -225,7 +225,7 @@ function Overview() {
     
     // Check permissions - only allow users with complete access to rooms
     if (isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) {
-      console.log('❌ User does not have permission to update HW/HK status');
+      // console.log('❌ User does not have permission to update HW/HK status');
       alert('You do not have permission to modify room status. View-only access.');
       return;
     }
@@ -234,11 +234,11 @@ function Overview() {
     setIsUpdating(true);
     setUpdatingOption(newStatus);
     try {
-      console.log(`🔄 Updating ${selectedStatusType} status for listing ${selectedListing.id} to: ${newStatus}`);
-      console.log('🔄 Frontend request details:');
-      console.log('  - URL:', `/api/rooms/update-cleaning-status/${selectedListing.id}`);
-      console.log('  - Method: PUT');
-      console.log('  - Body:', { statusType: selectedStatusType, newStatus: newStatus });
+      // console.log(`🔄 Updating ${selectedStatusType} status for listing ${selectedListing.id} to: ${newStatus}`);
+      // console.log('🔄 Frontend request details:');
+      // console.log('  - URL:', `/api/rooms/update-cleaning-status/${selectedListing.id}`);
+      // console.log('  - Method: PUT');
+      // console.log('  - Body:', { statusType: selectedStatusType, newStatus: newStatus });
       
       const response = await fetch(`/api/rooms/update-cleaning-status/${selectedListing.id}`, {
         method: 'PUT',
@@ -251,8 +251,8 @@ function Overview() {
         })
       });
 
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response ok:', response.ok);
+      // console.log('📡 Response status:', response.status);
+      // console.log('📡 Response ok:', response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -261,10 +261,10 @@ function Overview() {
       }
 
       const result = await response.json();
-      console.log('📦 API Response:', result);
+      // console.log('📦 API Response:', result);
       
       if (result.success) {
-        console.log(`✅ Successfully updated ${selectedStatusType} status`);
+        // console.log(`✅ Successfully updated ${selectedStatusType} status`);
         
         // Update the local state immediately for better UX
         setListings(prevListings => 
@@ -303,23 +303,23 @@ function Overview() {
       if (setLoadingState) setLoading(true);
       setError(null);
       
-      console.log('🔄 Fetching room listings from /api/rooms/listings...');
+      // console.log('🔄 Fetching room listings from /api/rooms/listings...');
       
       const response = await fetch('/api/rooms/listings');
       console.log('📡 Response status:', response.status);
       
       const data = await response.json();
-      console.log('📦 Response data:', data);
+      // console.log('📦 Response data:', data);
       
       if (data.success) {
         setListings(data.data);
-        console.log(`✅ Loaded ${data.data.length} room listings`);
-        console.log('📋 First listing data:', data.data[0]);
-        console.log('🧹 Cleaning status check:', data.data.map(listing => ({
-          id: listing.id,
-          name: listing.name,
-          cleaningStatus: listing.cleaningStatus
-        })));
+        // console.log(`✅ Loaded ${data.data.length} room listings`);
+        // console.log('📋 First listing data:', data.data[0]);
+        // console.log('🧹 Cleaning status check:', data.data.map(listing => ({
+        //   id: listing.id,
+        //   name: listing.name,
+        //   cleaningStatus: listing.cleaningStatus
+        // })));
       } else {
         setError(data.message || 'Failed to fetch room listings');
         console.error('❌ Failed to fetch listings:', data.error);
@@ -339,14 +339,14 @@ function Overview() {
       if (setLoadingState) setOccupancyLoading(true);
       setOccupancyError(null);
       
-      console.log('🏨 Fetching occupancy data from /api/occupancy/current...');
+      // console.log('🏨 Fetching occupancy data from /api/occupancy/current...');
       
       const response = await fetch('/api/occupancy/current');
       const data = await response.json();
       
       if (data.success) {
         setOccupancyData(data.data);
-        console.log('✅ Loaded occupancy data:', data.data);
+        // console.log('✅ Loaded occupancy data:', data.data);
       } else {
         setOccupancyError(data.message || 'Failed to fetch occupancy data');
         console.error('❌ Failed to fetch occupancy:', data.error);
@@ -434,16 +434,16 @@ function Overview() {
   const getRealListingsByRoomType = (roomType) => {
     // Debug: Log all apartment names to see what we're working with
     if (listings.length > 0) {
-      console.log('🔍 Total listings:', listings.length);
-      console.log('🔍 Sample apartment data:');
-      listings.slice(0, 5).forEach((listing, index) => {
-        console.log(`  ${index + 1}. Name: "${listing.name || 'NO NAME'}"`);
-        console.log(`     Activity: "${listing.activity || 'NO ACTIVITY'}"`);
-        console.log(`     Guest: "${listing.guestName || 'NO GUEST'}"`);
-        console.log(`     Status: "${listing.cleaningStatus || 'NO STATUS'}"`);
-        console.log('     ---');
-      });
-      console.log('🔍 Filtering for room type:', roomType);
+      // console.log('🔍 Total listings:', listings.length);
+      // console.log('🔍 Sample apartment data:');
+      // listings.slice(0, 5).forEach((listing, index) => {
+      //   console.log(`  ${index + 1}. Name: "${listing.name || 'NO NAME'}"`);
+      //   console.log(`     Activity: "${listing.activity || 'NO ACTIVITY'}"`);
+      //   console.log(`     Guest: "${listing.guestName || 'NO GUEST'}"`);
+      //   console.log(`     Status: "${listing.cleaningStatus || 'NO STATUS'}"`);
+      //   console.log('     ---');
+      // });
+      // console.log('🔍 Filtering for room type:', roomType);
     }
     
     const filtered = listings.filter(listing => {
@@ -489,23 +489,23 @@ function Overview() {
       }
     });
     
-    console.log(`🔍 Found ${filtered.length} apartments for ${roomType}`);
-    if (filtered.length > 0) {
-      filtered.forEach((apt, index) => {
-        console.log(`  ${index + 1}. "${apt.name}"`);
-      });
-    }
+    // console.log(`🔍 Found ${filtered.length} apartments for ${roomType}`);
+    // if (filtered.length > 0) {
+    //   filtered.forEach((apt, index) => {
+    //     console.log(`  ${index + 1}. "${apt.name}"`);
+    //   });
+    // }
     return filtered;
   };
 
   // Handle cleaning status change
   const handleCleaningStatusChange = async (listingId, newStatus) => {
     try {
-      console.log(`🔄 handleCleaningStatusChange called with listingId: "${listingId}", newStatus: "${newStatus}"`);
+      // console.log(`🔄 handleCleaningStatusChange called with listingId: "${listingId}", newStatus: "${newStatus}"`);
       
       // Prevent view_only users and custom users without complete access from making changes
       if (isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) {
-        console.log('❌ User does not have permission to modify cleaning status');
+        // console.log('❌ User does not have permission to modify cleaning status');
         setError('You do not have permission to modify cleaning status');
         return;
       }
@@ -523,7 +523,7 @@ function Overview() {
       setUpdatingStatus(prev => ({ ...prev, [listingId]: true }));
       
       const requestBody = { cleaningStatus: newStatus };
-      console.log(`📤 Sending request to /api/rooms/cleaning-status/${listingId}`, requestBody);
+      // console.log(`📤 Sending request to /api/rooms/cleaning-status/${listingId}`, requestBody);
       
       const response = await fetch(`/api/rooms/cleaning-status/${listingId}`, {
         method: 'PUT',
@@ -533,13 +533,13 @@ function Overview() {
         body: JSON.stringify(requestBody)
       });
       
-      console.log(`📡 Response status: ${response.status} ${response.statusText}`);
+      // console.log(`📡 Response status: ${response.status} ${response.statusText}`);
       
       const data = await response.json();
-      console.log(`📦 Response data:`, data);
+      // console.log(`📦 Response data:`, data);
       
       if (data.success) {
-        console.log(`✅ Successfully updated cleaning status for listing ${listingId}`);
+        // console.log(`✅ Successfully updated cleaning status for listing ${listingId}`);
         
         // Update the local state immediately for better UX
         setListings(prevListings => 
@@ -573,10 +573,10 @@ function Overview() {
   // Test API health
   const testApiHealth = async () => {
     try {
-      console.log('🏥 Testing Room API health...');
+      // console.log('🏥 Testing Room API health...');
       const response = await fetch('/api/rooms/health');
       const data = await response.json();
-      console.log('🏥 Health check result:', data);
+      // console.log('🏥 Health check result:', data);
     } catch (err) {
       console.error('🏥 Health check failed:', err);
     }
@@ -726,7 +726,7 @@ function Overview() {
         fetchOccupancyData(false)  // Don't let function manage its own loading state
       ]).then(() => {
         // Both data sets loaded, set both loading states to false
-        console.log('✅ Both room listings and occupancy data loaded');
+        // console.log('✅ Both room listings and occupancy data loaded');
         setLoading(false);
         setOccupancyLoading(false);
       }).catch((error) => {

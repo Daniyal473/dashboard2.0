@@ -359,7 +359,7 @@ function AdminPanel() {
         // Refresh user list to show updated permissions
         fetchUsers();
         
-        console.log(`✅ Permissions updated in database for user: ${editingPermissions}`);
+        // console.log(`✅ Permissions updated in database for user: ${editingPermissions}`);
       } else {
         setMessage({ type: "error", text: result.message });
       }
@@ -401,7 +401,7 @@ function AdminPanel() {
   const executeCreateUser = async () => {
     setLoading(true);
 
-    console.log("👤 Creating user:", createUserForm.username);
+    // console.log("👤 Creating user:", createUserForm.username);
 
     try {
       const response = await fetch(API_ENDPOINTS.CREATE_USER, {
@@ -421,7 +421,7 @@ function AdminPanel() {
 
       if (result.success) {
         // Permissions are now stored in database automatically by backend
-        console.log(`✅ User created with database-stored permissions: ${createUserForm.username}`);
+        // console.log(`✅ User created with database-stored permissions: ${createUserForm.username}`);
         
         setMessage({
           type: "success",
@@ -634,15 +634,15 @@ function AdminPanel() {
       const result = await response.json();
 
       if (result.success) {
-        console.log("📋 Password history received:", result.history);
-        result.history?.forEach((record, index) => {
-          console.log(`Frontend Record ${index}:`, {
-            username: record.username,
-            status: record.status,
-            newPassword: record.newPassword,
-            rawRecord: record,
-          });
-        });
+        // console.log("📋 Password history received:", result.history);
+        // result.history?.forEach((record, index) => {
+        //   console.log(`Frontend Record ${index}:`, {
+        //     username: record.username,
+        //     status: record.status,
+        //     newPassword: record.newPassword,
+        //     rawRecord: record,
+        //   });
+        // });
         setPasswordHistory(result.history || []);
       } else {
         console.error("Failed to fetch password history:", result.message);
@@ -1472,11 +1472,11 @@ function AdminPanel() {
                                     
                                     if (user.permissions) {
                                       try {
-                                        console.log('Raw permissions for', user.username, ':', user.permissions);
+                                        // console.log('Raw permissions for', user.username, ':', user.permissions);
                                         permissions = typeof user.permissions === 'string' 
                                           ? JSON.parse(user.permissions) 
                                           : user.permissions;
-                                        console.log('Parsed permissions for', user.username, ':', permissions);
+                                        // console.log('Parsed permissions for', user.username, ':', permissions);
                                       } catch (error) {
                                         console.error('Error parsing user permissions:', error, 'Raw value:', user.permissions);
                                       }

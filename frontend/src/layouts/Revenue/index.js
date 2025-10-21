@@ -164,7 +164,7 @@ class RevenueChartComponent extends Component {
   }
 
   formatValue = (value) => {
-    console.log("💰 Formatting value:", value);
+    // console.log("💰 Formatting value:", value);
     if (value >= 1000000) {
       return `Rs${(value / 1000000).toFixed(1)}M`;
     } else if (value >= 1000) {
@@ -175,14 +175,14 @@ class RevenueChartComponent extends Component {
   };
 
   handleBarClick = (item, index) => {
-    console.log("Bar clicked:", item.label, item.value);
+    // console.log("Bar clicked:", item.label, item.value);
     this.setState(
       {
         selectedBar: { ...item, index },
         showDetails: true,
       },
       () => {
-        console.log("State updated:", this.state.showDetails, this.state.selectedBar);
+        // console.log("State updated:", this.state.showDetails, this.state.selectedBar);
       }
     );
   };
@@ -815,7 +815,7 @@ function ImprovedListingRevenue({ revenueData, formatCurrency }) {
       y: rect.top - 200 // Move tooltip higher to ensure visibility
     });
     setHoveredCategory(categoryName);
-    console.log('Hovering over:', categoryName); // Debug log
+    // console.log('Hovering over:', categoryName); // Debug log
   };
 
   const handleMouseLeave = () => {
@@ -1750,18 +1750,18 @@ function Revenue() {
       try {
         setLoading(true);
         // Fetch revenue data
-        console.log("🔗 Connecting to:", API_ENDPOINTS.REVENUE);
+        // console.log("🔗 Connecting to:", API_ENDPOINTS.REVENUE);
         const revenueResponse = await fetch(API_ENDPOINTS.REVENUE);
-        console.log("📡 Revenue response status:", revenueResponse.status);
+        // console.log("📡 Revenue response status:", revenueResponse.status);
         const revenueResult = await revenueResponse.json();
-        console.log("📊 Revenue API Result:", revenueResult);
+        // console.log("📊 Revenue API Result:", revenueResult);
 
         // Fetch monthly target data
-        console.log("🔗 Connecting to:", API_ENDPOINTS.MONTHLY_TARGET);
+        // console.log("🔗 Connecting to:", API_ENDPOINTS.MONTHLY_TARGET);
         const monthlyResponse = await fetch(API_ENDPOINTS.MONTHLY_TARGET);
-        console.log("📡 Monthly response status:", monthlyResponse.status);
+        // console.log("📡 Monthly response status:", monthlyResponse.status);
         const monthlyResult = await monthlyResponse.json();
-        console.log("📊 Monthly API Result:", monthlyResult);
+        // console.log("📊 Monthly API Result:", monthlyResult);
 
         if (revenueResult.success) {
           setRevenueData(revenueResult.data);
@@ -1797,14 +1797,14 @@ function Revenue() {
       setReservationLoading(true);
       setReservationError(null);
       
-      console.log('🔄 Fetching today\'s reservations...');
+      // console.log('🔄 Fetching today\'s reservations...');
       
       const response = await fetch('/api/payment/today-reservations');
       const data = await response.json();
       
       if (data.success) {
         setReservations(data.data);
-        console.log(`✅ Loaded ${data.data.length} reservations for today`);
+        // console.log(`✅ Loaded ${data.data.length} reservations for today`);
       } else {
         setReservationError(data.message || 'Failed to fetch reservations');
         console.error('❌ Failed to fetch reservations:', data.error);
@@ -1853,18 +1853,18 @@ function Revenue() {
 
   // Debug revenue access
   const hasRevenueAccess = isAdmin() || (isCustom() && (hasPermission('revenue', 'view') || hasPermission('revenue', 'complete')));
-  console.log('🔐 Revenue Access Check:', {
-    isAdmin: isAdmin(),
-    isCustom: isCustom(),
-    userRole: user?.role,
-    revenueView: hasPermission('revenue', 'view'),
-    revenueComplete: hasPermission('revenue', 'complete'),
-    hasRevenueAccess
-  });
+  // console.log('🔐 Revenue Access Check:', {
+  //   isAdmin: isAdmin(),
+  //   isCustom: isCustom(),
+  //   userRole: user?.role,
+  //   revenueView: hasPermission('revenue', 'view'),
+  //   revenueComplete: hasPermission('revenue', 'complete'),
+  //   hasRevenueAccess
+  // });
 
   // Redirect users who don't have revenue access
   if (!hasRevenueAccess) {
-    console.log('❌ Revenue Access Denied - Redirecting to FDO Panel');
+    // console.log('❌ Revenue Access Denied - Redirecting to FDO Panel');
     window.location.href = "/fdo-panel";
     return null;
   }
@@ -1884,14 +1884,14 @@ function Revenue() {
   // FULLY DYNAMIC CHART DATA - NO HARDCODED VALUES
   const getChartData = () => {
     // ABSOLUTE CHECK: Return empty if no backend connection
-    console.log("🔍 Backend Connection Check:");
-    console.log("- revenueData exists:", !!revenueData);
-    console.log("- monthlyData exists:", !!monthlyData);
-    console.log("- Raw actualRevenue from backend:", revenueData?.actualRevenue);
-    console.log("- Raw actualRevenue type:", typeof revenueData?.actualRevenue);
+    // console.log("🔍 Backend Connection Check:");
+    // console.log("- revenueData exists:", !!revenueData);
+    // console.log("- monthlyData exists:", !!monthlyData);
+    // console.log("- Raw actualRevenue from backend:", revenueData?.actualRevenue);
+    // console.log("- Raw actualRevenue type:", typeof revenueData?.actualRevenue);
 
     if (!revenueData && !monthlyData) {
-      console.log("❌ NO BACKEND CONNECTION AT ALL - RETURNING EMPTY");
+      // console.log("❌ NO BACKEND CONNECTION AT ALL - RETURNING EMPTY");
       return [];
     }
 
@@ -1919,11 +1919,11 @@ function Revenue() {
         ? parseFloat(revenueData.quarterlyAchievedRevenue)
         : null;
 
-    console.log("🔥 EXTRACTED REAL VALUES:");
-    console.log("- Actual Revenue:", actualRevenue);
-    console.log("- Expected Revenue:", expectedRevenue);
-    console.log("- Monthly Achieved:", monthlyAchieved);
-    console.log("- Quarterly Achieved:", quarterlyAchievedRevenue);
+    // console.log("🔥 EXTRACTED REAL VALUES:");
+    // console.log("- Actual Revenue:", actualRevenue);
+    // console.log("- Expected Revenue:", expectedRevenue);
+    // console.log("- Monthly Achieved:", monthlyAchieved);
+    // console.log("- Quarterly Achieved:", quarterlyAchievedRevenue);
 
     // Build array ONLY with real values
     const validBars = [];
@@ -1968,38 +1968,38 @@ function Revenue() {
     }
 
     if (validBars.length === 0) {
-      console.log("❌ NO VALID BARS - ALL VALUES ARE NULL/ZERO");
+      // console.log("❌ NO VALID BARS - ALL VALUES ARE NULL/ZERO");
       return [];
     }
 
-    console.log("✅ RETURNING", validBars.length, "VALID BARS");
+    // console.log("✅ RETURNING", validBars.length, "VALID BARS");
     return validBars;
   };
 
   const chartData = getChartData();
-  console.log(
-    "🔍 Chart Data Values:",
-    chartData.map((item) => ({ label: item.label, value: item.value }))
-  );
+  // console.log(
+  //   "🔍 Chart Data Values:",
+  //   chartData.map((item) => ({ label: item.label, value: item.value }))
+  // );
   const maxValue = Math.max(...chartData.map((item) => item.value), 1);
-  console.log("📊 Max Value:", maxValue);
+  // console.log("📊 Max Value:", maxValue);
 
   // Revenue cards data based on backend response - Updated
   const getRevenueCards = () => {
     // Use state variable instead of direct localStorage access for reactivity
     const monthlyTargetData = adminTargetData;
-    console.log("🔍 Admin Target Data from state:", adminTargetData);
-    console.log("🔍 Raw localStorage data:", localStorage.getItem('monthlyTargetData'));
-    console.log("🔍 Parsed monthlyTargetData:", monthlyTargetData);
+    // console.log("🔍 Admin Target Data from state:", adminTargetData);
+    // console.log("🔍 Raw localStorage data:", localStorage.getItem('monthlyTargetData'));
+    // console.log("🔍 Parsed monthlyTargetData:", monthlyTargetData);
     
     const adminMonthlyTarget = monthlyTargetData.amount ? parseFloat(String(monthlyTargetData.amount).replace(/,/g, '')) : null;
     const adminDaysInMonth = monthlyTargetData.days ? parseInt(monthlyTargetData.days) : 30;
     
-    console.log("🔍 Processed values:", {
-      adminMonthlyTarget,
-      adminDaysInMonth,
-      originalAmount: monthlyTargetData.amount
-    });
+    // console.log("🔍 Processed values:", {
+    //   adminMonthlyTarget,
+    //   adminDaysInMonth,
+    //   originalAmount: monthlyTargetData.amount
+    // });
     
     // Calculate dynamic targets from admin form
     const dynamicDailyTarget = adminMonthlyTarget ? adminMonthlyTarget / adminDaysInMonth : null;
@@ -2018,26 +2018,26 @@ function Revenue() {
       : actualRevenue || 0;
     
     // Debug logging for monthly data and dynamic targets
-    console.log("🔍 Monthly Data Debug:", {
-      monthlyData,
-      totalMonthlyAchieved: monthlyData?.totalMonthlyAchieved,
-      monthlyAchieved: monthlyData?.monthlyAchieved,
-      calculatedMonthlyAchieved: monthlyAchievedRevenue,
-      actualRevenue
-    });
+    // console.log("🔍 Monthly Data Debug:", {
+    //   monthlyData,
+    //   totalMonthlyAchieved: monthlyData?.totalMonthlyAchieved,
+    //   monthlyAchieved: monthlyData?.monthlyAchieved,
+    //   calculatedMonthlyAchieved: monthlyAchievedRevenue,
+    //   actualRevenue
+    // });
     
     const monthlyTarget = adminMonthlyTarget || (monthlyData ? monthlyData.monthlyTarget || 17500000 : 17500000); // Use admin form value first
     
-    console.log("🎯 Dynamic Targets Debug:", {
-      monthlyTargetData,
-      adminMonthlyTarget,
-      adminDaysInMonth,
-      dynamicDailyTarget,
-      dynamicQuarterlyTarget,
-      finalTargetRevenue: targetRevenue,
-      finalMonthlyTarget: monthlyTarget,
-      finalQuarterlyTarget: quarterlyTarget
-    });
+    // console.log("🎯 Dynamic Targets Debug:", {
+    //   monthlyTargetData,
+    //   adminMonthlyTarget,
+    //   adminDaysInMonth,
+    //   dynamicDailyTarget,
+    //   dynamicQuarterlyTarget,
+    //   finalTargetRevenue: targetRevenue,
+    //   finalMonthlyTarget: monthlyTarget,
+    //   finalQuarterlyTarget: quarterlyTarget
+    // });
     const quarterlyAchievedRevenue = revenueData
       ? parseFloat(revenueData.quarterlyAchievedRevenue) || 0
       : 0;
@@ -2071,13 +2071,13 @@ function Revenue() {
         : 0;
 
     // Debug logging for progress values
-    console.log("🔍 Progress Values Debug:", {
-      actualRevenueProgress,
-      expectedRevenueProgress,
-      targetAchievementProgress,
-      monthlyProgress,
-      quarterlyProgress
-    });
+    // console.log("🔍 Progress Values Debug:", {
+    //   actualRevenueProgress,
+    //   expectedRevenueProgress,
+    //   targetAchievementProgress,
+    //   monthlyProgress,
+    //   quarterlyProgress
+    // });
 
     return [
       {

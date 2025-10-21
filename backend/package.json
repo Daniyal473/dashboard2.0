@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/server.js",
+    "start:silent": "node src/server.js > nul 2>&1",
     "dev": "nodemon src/server.js",
+    "dev:silent": "nodemon src/server.js > nul 2>&1",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

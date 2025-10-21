@@ -19,7 +19,7 @@ class OfflineService {
     this.checkInitialConnectivity();
 
     // Log initial status
-    console.log('OfflineService initialized. Initial status:', this.isOnline ? 'ONLINE' : 'OFFLINE');
+    // console.log('OfflineService initialized. Initial status:', this.isOnline ? 'ONLINE' : 'OFFLINE');
   }
 
   async checkInitialConnectivity() {
@@ -45,7 +45,7 @@ class OfflineService {
       clearTimeout(timeoutId);
       this.handleOnline();
     } catch (error) {
-      console.log('Initial connectivity test failed:', error.message);
+      // console.log('Initial connectivity test failed:', error.message);
       this.handleOffline();
     }
   }
@@ -53,18 +53,18 @@ class OfflineService {
 
   // Immediate event handlers for browser online/offline events
   handleOnlineEvent() {
-    console.log('Browser event: Going ONLINE');
+    // console.log('Browser event: Going ONLINE');
     this.handleOnline();
   }
 
   handleOfflineEvent() {
-    console.log('Browser event: Going OFFLINE');
+    // console.log('Browser event: Going OFFLINE');
     this.handleOffline();
   }
 
   handleOnline() {
     if (!this.isOnline) {
-      console.log('Status change: Going ONLINE');
+      // console.log('Status change: Going ONLINE');
       this.isOnline = true;
       this.notifyListeners(true);
     }
@@ -72,14 +72,14 @@ class OfflineService {
 
   handleOffline() {
     if (this.isOnline) {
-      console.log('Status change: Going OFFLINE');
+      // console.log('Status change: Going OFFLINE');
       this.isOnline = false;
       this.notifyListeners(false);
     }
   }
 
   notifyListeners(isOnline) {
-    console.log('Notifying listeners. Status:', isOnline ? 'ONLINE' : 'OFFLINE');
+    // console.log('Notifying listeners. Status:', isOnline ? 'ONLINE' : 'OFFLINE');
     this.listeners.forEach(callback => {
       try {
         callback(isOnline);
@@ -92,14 +92,14 @@ class OfflineService {
   // Subscribe to connectivity changes
   subscribe(callback) {
     this.listeners.push(callback);
-    console.log('New listener subscribed. Total listeners:', this.listeners.length);
+    // console.log('New listener subscribed. Total listeners:', this.listeners.length);
     
     // Return unsubscribe function
     return () => {
       const index = this.listeners.indexOf(callback);
       if (index > -1) {
         this.listeners.splice(index, 1);
-        console.log('Listener unsubscribed. Remaining listeners:', this.listeners.length);
+        // console.log('Listener unsubscribed. Remaining listeners:', this.listeners.length);
       }
     };
   }
