@@ -248,7 +248,7 @@ function Basic() {
           }}
         >
           <MDBox p={4}>
-            {/* Chatwoot Logo and Header */}
+            {/* Dashboard Logo and Header */}
             <MDBox textAlign="center" mb={4}>
               {/* Custom Logo */}
               <MDBox

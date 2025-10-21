@@ -143,7 +143,7 @@ function ForgotPassword() {
                 }}
               >
                 {step === 1
-                  ? "Enter the username you use to log in to Chatwoot to get the password reset instructions"
+                  ? "Enter your username to get the password reset instructions"
                   : "Enter your new password below"}
               </MDTypography>
             </MDBox>
