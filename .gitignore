@@ -198,3 +198,9 @@ target/
 connect.lock
 typings/
 .angular/
+
+# Silent mode and deployment files
+SILENT-MODE.md
+start-silent.bat
+start-silent.ps1
+vercel.json
