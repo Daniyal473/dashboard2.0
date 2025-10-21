@@ -3266,11 +3266,7 @@ function KanbanView() {
 
                       <MDBox px={2} pb={2} sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", maxHeight: "calc(98vh - 280px)" }}>
                         {filteredGuests.map((guest) => (
-<<<<<<< HEAD
                           <ReservationCard key={guest.id} guest={guest} setSnackbar={setSnackbar} searchTerm={searchTerm} stack={stack} isViewOnly={isViewOnly} isCustom={isCustom} hasPermission={hasPermission}/>
-=======
-                          <ReservationCard key={guest.id} guest={guest} setSnackbar={setSnackbar} searchTerm={searchTerm} stack={stack} />
->>>>>>> 91be51e52b2baa3c307b59955db9d6e9a76912ac
                         ))}
                       </MDBox>
                     </Card>
