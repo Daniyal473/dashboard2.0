@@ -33,6 +33,7 @@ import Icon from "@mui/material/Icon";
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 
+
 // Material Dashboard 2 React example components
 import Sidenav from "examples/Sidenav";
 import Configurator from "examples/Configurator";
@@ -55,6 +56,7 @@ import routes, { getRoleBasedRoutes } from "routes";
 
 // User Layout for role-based rendering
 import UserLayout from "layouts/fdo-panel/UserLayout";
+
 
 // Protected Route component
 import ProtectedRoute from "components/ProtectedRoute";
@@ -127,7 +129,25 @@ function AppContent() {
   const isAuthPage = pathname.includes("/authentication/");
 
   // Get role-based routes
-  const roleBasedRoutes = getRoleBasedRoutes(user?.role, isAuthenticated);
+  const roleBasedRoutes = getRoleBasedRoutes(user?.role, isAuthenticated, user?.permissions, user?.username);
+  
+  // Debug logging
+  console.log("🔍 Debug Info:", {
+    userRole: user?.role,
+    isAuthenticated,
+    isAuthPage,
+    pathname,
+    roleBasedRoutesCount: roleBasedRoutes?.length,
+    roleBasedRoutes: roleBasedRoutes?.map(r => ({ key: r.key, route: r.route, name: r.name, type: r.type }))
+  });
+  
+  // Additional routing debug
+  console.log("🚦 Routing Decision:", {
+    isUser: user?.role === "user",
+    isAdminOrViewOnly: user?.role === "admin" || user?.role === "view_only" || user?.role === "custom",
+    willUseUserLayout: user?.role === "user" && isAuthenticated && !isAuthPage,
+    willUseAdminRoutes: (user?.role === "admin" || user?.role === "view_only" || user?.role === "custom") && isAuthenticated && !isAuthPage
+  });
 
   // Show loading while checking authentication
   if (loading) {
@@ -171,17 +191,22 @@ function AppContent() {
   // Change the openConfigurator state
   const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
 
-  const getRoutes = (allRoutes) =>
-    allRoutes.map((route) => {
-      if (route.collapse) {
+  const getRoutes = (allRoutes) => {
+    console.log("🛣️ Processing routes:", allRoutes?.map(r => ({ key: r.key, route: r.route, name: r.name })));
+    
+    return allRoutes.map((route) => {
+      if (route.collapse && Array.isArray(route.collapse)) {
         return getRoutes(route.collapse);
       }
 
       if (route.route) {
-        return <Route exact path={route.route} element={route.component} key={route.key} />;
+        console.log("✅ Creating route:", { key: route.key, path: route.route, name: route.name });
+        return <Route path={route.route} element={route.component} key={route.key} />;
       }
+      console.log("⚠️ Skipping route (no route property):", { key: route.key, name: route.name, type: route.type });
       return null;
-    });
+    }).filter(Boolean);
+  };
 
   // Determine default redirect based on authentication and role
   const getDefaultRedirect = () => {
@@ -189,15 +214,9 @@ function AppContent() {
       return "/authentication/sign-in";
     }
 
-    if (user?.role === "user") {
-      return "/fdo-panel";
-    }
 
-    if (user?.role === "admin") {
-      return "/fdo-panel";
-    }
-
-    return "/authentication/sign-in";
+    // All other authenticated users default to FDO Panel as home page
+    return "/fdo-panel";
   };
   // Settings button hidden
   const configsButton = null;
@@ -206,7 +225,7 @@ function AppContent() {
     <CacheProvider value={rtlCache}>
       <ThemeProvider theme={darkMode ? themeDarkRTL : themeRTL}>
         <CssBaseline />
-        {!isAuthPage && user?.role === "admin" && (
+        {!isAuthPage && (user?.role === "admin" || user?.role === "view_only" || user?.role === "custom") && (
           <>
             <Sidenav
               color={sidenavColor}
@@ -224,14 +243,19 @@ function AppContent() {
         {user?.role === "user" && isAuthenticated && !isAuthPage ? (
           <UserLayout>
             <Routes>
-              {getRoutes(routes)}
+              {getRoutes(roleBasedRoutes)}
               <Route path="/" element={<Navigate to={getDefaultRedirect()} />} />
               <Route path="*" element={<Navigate to={getDefaultRedirect()} />} />
             </Routes>
           </UserLayout>
+        ) : (user?.role === "admin" || user?.role === "view_only" || user?.role === "custom") && isAuthenticated && !isAuthPage ? (
+          <Routes>
+            {getRoutes(roleBasedRoutes)}
+            <Route path="/" element={<Navigate to={getDefaultRedirect()} replace />} />
+          </Routes>
         ) : (
           <Routes>
-            {getRoutes(routes)}
+            {getRoutes(roleBasedRoutes)}
             <Route path="/" element={<Navigate to={getDefaultRedirect()} replace />} />
             <Route path="*" element={<Navigate to={getDefaultRedirect()} replace />} />
           </Routes>
@@ -241,7 +265,7 @@ function AppContent() {
   ) : (
     <ThemeProvider theme={darkMode ? themeDark : theme}>
       <CssBaseline />
-      {!isAuthPage && user?.role === "admin" && (
+      {!isAuthPage && (user?.role === "admin" || user?.role === "view_only" || user?.role === "custom") && (
         <>
           <Sidenav
             color={sidenavColor}
@@ -259,14 +283,19 @@ function AppContent() {
       {user?.role === "user" && isAuthenticated && !isAuthPage ? (
         <UserLayout>
           <Routes>
-            {getRoutes(routes)}
+            {getRoutes(roleBasedRoutes)}
             <Route path="/" element={<Navigate to={getDefaultRedirect()} />} />
             <Route path="*" element={<Navigate to={getDefaultRedirect()} />} />
           </Routes>
         </UserLayout>
+      ) : (user?.role === "admin" || user?.role === "view_only" || user?.role === "custom") && isAuthenticated && !isAuthPage ? (
+        <Routes>
+          {getRoutes(roleBasedRoutes)}
+          <Route path="/" element={<Navigate to={getDefaultRedirect()} replace />} />
+        </Routes>
       ) : (
         <Routes>
-          {getRoutes(routes)}
+          {getRoutes(roleBasedRoutes)}
           <Route path="/" element={<Navigate to={getDefaultRedirect()} replace />} />
           <Route path="*" element={<Navigate to={getDefaultRedirect()} replace />} />
         </Routes>

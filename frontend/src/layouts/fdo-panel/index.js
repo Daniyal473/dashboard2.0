@@ -69,7 +69,7 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
-function ReservationCard({ guest, setSnackbar, stack, }) {
+function ReservationCard({ guest, setSnackbar, stack, isViewOnly, isCustom, hasPermission }) {
   const [open, setOpen] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [reservationDetails, setReservationDetails] = useState({});
@@ -87,7 +87,14 @@ function ReservationCard({ guest, setSnackbar, stack, }) {
 
   const handlePrintCheckIn = async () => {
     try {
-      // ✅ Fetch latest reservation from API
+      // Prevent view_only users and custom users without complete access from printing
+      if (isViewOnly() || (isCustom() && !hasPermission('fdoPanel', 'complete'))) {
+        console.log('❌ User does not have permission to print check-in forms');
+        setSnackbar({ open: true, message: 'You do not have permission to print forms', severity: 'error' });
+        return;
+      }
+      
+      // Fetch latest reservation from API
       const response = await fetch(`${HOSTAWAY_API}/${guest.reservationId}`, {
         method: "GET",
         headers: { Authorization: `Bearer ${HOSTAWAY_TOKEN}` },
@@ -532,6 +539,13 @@ ul li {
 
   const handlePrintCheckOut = async () => {
     try {
+      // Prevent view_only users and custom users without complete access from printing
+      if (isViewOnly() || (isCustom() && !hasPermission('fdoPanel', 'complete'))) {
+        console.log('❌ User does not have permission to print check-out forms');
+        setSnackbar({ open: true, message: 'You do not have permission to print forms', severity: 'error' });
+        return;
+      }
+      
       // ✅ Fetch latest reservation from API
       const response = await fetch(`${HOSTAWAY_API}/${guest.reservationId}`, {
         method: "GET",
@@ -1094,13 +1108,24 @@ ${CheckOutSecurityDeposit !== "0"
     }
   };
 
-  // ✅ New function for Mark Check In
+  // New function for Mark Check In
   const handleMarkCheckIn = async () => {
-    console.log("🏨 Starting check-in process...");
+    console.log(" Starting check-in process...");
 
-    // 🧠 Make sure setSnackbar exists (for safety)
+    // Prevent view_only users and custom users without complete access from marking check-in
+    if (isViewOnly() || (isCustom() && !hasPermission('fdoPanel', 'complete'))) {
+      console.log(' User does not have permission to mark check-in');
+      setSnackbar({
+        open: true,
+        message: 'You do not have permission to mark check-in',
+        severity: 'error'
+      });
+      return;
+    }
+
+    // Make sure setSnackbar exists (for safety)
     if (!setSnackbar) {
-      console.warn("⚠️ setSnackbar not provided to ReservationCard!");
+      console.warn(" setSnackbar not provided to ReservationCard!");
     }
 
     try {
@@ -1197,6 +1222,13 @@ ${CheckOutSecurityDeposit !== "0"
   const handleMarkCheckOut = async () => {
     try {
       console.log("🔄 Starting Check-Out process...");
+
+      // Prevent view_only users and custom users without complete access from marking check-out
+      if (isViewOnly() || (isCustom() && !hasPermission('fdoPanel', 'complete'))) {
+        console.log('❌ User does not have permission to mark check-out');
+        setSnackbar({ open: true, message: 'You do not have permission to mark check-out', severity: 'error' });
+        return;
+      }
 
       const getResUrl = `${HOSTAWAY_API}/${guest.reservationId}`;
       const res = await fetch(getResUrl, {
@@ -1825,6 +1857,7 @@ ${CheckOutSecurityDeposit !== "0"
             {stack === "Checked In" && (
               <IconButton
                 onClick={handlePrintCheckIn}
+                disabled={isViewOnly() || (isCustom() && !hasPermission('fdoPanel', 'complete'))}
                 sx={{
                 color: "#28282B",
                 border: "1.5px solid #28282B",
@@ -1852,6 +1885,7 @@ ${CheckOutSecurityDeposit !== "0"
             {stack === "Checked Out" && (
               <IconButton
                 onClick={handlePrintCheckOut}
+                disabled={isViewOnly() || (isCustom() && !hasPermission('fdoPanel', 'complete'))}
                 sx={{
                 color: "#28282B",
                 border: "1.5px solid #28282B",
@@ -1882,6 +1916,7 @@ ${CheckOutSecurityDeposit !== "0"
               variant="outlined"
               size="small"
               onClick={handleMarkCheckIn}
+              disabled={isViewOnly() || (isCustom() && !hasPermission('fdoPanel', 'complete'))}
               sx={{
                 borderRadius: "12px",
                 textTransform: "none",
@@ -1913,6 +1948,7 @@ ${CheckOutSecurityDeposit !== "0"
                 variant="outlined"
                 size="small"
                 onClick={handlePrintCheckIn}
+                disabled={isViewOnly() || (isCustom() && !hasPermission('fdoPanel', 'complete'))}
                 sx={{
                   borderRadius: "12px",
                   textTransform: "none",
@@ -1951,6 +1987,7 @@ ${CheckOutSecurityDeposit !== "0"
                 variant="outlined"
                 size="small"
                 onClick={handleMarkCheckOut}
+                disabled={isViewOnly() || (isCustom() && !hasPermission('fdoPanel', 'complete'))}
                 sx={{
                   borderRadius: "12px",
                   textTransform: "none",
@@ -1987,6 +2024,7 @@ ${CheckOutSecurityDeposit !== "0"
                 variant="outlined"
                 size="small"
                 onClick={handlePrintCheckOut}
+                disabled={isViewOnly() || (isCustom() && !hasPermission('fdoPanel', 'complete'))}
                 sx={{
                   borderRadius: "12px",
                   textTransform: "none",
@@ -2378,10 +2416,15 @@ ReservationCard.propTypes = {
     deposit: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     listingName: PropTypes.string,
   }).isRequired,
+  setSnackbar: PropTypes.func.isRequired,
+  stack: PropTypes.string.isRequired,
+  isViewOnly: PropTypes.func.isRequired,
+  isCustom: PropTypes.func.isRequired,
+  hasPermission: PropTypes.func.isRequired,
 };
 
 function KanbanView() {
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, isViewOnly, isCustom, hasPermission } = useAuth();
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -2982,7 +3025,7 @@ function KanbanView() {
 
                       <MDBox px={2} pb={2} sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", maxHeight: "calc(98vh - 280px)" }}>
                         {filteredGuests.map((guest) => (
-                          <ReservationCard key={guest.id} guest={guest} setSnackbar={setSnackbar} searchTerm={searchTerm} stack={stack}/>
+                          <ReservationCard key={guest.id} guest={guest} setSnackbar={setSnackbar} searchTerm={searchTerm} stack={stack} isViewOnly={isViewOnly} isCustom={isCustom} hasPermission={hasPermission}/>
                         ))}
                       </MDBox>
                     </Card>

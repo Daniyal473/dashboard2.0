@@ -58,6 +58,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const { logout } = useAuth();
   const collapseName = location.pathname.replace("/", "");
 
+
   // Handle logout functionality with proper navigation
   const handleLogout = () => {
     logout();

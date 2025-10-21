@@ -4,6 +4,7 @@
  */
 
 const express = require('express');
+const axios = require('axios');
 const router = express.Router();
 
 // Ensure fetch is available (Node.js 18+ has it built-in, older versions need polyfill)
@@ -224,9 +225,10 @@ async function fetchCleaningStatusFromTeable() {
           'Booking Status': fields['Booking Status']
         });
         
-        if (fields['Listing IDs'] && (fields['HW - Status'] || fields['HK - Status'])) {
+        if (fields['Listing IDs']) {
           const listingId = String(fields['Listing IDs']); // Convert to string for consistent mapping
-          const hwStatus = fields['HW - Status'] || fields['HK - Status'];
+          const hwStatusRaw = fields['HW - Status'] || '';
+          const hkStatusRaw = fields['HK - Status'] || '';
           const activity = fields['Activity'] || 'Unknown';
           const reservationId = fields['(T) Reservation ID'] || '';
           const checkInDate = fields['(T) Check-In Date'] || '';
@@ -236,25 +238,47 @@ async function fetchCleaningStatusFromTeable() {
           const reservationStatus = fields['(T) Reservation Status'] || fields['Reservation Status'] || fields['Status'] || fields['Booking Status'] || '';
           
           console.log(`🔍 Processing Listing ${listingId}:`);
-          console.log(`   - HW Status: "${fields['HW - Status']}"`);
-          console.log(`   - HK Status: "${fields['HK - Status']}"`);
+          console.log(`   - HW Status Raw: "${hwStatusRaw}"`);
+          console.log(`   - HK Status Raw: "${hkStatusRaw}"`);
           console.log(`   - Activity: "${activity}"`);
           console.log(`   - Reservation ID: "${reservationId}"`);
           console.log(`   - Check-In Date: "${checkInDate}"`);
           console.log(`   - Check-out Date: "${checkOutDate}"`);
           console.log(`   - Guest Name: "${guestName}"`);
           console.log(`   - Reservation Status: "${reservationStatus}"`);
-          console.log(`   - Selected Status: "${hwStatus}"`);
           
-          // Convert Teable status to our format
-          let cleanStatus = 'Not Clean';
-          if (hwStatus && hwStatus.includes('Cleaned ✅')) {
-            cleanStatus = 'Clean';
+          // Convert Teable status to our format for both HW and HK
+          let hwStatus = 'Not Clean';
+          if (hwStatusRaw && hwStatusRaw.includes('Cleaned ✅')) {
+            hwStatus = 'Clean';
           }
           
-          console.log(`✅ Mapped Listing ${listingId}: "${hwStatus}" → "${cleanStatus}"`);
+          let hkStatus = 'Not Clean';
+          if (hkStatusRaw && hkStatusRaw.includes('Cleaned ✅')) {
+            hkStatus = 'Clean';
+          }
+          
+          // Debug: Log the conversion process
+          console.log(`🔄 Status Conversion for ${listingId}:`);
+          console.log(`   - HW Raw: "${hwStatusRaw}" → Processed: "${hwStatus}"`);
+          console.log(`   - HK Raw: "${hkStatusRaw}" → Processed: "${hkStatus}"`);
+          console.log(`   - HW includes 'Cleaned ✅': ${hwStatusRaw ? hwStatusRaw.includes('Cleaned ✅') : false}`);
+          console.log(`   - HK includes 'Cleaned ✅': ${hkStatusRaw ? hkStatusRaw.includes('Cleaned ✅') : false}`);
+          
+          // Legacy cleaningStatus for backward compatibility
+          const legacyCleanStatus = hwStatus === 'Clean' || hkStatus === 'Clean' ? 'Clean' : 'Not Clean';
+          
+          console.log(`✅ Mapped Listing ${listingId}:`);
+          console.log(`   - HW: "${hwStatusRaw}" → "${hwStatus}"`);
+          console.log(`   - HK: "${hkStatusRaw}" → "${hkStatus}"`);
+          console.log(`   - Legacy: "${legacyCleanStatus}"`);
+          
           cleaningStatusMap[listingId] = {
-            cleaningStatus: cleanStatus,
+            cleaningStatus: legacyCleanStatus, // Keep for backward compatibility
+            hwStatus: hwStatus,
+            hkStatus: hkStatus,
+            hwStatusRaw: hwStatusRaw,
+            hkStatusRaw: hkStatusRaw,
             activity: activity,
             reservationId: reservationId,
             checkInDate: checkInDate,
@@ -269,7 +293,15 @@ async function fetchCleaningStatusFromTeable() {
     }
 
     console.log('✅ Fetched cleaning status from Teable:', Object.keys(cleaningStatusMap).length, 'records');
-    console.log('🧹 Cleaning status map:', cleaningStatusMap);
+    console.log('🔑 Teable listing IDs found:', Object.keys(cleaningStatusMap));
+    console.log('🧹 Sample cleaning status data:', Object.keys(cleaningStatusMap).slice(0, 3).reduce((obj, key) => {
+      obj[key] = {
+        hwStatus: cleaningStatusMap[key].hwStatus,
+        hkStatus: cleaningStatusMap[key].hkStatus,
+        activity: cleaningStatusMap[key].activity
+      };
+      return obj;
+    }, {}));
     return cleaningStatusMap;
   } catch (error) {
     console.error('❌ Error fetching cleaning status from Teable:', error.message);
@@ -395,6 +427,32 @@ async function fetchHostawayListings(listingId = null) {
             const guestName = teableData?.guestName || '';
             console.log(`🏠 Listing ${listing.id} (${listing.internalListingName}): guestName = "${guestName}"`);
             return guestName;
+          })(),
+          hwStatus: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            const hwStatus = teableData?.hwStatus || 'Not Clean';
+            console.log(`🏠 Listing ${listing.id} (${listing.internalListingName}): hwStatus = "${hwStatus}"`);
+            if (!teableData) {
+              console.log(`⚠️ No Teable data found for listing ID ${listing.id}`);
+            }
+            return hwStatus;
+          })(),
+          hkStatus: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            const hkStatus = teableData?.hkStatus || 'Not Clean';
+            console.log(`🏠 Listing ${listing.id} (${listing.internalListingName}): hkStatus = "${hkStatus}"`);
+            if (!teableData) {
+              console.log(`⚠️ No Teable data found for listing ID ${listing.id}`);
+            }
+            return hkStatus;
+          })(),
+          hwStatusRaw: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.hwStatusRaw || '';
+          })(),
+          hkStatusRaw: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.hkStatusRaw || '';
           })()
         }];
       }
@@ -452,6 +510,32 @@ async function fetchHostawayListings(listingId = null) {
           const guestName = teableData?.guestName || '';
           console.log(`🏠 Listing ${listing.id} (${listing.internalListingName}): guestName = "${guestName}"`);
           return guestName;
+        })(),
+        hwStatus: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          const hwStatus = teableData?.hwStatus || 'Not Clean';
+          console.log(`🏠 Listing ${listing.id} (${listing.internalListingName}): hwStatus = "${hwStatus}"`);
+          if (!teableData) {
+            console.log(`⚠️ No Teable data found for listing ID ${listing.id}`);
+          }
+          return hwStatus;
+        })(),
+        hkStatus: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          const hkStatus = teableData?.hkStatus || 'Not Clean';
+          console.log(`🏠 Listing ${listing.id} (${listing.internalListingName}): hkStatus = "${hkStatus}"`);
+          if (!teableData) {
+            console.log(`⚠️ No Teable data found for listing ID ${listing.id}`);
+          }
+          return hkStatus;
+        })(),
+        hwStatusRaw: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.hwStatusRaw || '';
+        })(),
+        hkStatusRaw: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.hkStatusRaw || '';
         })()
       })) || [];
     }
@@ -668,22 +752,224 @@ router.get('/health', (req, res) => {
 });
 
 /**
+ * POST /api/rooms/test-cors
+ * Test CORS functionality
+ */
+router.post('/test-cors', (req, res) => {
+  console.log('🧪 CORS TEST ROUTE HIT!');
+  console.log('🔄 Method:', req.method);
+  console.log('🔄 Headers:', req.headers);
+  console.log('🔄 Body:', req.body);
+  
+  res.json({
+    success: true,
+    message: 'CORS test successful',
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
+ * PUT /api/rooms/update-cleaning-status/:listingId
+ * Update HW or HK cleaning status for a specific listing
+ */
+router.put('/update-cleaning-status/:listingId', async (req, res) => {
+  console.log('🚀 UPDATE CLEANING STATUS ROUTE HIT!');
+  console.log('🔄 Method:', req.method);
+  console.log('🔄 URL:', req.url);
+  console.log('🔄 Headers:', req.headers);
+  
+  try {
+    const { listingId } = req.params;
+    const { statusType, newStatus } = req.body; // statusType: 'HW' or 'HK', newStatus: 'Clean' or 'Not Clean'
+    
+    console.log(`🔄 API Request - Listing ID: ${listingId}, Status Type: ${statusType}, New Status: ${newStatus}`);
+    console.log(`🔄 Request body:`, req.body);
+    
+    // Validate required parameters
+    if (!listingId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Listing ID is required'
+      });
+    }
+    
+    if (!statusType || !['HW', 'HK'].includes(statusType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status type must be either "HW" or "HK"'
+      });
+    }
+    
+    if (!newStatus || !['Clean', 'Not Clean'].includes(newStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: 'New status must be either "Clean" or "Not Clean"'
+      });
+    }
+    
+    console.log(`🔄 Updating ${statusType} status for listing ${listingId} to: ${newStatus}`);
+    
+    // Convert our format back to Teable format
+    const teableStatus = newStatus === 'Clean' ? 'Cleaned ✅' : 'Not Cleaned ❌';
+    const fieldName = statusType === 'HW' ? 'HW - Status' : 'HK - Status';
+    
+    // Find the record in Teable by listing ID
+    const teableUrl = 'https://teable.namuve.com/api/table/tblg8UqsmbyTMeZV1j8/record';
+    console.log(`🔗 Making request to Teable API: ${teableUrl}`);
+    
+    const response = await axios.get(teableUrl, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer teable_accSkoTP5GM9CQvPm4u_csIKhbkyBkfGhWK+6GsEqCbzRDpxu/kJJAorC0dxkhE=',
+        'User-Agent': 'Dashboard-App/1.0'
+      }
+    });
+
+    console.log(`📡 Teable API response status: ${response.status}`);
+    console.log(`📡 Teable API response data length: ${response.data?.records?.length || 0}`);
+
+    const data = response.data;
+    
+    // Find the record with matching listing ID
+    const record = data.records?.find(record => 
+      String(record.fields['Listing IDs']) === String(listingId)
+    );
+    
+    if (!record) {
+      return res.status(404).json({
+        success: false,
+        message: `Listing ${listingId} not found in Teable database`
+      });
+    }
+    
+    console.log(`📋 Found record: ${record.id} for listing ${listingId}`);
+    
+    // Update the record
+    const updateUrl = `https://teable.namuve.com/api/table/tblg8UqsmbyTMeZV1j8/record/${record.id}`;
+    
+    // Teable API requires record wrapper with fields
+    const updatePayload = {
+      record: {
+        fields: {
+          [fieldName]: teableStatus
+        }
+      }
+    };
+    
+    console.log(`🔄 Updating Teable record: ${updateUrl}`);
+    console.log(`🔄 Update payload:`, JSON.stringify(updatePayload, null, 2));
+    
+    const updateResponse = await axios.patch(updateUrl, updatePayload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer teable_accSkoTP5GM9CQvPm4u_csIKhbkyBkfGhWK+6GsEqCbzRDpxu/kJJAorC0dxkhE=',
+        'User-Agent': 'Dashboard-App/1.0'
+      }
+    });
+
+    console.log(`📡 Update response status: ${updateResponse.status}`);
+    console.log(`📡 Update successful: ${updateResponse.status === 200}`);
+
+    const updatedRecord = updateResponse.data;
+    console.log(`✅ Successfully updated ${statusType} status for listing ${listingId} to: ${teableStatus}`);
+    
+    res.json({
+      success: true,
+      message: `${statusType} status updated successfully`,
+      listingId: listingId,
+      statusType: statusType,
+      oldStatus: record.fields[fieldName],
+      newStatus: teableStatus,
+      updatedRecord: updatedRecord
+    });
+    
+  } catch (error) {
+    console.error('❌ Error updating cleaning status:', error);
+    
+    // Handle axios errors specifically
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      console.error('❌ Axios response error:', error.response.status, error.response.data);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update cleaning status',
+        error: `HTTP ${error.response.status}: ${JSON.stringify(error.response.data)}`
+      });
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('❌ Axios request error:', error.request);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update cleaning status',
+        error: 'No response received from Teable API'
+      });
+    } else {
+      // Something happened in setting up the request
+      console.error('❌ Axios setup error:', error.message);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update cleaning status',
+        error: error.message
+      });
+    }
+  }
+});
+
+/**
  * GET /api/rooms/test-teable
- * Test Teable API connectivity
+ * Test Teable API connectivity and show raw data
  */
 router.get('/test-teable', async (req, res) => {
   try {
     console.log('🧪 Testing Teable API connectivity...');
+    
+    // Get raw Teable data first
+    const teableUrl = 'https://teable.namuve.com/api/table/tblg8UqsmbyTMeZV1j8/record';
+    const response = await fetch(teableUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer teable_accSkoTP5GM9CQvPm4u_csIKhbkyBkfGhWK+6GsEqCbzRDpxu/kJJAorC0dxkhE=',
+        'User-Agent': 'Dashboard-App/1.0'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Teable API error: ${response.status}`);
+    }
+
+    const rawData = await response.json();
+    
+    // Show sample raw records
+    const sampleRawRecords = rawData.records?.slice(0, 5).map(record => ({
+      id: record.id,
+      listingId: record.fields['Listing IDs'],
+      listingName: record.fields['Listing Name'],
+      hwStatus: record.fields['HW - Status'],
+      hkStatus: record.fields['HK - Status'],
+      activity: record.fields['Activity']
+    })) || [];
+    
+    // Process the data
     const cleaningStatusMap = await fetchCleaningStatusFromTeable();
+    
+    // Show processed data
+    const sampleProcessedData = Object.keys(cleaningStatusMap).slice(0, 5).reduce((obj, key) => {
+      obj[key] = cleaningStatusMap[key];
+      return obj;
+    }, {});
     
     res.json({
       success: true,
       message: 'Teable API test successful',
-      recordCount: Object.keys(cleaningStatusMap).length,
-      sampleData: Object.keys(cleaningStatusMap).slice(0, 3).reduce((obj, key) => {
-        obj[key] = cleaningStatusMap[key];
-        return obj;
-      }, {}),
+      rawDataCount: rawData.records?.length || 0,
+      processedDataCount: Object.keys(cleaningStatusMap).length,
+      sampleRawRecords: sampleRawRecords,
+      sampleProcessedData: sampleProcessedData,
       timestamp: new Date().toISOString()
     });
   } catch (error) {

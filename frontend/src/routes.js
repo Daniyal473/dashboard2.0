@@ -13,28 +13,151 @@ import AdminPanel from "layouts/admin-panel";
 import Icon from "@mui/material/Icon";
 
 // Role-based route filtering
-export const getRoleBasedRoutes = (userRole, isAuthenticated) => {
+export const getRoleBasedRoutes = (userRole, isAuthenticated, userPermissions = null, username = null) => {
+  console.log("🔐 getRoleBasedRoutes called:", { userRole, isAuthenticated, userPermissions, username });
+  
   // If not authenticated, only show sign-in and forgot password
   if (!isAuthenticated) {
-    return routes.filter((route) => route.key === "sign-in" || route.key === "forgot-password");
+    const filteredRoutes = routes.filter((route) => route.key === "sign-in" || route.key === "forgot-password");
+    console.log("❌ Not authenticated, returning:", filteredRoutes.map(r => r.key));
+    return filteredRoutes;
   }
 
   // If user role, only show FDO Panel
   if (userRole === "user") {
-    return routes.filter((route) => route.key === "fdo-panel");
+    const filteredRoutes = routes.filter((route) => route.key === "fdo-panel");
+    console.log("👤 User role, returning:", filteredRoutes.map(r => r.key));
+    return filteredRoutes;
   }
 
   // If admin role, show all routes except sign-in
   if (userRole === "admin") {
-    return routes.filter((route) => route.key !== "sign-in");
+    const filteredRoutes = routes.filter((route) => route.key !== "sign-in");
+    console.log("👑 Admin role, returning:", filteredRoutes.map(r => r.key));
+    return filteredRoutes;
+  }
+
+  // If view_only (Full Access) role, show all routes except sign-in and admin-panel
+  if (userRole === "view_only") {
+    const filteredRoutes = routes.filter((route) => route.key !== "sign-in" && route.key !== "admin-panel");
+    console.log("👁️ View_only role, returning:", filteredRoutes.map(r => r.key));
+    return filteredRoutes;
+  }
+
+
+  // If custom role, show routes based on permissions
+  if (userRole === "custom") {
+    console.log("🎛️ Custom user detected, checking permissions...");
+    console.log("📋 Raw userPermissions:", userPermissions);
+    console.log("👤 Username:", username);
+    
+    let allowedRoutes = [];
+    
+    // Add routes based on permissions
+    let permissions = null;
+    
+    // Try to get permissions from parameter
+    if (userPermissions) {
+      try {
+        permissions = typeof userPermissions === 'string' 
+          ? JSON.parse(userPermissions) 
+          : userPermissions;
+      } catch (error) {
+        console.error('Error parsing userPermissions:', error, 'Raw value:', userPermissions);
+        // If permissions is just "123" or invalid, provide default permissions for testing
+        if (userPermissions === "123") {
+          console.warn('⚠️ Invalid permissions format detected, using default permissions');
+          permissions = {
+            fdoPanel: { view: true, complete: false },
+            rooms: { view: true, complete: false },
+            revenue: { view: true, complete: false },
+            resetPassword: true
+          };
+        }
+      }
+    }
+    
+    // Fallback to localStorage if no permissions and username provided
+    if (!permissions && username) {
+      try {
+        const storedPermissions = localStorage.getItem(`permissions_${username}`);
+        if (storedPermissions) {
+          permissions = JSON.parse(storedPermissions);
+        }
+      } catch (error) {
+        console.error('Error getting permissions from localStorage:', error);
+      }
+    }
+    
+    console.log("🔍 Parsed permissions:", permissions);
+    
+    if (permissions) {
+      try {
+        // Filter routes in the correct order to maintain sidebar pattern
+        const orderedKeys = ["fdo-panel", "revenue", "rooms", "admin-panel", "forgot-password", "logout"];
+        
+        for (const key of orderedKeys) {
+          switch (key) {
+            case "fdo-panel":
+              console.log("🏠 Checking FDO Panel permission:", { view: permissions?.fdoPanel?.view, complete: permissions?.fdoPanel?.complete });
+              if (permissions?.fdoPanel?.view || permissions?.fdoPanel?.complete) {
+                console.log("✅ FDO Panel access granted");
+                allowedRoutes.push(...routes.filter(route => route.key === "fdo-panel"));
+              } else {
+                console.log("❌ FDO Panel access denied");
+              }
+              break;
+            case "revenue":
+              if (permissions?.revenue?.view || permissions?.revenue?.complete) {
+                allowedRoutes.push(...routes.filter(route => route.key === "revenue"));
+              }
+              break;
+            case "rooms":
+              if (permissions?.rooms?.view || permissions?.rooms?.complete) {
+                allowedRoutes.push(...routes.filter(route => route.key === "rooms"));
+              }
+              break;
+            case "admin-panel":
+              if (permissions?.userManagement?.complete || 
+                  permissions?.passwordHistory?.complete || 
+                  permissions?.monthlyTarget?.view || permissions?.monthlyTarget?.complete) {
+                allowedRoutes.push(...routes.filter(route => route.key === "admin-panel"));
+              }
+              break;
+            case "forgot-password":
+              if (permissions?.resetPassword) {
+                allowedRoutes.push(...routes.filter(route => route.key === "forgot-password"));
+              }
+              break;
+            case "logout":
+              // Always add logout for custom users
+              allowedRoutes.push(...routes.filter(route => route.key === "logout"));
+              break;
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing user permissions:', error);
+      }
+    }
+    
+    // Remove any duplicates that might have been added
+    const uniqueRoutes = allowedRoutes.filter((route, index, self) => 
+      index === self.findIndex(r => r.key === route.key)
+    );
+    
+    console.log("🎛️ Custom role, returning routes based on permissions:", uniqueRoutes.map(r => r.key));
+    return uniqueRoutes;
   }
 
   // Default: only show sign-in
-  return routes.filter((route) => route.key === "sign-in");
+  const filteredRoutes = routes.filter((route) => route.key === "sign-in");
+  console.log("🔄 Default case, returning:", filteredRoutes.map(r => r.key));
+  return filteredRoutes;
 };
 
-// All available routes
+// All available routes - Ordered according to desired sidebar pattern
 const routes = [
+  // 1. FDO Panel (First in sidebar)
   {
     type: "collapse",
     name: "FDO Panel",
@@ -43,6 +166,52 @@ const routes = [
     route: "/fdo-panel",
     component: <FDOPanel />,
   },
+  // 2. Revenue (Second in sidebar)
+  {
+    type: "collapse",
+    name: "Revenue",
+    key: "revenue",
+    icon: <Icon fontSize="small">receipt_long</Icon>,
+    route: "/revenue",
+    component: <Revenue />,
+  },
+  // 3. Rooms (Third in sidebar)
+  {
+    type: "collapse",
+    name: "Rooms",
+    key: "rooms",
+    icon: <Icon fontSize="small">meeting_room</Icon>,
+    route: "/rooms",
+    component: <Profile />,
+  },
+  // 4. Admin Panel (Fourth in sidebar)
+  {
+    type: "collapse",
+    name: "Admin Panel",
+    key: "admin-panel",
+    icon: <Icon fontSize="small">admin_panel_settings</Icon>,
+    route: "/admin-panel",
+    component: <AdminPanel />,
+  },
+  // 5. Reset Password (Fifth in sidebar)
+  {
+    type: "collapse",
+    name: "Reset Password",
+    key: "forgot-password",
+    icon: <Icon fontSize="small">lock_reset</Icon>,
+    route: "/forgot-password",
+    component: <ForgotPassword />,
+  },
+  // 6. Logout (Sixth in sidebar)
+  {
+    type: "collapse",
+    name: "Logout",
+    key: "logout",
+    icon: <Icon fontSize="small">logout</Icon>,
+    route: "/logout",
+    component: null, // This will be handled by the sidebar component
+  },
+  // Hidden routes (not shown in sidebar)
   {
     type: "hidden",
     name: "Dashboard",
@@ -60,56 +229,12 @@ const routes = [
     component: <Tables />,
   },
   {
-    type: "collapse",
-    name: "Revenue",
-    key: "revenue",
-    icon: <Icon fontSize="small">receipt_long</Icon>,
-    route: "/revenue",
-    component: <Revenue />,
-  },
-  {
     type: "hidden",
     name: "RTL",
     key: "rtl",
     icon: <Icon fontSize="small">format_textdirection_r_to_l</Icon>,
     route: "/rtl",
     component: <RTL />,
-  },
-  {
-    type: "collapse",
-    name: "Rooms",
-    key: "rooms",
-    icon: <Icon fontSize="small">meeting_room</Icon>,
-    route: "/rooms",
-    component: <Profile />,
-  },
-  {
-    type: "collapse",
-    name: "Admin Panel",
-    key: "admin-panel",
-    icon: <Icon fontSize="small">admin_panel_settings</Icon>,
-    route: "/admin-panel",
-    component: <AdminPanel />,
-  },
-  {
-    type: "collapse",
-    name: "Reset Password",
-    key: "forgot-password",
-    icon: <Icon fontSize="small">lock_reset</Icon>,
-    route: "/forgot-password",
-    component: <ForgotPassword />,
-  },
-  {
-    type: "divider",
-    key: "divider-1",
-  },
-  {
-    type: "collapse",
-    name: "Logout",
-    key: "logout",
-    icon: <Icon fontSize="small">logout</Icon>,
-    route: "/logout",
-    component: null, // This will be handled by the sidebar component
   },
   {
     type: "collapse",

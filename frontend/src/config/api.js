@@ -22,6 +22,7 @@ export const API_ENDPOINTS = {
   USERS: `${API_BASE_URL}/api/auth/admin/users`,
   CREATE_USER: `${API_BASE_URL}/api/auth/admin/create-user`,
   UPDATE_USER_ROLE: `${API_BASE_URL}/api/auth/admin/update-role`,
+  UPDATE_USERNAME: `${API_BASE_URL}/api/auth/admin/update-username`,
   DELETE_USER: `${API_BASE_URL}/api/auth/admin/delete-user`,
   PASSWORD_HISTORY: `${API_BASE_URL}/api/auth/admin/password-history`,
 

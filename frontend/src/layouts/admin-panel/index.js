@@ -14,6 +14,8 @@ import FormControl from "@mui/material/FormControl";
 import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
 import InputLabel from "@mui/material/InputLabel";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -30,21 +32,62 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
 function AdminPanel() {
-  const { user, isAuthenticated, loading: authLoading, isAdmin } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, isAdmin, isCustom, hasPermission } = useAuth();
   const [createUserForm, setCreateUserForm] = useState({
     username: "",
     password: "",
     confirmPassword: "",
     role: "user", // Default to user role
   });
+  const [customPermissions, setCustomPermissions] = useState({
+    fdoPanel: { view: false, complete: false },
+    rooms: { view: false, complete: false },
+    revenue: { view: false, complete: false },
+    userManagement: { view: false, complete: false },
+    passwordHistory: { view: false, complete: false },
+    monthlyTarget: { view: false, complete: false },
+    resetPassword: true
+  });
   const [users, setUsers] = useState([]);
   const [passwordHistory, setPasswordHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [activeTab, setActiveTab] = useState("users"); // users, history, monthly-target
+  
+  // Set default tab based on user permissions after component mounts
+  useEffect(() => {
+    if (!user || authLoading) return; // Wait for user data to load
+    
+    if (isAdmin()) {
+      setActiveTab("users");
+    } else if (isCustom()) {
+      if (hasPermission('userManagement', 'complete')) {
+        setActiveTab("users");
+      } else if (hasPermission('passwordHistory', 'complete')) {
+        setActiveTab("history");
+      } else if (hasPermission('monthlyTarget', 'view') || hasPermission('monthlyTarget', 'complete')) {
+        setActiveTab("monthly-target");
+      }
+    }
+  }, [user, authLoading, isAdmin, isCustom, hasPermission]);
   const [editingUser, setEditingUser] = useState(null);
   const [editRole, setEditRole] = useState("");
   const [originalRole, setOriginalRole] = useState("");
+  const [editingUsername, setEditingUsername] = useState(null);
+  const [editUsername, setEditUsername] = useState("");
+  const [originalUsername, setOriginalUsername] = useState("");
+  
+  // Permission editing state
+  const [editingPermissions, setEditingPermissions] = useState(null);
+  const [editPermissions, setEditPermissions] = useState({
+    fdoPanel: { view: false, complete: false },
+    rooms: { view: false, complete: false },
+    revenue: { view: false, complete: false },
+    userManagement: { view: false, complete: false },
+    passwordHistory: { view: false, complete: false },
+    monthlyTarget: { view: false, complete: false },
+    resetPassword: true
+  });
   
   // Monthly Target state
   const [monthlyTarget, setMonthlyTarget] = useState({
@@ -185,6 +228,12 @@ function AdminPanel() {
   const handleMonthlyTargetSubmit = (event) => {
     event.preventDefault();
     
+    // Check permissions - only allow users with complete access to submit
+    if (isCustom() && !hasPermission('monthlyTarget', 'complete')) {
+      setMessage({ type: "error", text: "You do not have permission to modify monthly targets!" });
+      return;
+    }
+    
     if (!monthlyTarget.amount) {
       setMessage({ type: "error", text: "Please enter target amount!" });
       return;
@@ -223,6 +272,106 @@ function AdminPanel() {
       type: "success", 
       text: `Monthly Target set successfully! Daily: ${formatNumber(calculatedTargets.dailyTarget)}, Quarterly: ${formatNumber(calculatedTargets.quarterlyTarget)}` 
     });
+  };
+
+  // Handle permission editing
+  const handleEditPermissions = (username) => {
+    // Get current permissions from user data (database-stored)
+    try {
+      const user = users.find(u => u.username === username);
+      if (user && user.permissions) {
+        const permissions = typeof user.permissions === 'string' 
+          ? JSON.parse(user.permissions) 
+          : user.permissions;
+        setEditPermissions(permissions);
+      } else {
+        // Set default permissions if none found
+        setEditPermissions({
+          fdoPanel: { view: false, complete: false },
+          rooms: { view: false, complete: false },
+          revenue: { view: false, complete: false },
+          userManagement: { view: false, complete: false },
+          passwordHistory: { view: false, complete: false },
+          monthlyTarget: { view: false, complete: false },
+          resetPassword: true
+        });
+      }
+      setEditingPermissions(username);
+    } catch (error) {
+      console.error('Error loading permissions for editing:', error);
+      setMessage({
+        type: "error",
+        text: "Error loading user permissions"
+      });
+    }
+  };
+
+  // Handle permission change during editing
+  const handleEditPermissionChange = (page, level) => {
+    setEditPermissions(prev => ({
+      ...prev,
+      [page]: {
+        ...prev[page],
+        [level]: !prev[page][level]
+      }
+    }));
+  };
+
+  // Save edited permissions
+  const handleSavePermissions = async () => {
+    if (!editingPermissions) return;
+
+    setLoading(true);
+    try {
+      // Update permissions in database via API
+      const response = await fetch(API_ENDPOINTS.UPDATE_USER_ROLE, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: editingPermissions,
+          role: 'custom',
+          permissions: editPermissions
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setMessage({
+          type: "success",
+          text: `Permissions updated successfully for ${editingPermissions}!`
+        });
+        
+        // Reset editing state
+        setEditingPermissions(null);
+        setEditPermissions({
+          fdoPanel: { view: false, complete: false },
+          rooms: { view: false, complete: false },
+          revenue: { view: false, complete: false },
+          userManagement: { view: false, complete: false },
+          passwordHistory: { view: false, complete: false },
+          monthlyTarget: { view: false, complete: false },
+          resetPassword: true
+        });
+        
+        // Refresh user list to show updated permissions
+        fetchUsers();
+        
+        console.log(`✅ Permissions updated in database for user: ${editingPermissions}`);
+      } else {
+        setMessage({ type: "error", text: result.message });
+      }
+    } catch (error) {
+      console.error('Error updating permissions:', error);
+      setMessage({
+        type: "error",
+        text: "Error updating permissions"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Create new user
@@ -264,17 +413,30 @@ function AdminPanel() {
           username: createUserForm.username,
           password: createUserForm.password,
           role: createUserForm.role,
+          ...(createUserForm.role === 'custom' && { permissions: customPermissions })
         }),
       });
 
       const result = await response.json();
 
       if (result.success) {
+        // Permissions are now stored in database automatically by backend
+        console.log(`✅ User created with database-stored permissions: ${createUserForm.username}`);
+        
         setMessage({
           type: "success",
           text: `User "${createUserForm.username}" created successfully!`,
         });
         setCreateUserForm({ username: "", password: "", confirmPassword: "", role: "user" });
+        setCustomPermissions({
+          fdoPanel: { view: false, complete: false },
+          rooms: { view: false, complete: false },
+          revenue: { view: false, complete: false },
+          userManagement: { view: false, complete: false },
+          passwordHistory: { view: false, complete: false },
+          monthlyTarget: { view: false, complete: false },
+          resetPassword: true
+        });
         fetchUsers(); // Refresh user list
       } else {
         setMessage({ type: "error", text: result.message });
@@ -357,6 +519,50 @@ function AdminPanel() {
     }
     setLoading(false);
   };
+
+  // Update username
+  const handleUpdateUsername = async (oldUsername, newUsername) => {
+    await executeUpdateUsername(oldUsername, newUsername);
+  };
+
+  // Execute update username without admin verification
+  const executeUpdateUsername = async (oldUsername, newUsername) => {
+    setLoading(true);
+    
+    try {
+      const response = await fetch(API_ENDPOINTS.UPDATE_USERNAME, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          adminPassword: "bypass", // Use bypass for no verification
+          oldUsername: oldUsername,
+          newUsername: newUsername,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setMessage({
+          type: "success",
+          text: `Username updated from "${oldUsername}" to "${newUsername}" successfully!`,
+        });
+        setEditingUsername(null);
+        setEditUsername("");
+        setOriginalUsername("");
+        fetchUsers(); // Refresh user list
+      } else {
+        setMessage({ type: "error", text: result.message });
+      }
+    } catch (error) {
+      setMessage({ type: "error", text: "Failed to update username. Please try again." });
+      console.error("Update username error:", error);
+    }
+    setLoading(false);
+  };
+
 
   // Delete user
   const handleDeleteUser = async (username) => {
@@ -481,8 +687,8 @@ function AdminPanel() {
     // fetchPasswordHistory();
   }, []);
 
-  // Show loading while checking authentication
-  if (authLoading) {
+  // Show loading spinner while authenticating or user data is not ready
+  if (authLoading || !user) {
     return (
       <DashboardLayout>
         <DashboardNavbar />
@@ -508,8 +714,14 @@ function AdminPanel() {
     return null;
   }
 
-  // Redirect non-admin users
-  if (!isAdmin()) {
+  // Redirect users who don't have admin panel access
+  const hasAdminAccess = isAdmin() || (isCustom() && (
+    hasPermission('userManagement', 'complete') ||
+    hasPermission('passwordHistory', 'complete') ||
+    hasPermission('monthlyTarget', 'view') || hasPermission('monthlyTarget', 'complete')
+  ));
+  
+  if (!hasAdminAccess) {
     window.location.href = "/fdo-panel";
     return null;
   }
@@ -556,64 +768,66 @@ function AdminPanel() {
                 backgroundColor: "#ffffff",
                 borderRadius: "12px",
                 p: 1,
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                width: { xs: "100%", sm: "auto" },
-                maxWidth: { xs: "400px", sm: "none" },
               }}
             >
-              <MDButton
-                variant={activeTab === "users" ? "gradient" : "text"}
-                color="info"
-                onClick={() => setActiveTab("users")}
-                sx={{
-                  borderRadius: "8px",
-                  textTransform: "none",
-                  mx: { xs: 0, sm: 1 },
-                  my: { xs: 0.5, sm: 0 },
-                  px: 3,
-                  width: { xs: "100%", sm: "auto" },
-                  fontSize: { xs: "0.875rem", sm: "1rem" },
-                }}
-              >
-                User Management
-              </MDButton>
-              <MDButton
-                variant={activeTab === "history" ? "gradient" : "text"}
-                color="info"
-                onClick={() => {
-                  setActiveTab("history");
-                  if (!passwordHistory || passwordHistory.length === 0) {
-                    fetchPasswordHistory();
-                  }
-                }}
-                sx={{
-                  borderRadius: "8px",
-                  textTransform: "none",
-                  mx: { xs: 0, sm: 1 },
-                  my: { xs: 0.5, sm: 0 },
-                  px: 3,
-                  width: { xs: "100%", sm: "auto" },
-                  fontSize: { xs: "0.875rem", sm: "1rem" },
-                }}
-              >
-                Password History
-              </MDButton>
-              <MDButton
-                variant={activeTab === "monthly-target" ? "gradient" : "text"}
-                color="info"
-                onClick={() => setActiveTab("monthly-target")}
-                sx={{
-                  borderRadius: "8px",
-                  textTransform: "none",
-                  mx: { xs: 0, sm: 1 },
-                  my: { xs: 0.5, sm: 0 },
-                  px: 3,
-                  width: { xs: "100%", sm: "auto" },
-                  fontSize: { xs: "0.875rem", sm: "1rem" },
-                }}
-              >
-                Monthly Target
-              </MDButton>
+              {(isAdmin() || (isCustom() && hasPermission('userManagement', 'complete'))) && (
+                <MDButton
+                  variant={activeTab === "users" ? "gradient" : "text"}
+                  color="info"
+                  onClick={() => setActiveTab("users")}
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    fontWeight: "600",
+                    px: 3,
+                    py: 1,
+                    mx: 1,
+                  }}
+                >
+                  User Management
+                </MDButton>
+              )}
+              {(isAdmin() || (isCustom() && hasPermission('passwordHistory', 'complete'))) && (
+                <MDButton
+                  variant={activeTab === "history" ? "gradient" : "text"}
+                  color="info"
+                  onClick={() => {
+                    setActiveTab("history");
+                    if (!passwordHistory || passwordHistory.length === 0) {
+                      fetchPasswordHistory();
+                    }
+                  }}
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    mx: { xs: 0, sm: 1 },
+                    my: { xs: 0.5, sm: 0 },
+                    px: 3,
+                    width: { xs: "100%", sm: "auto" },
+                    fontSize: { xs: "0.875rem", sm: "1rem" },
+                  }}
+                >
+                  Password History
+                </MDButton>
+              )}
+              {(isAdmin() || (isCustom() && (hasPermission('monthlyTarget', 'view') || hasPermission('monthlyTarget', 'complete')))) && (
+                <MDButton
+                  variant={activeTab === "monthly-target" ? "gradient" : "text"}
+                  color="info"
+                  onClick={() => setActiveTab("monthly-target")}
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    mx: { xs: 0, sm: 1 },
+                    my: { xs: 0.5, sm: 0 },
+                    px: 3,
+                    width: { xs: "100%", sm: "auto" },
+                    fontSize: { xs: "0.875rem", sm: "1rem" },
+                  }}
+                >
+                  Monthly Target
+                </MDButton>
+              )}
             </MDBox>
           </MDBox>
 
@@ -624,7 +838,7 @@ function AdminPanel() {
           )}
 
           {/* User Management Tab */}
-          {activeTab === "users" && (
+          {activeTab === "users" && (isAdmin() || (isCustom() && hasPermission('userManagement', 'complete'))) && (
             <Grid container spacing={4}>
               {/* Create User Form */}
               <Grid item xs={12} md={6}>
@@ -725,37 +939,95 @@ function AdminPanel() {
                             <MDBox display="flex" alignItems="center" gap={2} width="100%">
                               <MDBox
                                 sx={{
-                                  width: 32,
-                                  height: 32,
-                                  borderRadius: "8px",
-                                  backgroundColor: "#dcfce7",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  backgroundColor: "#10b981",
+                                  marginRight: 1,
                                 }}
-                              >
-                                <MDBox
-                                  sx={{
-                                    width: 12,
-                                    height: 12,
-                                    borderRadius: "50%",
-                                    backgroundColor: "#16a34a",
-                                  }}
-                                />
-                              </MDBox>
+                              />
                               <MDBox>
                                 <MDTypography
                                   variant="body2"
-                                  fontWeight="600"
-                                  sx={{ color: "#1f2937", lineHeight: 1.2 }}
+                                  sx={{
+                                    fontWeight: "600",
+                                    color: "#065f46",
+                                    fontSize: "0.875rem",
+                                  }}
                                 >
                                   Standard User
                                 </MDTypography>
                                 <MDTypography
                                   variant="caption"
-                                  sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+                                  sx={{
+                                    color: "#6b7280",
+                                    fontSize: "0.75rem",
+                                    display: "block",
+                                    lineHeight: 1.2,
+                                  }}
                                 >
-                                  
+                                  Can access FDO Panel with full permissions
+                                </MDTypography>
+                              </MDBox>
+                            </MDBox>
+                          </MenuItem>
+                          <MenuItem value="view_only">
+                            <MDBox display="flex" alignItems="center" gap={2} width="100%">
+                              <MDBox
+                                sx={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  backgroundColor: "#3b82f6",
+                                  marginRight: 1,
+                                }}
+                              />
+                              <MDBox>
+                                <MDTypography
+                                  variant="body2"
+                                  sx={{
+                                    fontWeight: "600",
+                                    color: "#1e40af",
+                                    fontSize: "0.875rem",
+                                  }}
+                                >
+                                  View Access Only
+                                </MDTypography>
+                              </MDBox>
+                            </MDBox>
+                          </MenuItem>
+                          <MenuItem value="custom">
+                            <MDBox display="flex" alignItems="center" gap={2} width="100%">
+                              <MDBox
+                                sx={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  backgroundColor: "#ec4899",
+                                  marginRight: 1,
+                                }}
+                              />
+                              <MDBox>
+                                <MDTypography
+                                  variant="body2"
+                                  sx={{
+                                    fontWeight: "600",
+                                    color: "#be185d",
+                                    fontSize: "0.875rem",
+                                  }}
+                                >
+                                  Custom Permissions
+                                </MDTypography>
+                                <MDTypography
+                                  variant="caption"
+                                  sx={{
+                                    color: "#6b7280",
+                                    fontSize: "0.75rem",
+                                    display: "block",
+                                    lineHeight: 1.2,
+                                  }}
+                                >
+                                  Granular page-level access control
                                 </MDTypography>
                               </MDBox>
                             </MDBox>
@@ -764,37 +1036,34 @@ function AdminPanel() {
                             <MDBox display="flex" alignItems="center" gap={2} width="100%">
                               <MDBox
                                 sx={{
-                                  width: 32,
-                                  height: 32,
-                                  borderRadius: "8px",
-                                  backgroundColor: "#fef3c7",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: "50%",
+                                  backgroundColor: "#f59e0b",
+                                  marginRight: 1,
                                 }}
-                              >
-                                <MDBox
-                                  sx={{
-                                    width: 12,
-                                    height: 12,
-                                    borderRadius: "50%",
-                                    backgroundColor: "#f59e0b",
-                                  }}
-                                />
-                              </MDBox>
+                              />
                               <MDBox>
                                 <MDTypography
                                   variant="body2"
-                                  fontWeight="600"
-                                  sx={{ color: "#1f2937", lineHeight: 1.2 }}
+                                  sx={{
+                                    fontWeight: "600",
+                                    color: "#92400e",
+                                    fontSize: "0.875rem",
+                                  }}
                                 >
                                   Administrator
                                 </MDTypography>
                                 <MDTypography
                                   variant="caption"
-                                  sx={{ color: "#6b7280", fontSize: "0.75rem" }}
+                                  sx={{
+                                    color: "#6b7280",
+                                    fontSize: "0.75rem",
+                                    display: "block",
+                                    lineHeight: 1.2,
+                                  }}
                                 >
-                                  Full Dashboard Access
+                                  Full access to all features and admin panel
                                 </MDTypography>
                               </MDBox>
                             </MDBox>
@@ -802,6 +1071,210 @@ function AdminPanel() {
                         </Select>
                       </FormControl>
                     </MDBox>
+
+                    {/* Custom Permissions Configuration */}
+                    {createUserForm.role === 'custom' && (
+                      <MDBox mb={3}>
+                        <MDTypography variant="h6" fontWeight="bold" mb={2} color="text.primary">
+                          Configure Permissions
+                        </MDTypography>
+                        
+                        {/* FDO Panel Permissions */}
+                        <MDBox mb={2} p={2} sx={{ backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                          <MDTypography variant="subtitle2" fontWeight="bold" mb={1} color="#1e293b">
+                            🏠 FDO Panel Access
+                          </MDTypography>
+                          <MDBox display="flex" gap={2}>
+                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={customPermissions.fdoPanel?.view || false}
+                                onChange={(e) => setCustomPermissions(prev => ({
+                                  ...prev,
+                                  fdoPanel: { ...prev.fdoPanel, view: e.target.checked }
+                                }))}
+                                style={{ marginRight: '8px' }}
+                              />
+                              <MDTypography variant="body2">View Access</MDTypography>
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={customPermissions.fdoPanel?.complete || false}
+                                onChange={(e) => setCustomPermissions(prev => ({
+                                  ...prev,
+                                  fdoPanel: { ...prev.fdoPanel, complete: e.target.checked }
+                                }))}
+                                style={{ marginRight: '8px' }}
+                              />
+                              <MDTypography variant="body2">Complete Access</MDTypography>
+                            </label>
+                          </MDBox>
+                        </MDBox>
+
+                        {/* Rooms Permissions */}
+                        <MDBox mb={2} p={2} sx={{ backgroundColor: '#f3e8ff', borderRadius: '12px', border: '1px solid #8b5cf6' }}>
+                          <MDTypography variant="subtitle2" fontWeight="bold" mb={1} color="#7c3aed">
+                            🏠 Rooms Access
+                          </MDTypography>
+                          <MDBox display="flex" gap={2}>
+                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={customPermissions.rooms?.view || false}
+                                onChange={(e) => setCustomPermissions(prev => ({
+                                  ...prev,
+                                  rooms: { ...prev.rooms, view: e.target.checked }
+                                }))}
+                                style={{ marginRight: '8px' }}
+                              />
+                              <MDTypography variant="body2">View Access</MDTypography>
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={customPermissions.rooms?.complete || false}
+                                onChange={(e) => setCustomPermissions(prev => ({
+                                  ...prev,
+                                  rooms: { ...prev.rooms, complete: e.target.checked }
+                                }))}
+                                style={{ marginRight: '8px' }}
+                              />
+                              <MDTypography variant="body2">Complete Access</MDTypography>
+                            </label>
+                          </MDBox>
+                        </MDBox>
+
+                        {/* Revenue Permissions */}
+                        <MDBox mb={2} p={2} sx={{ backgroundColor: '#ecfdf5', borderRadius: '12px', border: '1px solid #10b981' }}>
+                          <MDTypography variant="subtitle2" fontWeight="bold" mb={1} color="#059669">
+                            💰 Revenue Access
+                          </MDTypography>
+                          <MDBox display="flex" gap={2}>
+                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={customPermissions.revenue?.view || false}
+                                onChange={(e) => setCustomPermissions(prev => ({
+                                  ...prev,
+                                  revenue: { ...prev.revenue, view: e.target.checked }
+                                }))}
+                                style={{ marginRight: '8px' }}
+                              />
+                              <MDTypography variant="body2">View Access</MDTypography>
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={customPermissions.revenue?.complete || false}
+                                onChange={(e) => setCustomPermissions(prev => ({
+                                  ...prev,
+                                  revenue: { ...prev.revenue, complete: e.target.checked }
+                                }))}
+                                style={{ marginRight: '8px' }}
+                              />
+                              <MDTypography variant="body2">Complete Access</MDTypography>
+                            </label>
+                          </MDBox>
+                        </MDBox>
+
+                        {/* User Management Permissions */}
+                        <MDBox mb={2} p={2} sx={{ backgroundColor: '#fef3c7', borderRadius: '12px', border: '1px solid #f59e0b' }}>
+                          <MDTypography variant="subtitle2" fontWeight="bold" mb={1} color="#d97706">
+                            👥 User Management Access
+                          </MDTypography>
+                          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={customPermissions.userManagement?.complete || false}
+                              onChange={(e) => setCustomPermissions(prev => ({
+                                ...prev,
+                                userManagement: { ...prev.userManagement, complete: e.target.checked }
+                              }))}
+                              style={{ marginRight: '8px' }}
+                            />
+                            <MDTypography variant="body2">Complete Access</MDTypography>
+                          </label>
+                        </MDBox>
+
+                        {/* Password History Permissions */}
+                        <MDBox mb={2} p={2} sx={{ backgroundColor: '#f0f4ff', borderRadius: '12px', border: '1px solid #6366f1' }}>
+                          <MDTypography variant="subtitle2" fontWeight="bold" mb={1} color="#4f46e5">
+                            📋 Password History Access
+                          </MDTypography>
+                          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={customPermissions.passwordHistory?.complete || false}
+                              onChange={(e) => setCustomPermissions(prev => ({
+                                ...prev,
+                                passwordHistory: { ...prev.passwordHistory, complete: e.target.checked }
+                              }))}
+                              style={{ marginRight: '8px' }}
+                            />
+                            <MDTypography variant="body2">Complete Access</MDTypography>
+                          </label>
+                        </MDBox>
+
+                        {/* Monthly Target Permissions */}
+                        <MDBox mb={2} p={2} sx={{ backgroundColor: '#fef7ff', borderRadius: '12px', border: '1px solid #a855f7' }}>
+                          <MDTypography variant="subtitle2" fontWeight="bold" mb={1} color="#9333ea">
+                            🎯 Monthly Target Access
+                          </MDTypography>
+                          <MDBox display="flex" gap={2}>
+                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={customPermissions.monthlyTarget?.view || false}
+                                onChange={(e) => setCustomPermissions(prev => ({
+                                  ...prev,
+                                  monthlyTarget: { ...prev.monthlyTarget, view: e.target.checked }
+                                }))}
+                                style={{ marginRight: '8px' }}
+                              />
+                              <MDTypography variant="body2">View Access</MDTypography>
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={customPermissions.monthlyTarget?.complete || false}
+                                onChange={(e) => setCustomPermissions(prev => ({
+                                  ...prev,
+                                  monthlyTarget: { ...prev.monthlyTarget, complete: e.target.checked }
+                                }))}
+                                style={{ marginRight: '8px' }}
+                              />
+                              <MDTypography variant="body2">Complete Access</MDTypography>
+                            </label>
+                          </MDBox>
+                        </MDBox>
+
+                        {/* Reset Password Permission */}
+                        <MDBox mb={2} p={2} sx={{ backgroundColor: '#fef3c7', borderRadius: '12px', border: '1px solid #f59e0b' }}>
+                          <MDTypography variant="subtitle2" fontWeight="bold" mb={1} color="#d97706">
+                            🔑 Password Reset
+                          </MDTypography>
+                          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={customPermissions.resetPassword || false}
+                              onChange={(e) => setCustomPermissions(prev => ({
+                                ...prev,
+                                resetPassword: e.target.checked
+                              }))}
+                              style={{ marginRight: '8px' }}
+                            />
+                            <MDTypography variant="body2">Allow password reset</MDTypography>
+                          </label>
+                        </MDBox>
+
+                        <MDBox mt={2} p={2} sx={{ backgroundColor: '#f0f9ff', borderRadius: '8px', border: '1px solid #0ea5e9' }}>
+                          <MDTypography variant="caption" color="#0369a1">
+                            <strong>Note:</strong> View Access = Read-only (can see data, cannot modify). Complete Access = Full control (can modify data and perform actions).
+                          </MDTypography>
+                        </MDBox>
+                      </MDBox>
+                    )}
 
                     <MDButton
                       type="submit"
@@ -860,9 +1333,79 @@ function AdminPanel() {
                         >
                           <MDBox>
                             <MDBox display="flex" alignItems="center" gap={1} mb={0.5}>
-                              <MDTypography variant="h6" fontWeight="medium">
-                                {user.username}
-                              </MDTypography>
+                              {editingUsername === user.username ? (
+                                <MDBox display="flex" alignItems="center" gap={1}>
+                                  <MDInput
+                                    value={editUsername}
+                                    onChange={(e) => setEditUsername(e.target.value)}
+                                    size="small"
+                                    sx={{
+                                      minWidth: "150px",
+                                      "& .MuiOutlinedInput-root": {
+                                        borderRadius: "8px",
+                                        fontSize: "1rem",
+                                        fontWeight: "500",
+                                      },
+                                    }}
+                                  />
+                                  <MDButton
+                                    variant="contained"
+                                    color={editUsername !== originalUsername && editUsername.trim() ? "success" : "secondary"}
+                                    size="small"
+                                    onClick={() => handleUpdateUsername(user.username, editUsername)}
+                                    disabled={loading || !editUsername.trim() || editUsername === originalUsername}
+                                    sx={{
+                                      borderRadius: "6px",
+                                      textTransform: "none",
+                                      minWidth: "auto",
+                                      px: 1.5,
+                                    }}
+                                  >
+                                    ✓
+                                  </MDButton>
+                                  <MDButton
+                                    variant="outlined"
+                                    color="secondary"
+                                    size="small"
+                                    onClick={() => {
+                                      setEditingUsername(null);
+                                      setEditUsername("");
+                                      setOriginalUsername("");
+                                    }}
+                                    sx={{
+                                      borderRadius: "6px",
+                                      textTransform: "none",
+                                      minWidth: "auto",
+                                      px: 1.5,
+                                    }}
+                                  >
+                                    ✕
+                                  </MDButton>
+                                </MDBox>
+                              ) : (
+                                <MDBox display="flex" alignItems="center" gap={1}>
+                                  <MDTypography variant="h6" fontWeight="medium">
+                                    {user.username}
+                                  </MDTypography>
+                                  <MDButton
+                                    variant="text"
+                                    color="info"
+                                    size="small"
+                                    onClick={() => {
+                                      setEditingUsername(user.username);
+                                      setEditUsername(user.username);
+                                      setOriginalUsername(user.username);
+                                    }}
+                                    sx={{
+                                      minWidth: "auto",
+                                      padding: "2px 6px",
+                                      fontSize: "0.75rem",
+                                    }}
+                                  >
+                                    ✏️
+                                  </MDButton>
+                                </MDBox>
+                              )}
                               <MDBox
                                 sx={{
                                   display: "inline-flex",
@@ -870,9 +1413,14 @@ function AdminPanel() {
                                   gap: 0.5,
                                   padding: "2px 8px",
                                   borderRadius: "12px",
-                                  backgroundColor: user.role === "admin" ? "#fef3c7" : "#dcfce7",
+                                  backgroundColor: 
+                                    user.role === "admin" ? "#fef3c7" : 
+                                    user.role === "view_only" ? "#dbeafe" : 
+                                    user.role === "custom" ? "#fdf2f8" : "#dcfce7",
                                   border: `1px solid ${
-                                    user.role === "admin" ? "#fbbf24" : "#22c55e"
+                                    user.role === "admin" ? "#fbbf24" : 
+                                    user.role === "view_only" ? "#3b82f6" : 
+                                    user.role === "custom" ? "#ec4899" : "#22c55e"
                                   }`,
                                 }}
                               >
@@ -881,19 +1429,26 @@ function AdminPanel() {
                                     width: 4,
                                     height: 4,
                                     borderRadius: "50%",
-                                    backgroundColor: user.role === "admin" ? "#f59e0b" : "#10b981",
+                                    backgroundColor: 
+                                      user.role === "admin" ? "#f59e0b" : 
+                                      user.role === "view_only" ? "#3b82f6" : 
+                                      user.role === "custom" ? "#ec4899" : "#10b981",
                                   }}
                                 />
                                 <MDTypography
                                   variant="caption"
                                   sx={{
-                                    color: user.role === "admin" ? "#92400e" : "#065f46",
+                                    color: 
+                                      user.role === "admin" ? "#92400e" : 
+                                      user.role === "view_only" ? "#1e40af" : 
+                                      user.role === "custom" ? "#be185d" : "#065f46",
                                     fontWeight: "600",
                                     fontSize: "0.7rem",
                                     textTransform: "uppercase",
                                   }}
                                 >
-                                  {user.role || "user"}
+                                  {user.role === "custom" ? "CUSTOM" : 
+                                   (user.role || "user").toUpperCase()}
                                 </MDTypography>
                               </MDBox>
                             </MDBox>
@@ -903,6 +1458,76 @@ function AdminPanel() {
                                 ? new Date(user.createdDate).toLocaleDateString()
                                 : "Unknown"}
                             </MDTypography>
+                            
+                            {/* Show permissions for custom users */}
+                            {user.role === "custom" && (
+                              <MDBox mt={1}>
+                                <MDTypography variant="caption" fontWeight="bold" color="text.primary">
+                                  Permissions:
+                                </MDTypography>
+                                <MDBox mt={0.5}>
+                                  {(() => {
+                                    // Try to get permissions from user object or localStorage
+                                    let permissions = null;
+                                    
+                                    if (user.permissions) {
+                                      try {
+                                        console.log('Raw permissions for', user.username, ':', user.permissions);
+                                        permissions = typeof user.permissions === 'string' 
+                                          ? JSON.parse(user.permissions) 
+                                          : user.permissions;
+                                        console.log('Parsed permissions for', user.username, ':', permissions);
+                                      } catch (error) {
+                                        console.error('Error parsing user permissions:', error, 'Raw value:', user.permissions);
+                                      }
+                                    }
+                                    
+                                    // Fallback to localStorage
+                                    if (!permissions) {
+                                      try {
+                                        const storedPermissions = localStorage.getItem(`permissions_${user.username}`);
+                                        if (storedPermissions) {
+                                          permissions = JSON.parse(storedPermissions);
+                                        }
+                                      } catch (error) {
+                                        console.error('Error getting permissions from localStorage:', error);
+                                      }
+                                    }
+                                    
+                                    if (permissions) {
+                                      const permissionList = [];
+                                      if (permissions?.fdoPanel?.view) permissionList.push("FDO Panel (View)");
+                                      if (permissions?.fdoPanel?.complete) permissionList.push("FDO Panel (Complete)");
+                                      if (permissions?.rooms?.view) permissionList.push("Rooms (View)");
+                                      if (permissions?.rooms?.complete) permissionList.push("Rooms (Complete)");
+                                      if (permissions?.revenue?.view) permissionList.push("Revenue (View)");
+                                      if (permissions?.revenue?.complete) permissionList.push("Revenue (Complete)");
+                                      if (permissions?.userManagement?.complete) permissionList.push("User Management (Complete)");
+                                      if (permissions?.passwordHistory?.complete) permissionList.push("Password History (Complete)");
+                                      if (permissions?.monthlyTarget?.view) permissionList.push("Monthly Target (View)");
+                                      if (permissions?.monthlyTarget?.complete) permissionList.push("Monthly Target (Complete)");
+                                      if (permissions?.resetPassword) permissionList.push("Password Reset");
+                                      
+                                      return permissionList.length > 0 ? (
+                                        <MDTypography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                                          {permissionList.join(", ")}
+                                        </MDTypography>
+                                      ) : (
+                                        <MDTypography variant="caption" color="error" sx={{ fontSize: '0.65rem' }}>
+                                          No permissions assigned
+                                        </MDTypography>
+                                      );
+                                    } else {
+                                      return (
+                                        <MDTypography variant="caption" color="warning.main" sx={{ fontSize: '0.65rem' }}>
+                                          No permissions configured
+                                        </MDTypography>
+                                      );
+                                    }
+                                  })()}
+                                </MDBox>
+                              </MDBox>
+                            )}
                           </MDBox>
                           <MDBox
                             display="flex"
@@ -954,6 +1579,32 @@ function AdminPanel() {
                                           }}
                                         />
                                         User
+                                      </MDBox>
+                                    </MenuItem>
+                                    <MenuItem value="view_only">
+                                      <MDBox display="flex" alignItems="center" gap={1}>
+                                        <MDBox
+                                          sx={{
+                                            width: 8,
+                                            height: 8,
+                                            borderRadius: "50%",
+                                            backgroundColor: "#3b82f6",
+                                          }}
+                                        />
+                                        View Access Only
+                                      </MDBox>
+                                    </MenuItem>
+                                    <MenuItem value="custom">
+                                      <MDBox display="flex" alignItems="center" gap={1}>
+                                        <MDBox
+                                          sx={{
+                                            width: 8,
+                                            height: 8,
+                                            borderRadius: "50%",
+                                            backgroundColor: "#ec4899",
+                                          }}
+                                        />
+                                        Custom Permissions
                                       </MDBox>
                                     </MenuItem>
                                     <MenuItem value="admin">
@@ -1036,10 +1687,36 @@ function AdminPanel() {
                                     fontSize: "0.75rem",
                                     width: { xs: "100%", sm: "auto" },
                                     mb: { xs: 1, sm: 0 },
+                                    mr: { xs: 0, sm: 1 },
                                   }}
                                 >
                                   Edit Role
                                 </MDButton>
+                                {user.role === "custom" && (
+                                  <MDButton
+                                    variant="outlined"
+                                    color="secondary"
+                                    size="small"
+                                    onClick={() => handleEditPermissions(user.username)}
+                                    disabled={loading}
+                                    sx={{
+                                      borderRadius: "8px",
+                                      textTransform: "none",
+                                      fontSize: "0.75rem",
+                                      width: { xs: "100%", sm: "auto" },
+                                      mb: { xs: 1, sm: 0 },
+                                      mr: { xs: 0, sm: 1 },
+                                      borderColor: "#ec4899",
+                                      color: "#ec4899",
+                                      "&:hover": {
+                                        borderColor: "#be185d",
+                                        backgroundColor: "rgba(236, 72, 153, 0.1)",
+                                      },
+                                    }}
+                                  >
+                                    Edit Permissions
+                                  </MDButton>
+                                )}
                                 <MDButton
                                   variant="outlined"
                                   color="error"
@@ -1067,8 +1744,247 @@ function AdminPanel() {
             </Grid>
           )}
 
+          {/* Edit Permissions Dialog */}
+          {editingPermissions && (
+            <Grid container spacing={4} mb={4}>
+              <Grid item xs={12}>
+                <Card
+                  sx={{
+                    p: 4,
+                    borderRadius: "20px",
+                    boxShadow: "0 25px 50px -12px rgba(236, 72, 153, 0.25)",
+                    border: "2px solid #ec4899",
+                  }}
+                >
+                  <MDBox mb={4}>
+                    <MDTypography variant="h4" fontWeight="bold" sx={{ color: "#ec4899", mb: 1 }}>
+                      Edit Permissions for {editingPermissions}
+                    </MDTypography>
+                    <MDTypography variant="body2" sx={{ color: "#6b7280" }}>
+                      Modify the permissions for this custom user
+                    </MDTypography>
+                  </MDBox>
+
+                  <Grid container spacing={3}>
+                    {/* FDO Panel Permissions */}
+                    <Grid item xs={12} md={6}>
+                      <MDBox p={3} sx={{ backgroundColor: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                        <MDTypography variant="h6" fontWeight="600" sx={{ color: "#374151", mb: 2 }}>
+                          🔔 FDO Panel
+                        </MDTypography>
+                        <MDBox display="flex" flexDirection="column">
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={editPermissions.fdoPanel?.view || false}
+                                onChange={() => handleEditPermissionChange('fdoPanel', 'view')}
+                                sx={{ color: "#6b7280" }}
+                              />
+                            }
+                            label="View Access"
+                          />
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={editPermissions.fdoPanel?.complete || false}
+                                onChange={() => handleEditPermissionChange('fdoPanel', 'complete')}
+                                sx={{ color: "#6b7280" }}
+                              />
+                            }
+                            label="Complete Access"
+                          />
+                        </MDBox>
+                      </MDBox>
+                    </Grid>
+
+                    {/* Revenue Permissions */}
+                    <Grid item xs={12} md={6}>
+                      <MDBox p={3} sx={{ backgroundColor: "#f0fdf4", borderRadius: "12px", border: "1px solid #bbf7d0" }}>
+                        <MDTypography variant="h6" fontWeight="600" sx={{ color: "#16a34a", mb: 2 }}>
+                          📄 Revenue
+                        </MDTypography>
+                        <MDBox display="flex" flexDirection="column">
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={editPermissions.revenue?.view || false}
+                                onChange={() => handleEditPermissionChange('revenue', 'view')}
+                                sx={{ color: "#16a34a" }}
+                              />
+                            }
+                            label="View Access"
+                          />
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={editPermissions.revenue?.complete || false}
+                                onChange={() => handleEditPermissionChange('revenue', 'complete')}
+                                sx={{ color: "#16a34a" }}
+                              />
+                            }
+                            label="Complete Access"
+                          />
+                        </MDBox>
+                      </MDBox>
+                    </Grid>
+
+                    {/* Rooms Permissions */}
+                    <Grid item xs={12} md={6}>
+                      <MDBox p={3} sx={{ backgroundColor: "#faf5ff", borderRadius: "12px", border: "1px solid #d8b4fe" }}>
+                        <MDTypography variant="h6" fontWeight="600" sx={{ color: "#8b5cf6", mb: 2 }}>
+                          🏠 Rooms
+                        </MDTypography>
+                        <MDBox display="flex" flexDirection="column">
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={editPermissions.rooms?.view || false}
+                                onChange={() => handleEditPermissionChange('rooms', 'view')}
+                                sx={{ color: "#8b5cf6" }}
+                              />
+                            }
+                            label="View Access"
+                          />
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={editPermissions.rooms?.complete || false}
+                                onChange={() => handleEditPermissionChange('rooms', 'complete')}
+                                sx={{ color: "#8b5cf6" }}
+                              />
+                            }
+                            label="Complete Access"
+                          />
+                        </MDBox>
+                      </MDBox>
+                    </Grid>
+
+                    {/* Monthly Target Permissions */}
+                    <Grid item xs={12} md={6}>
+                      <MDBox p={3} sx={{ backgroundColor: "#fefce8", borderRadius: "12px", border: "1px solid #fde047" }}>
+                        <MDTypography variant="h6" fontWeight="600" sx={{ color: "#ca8a04", mb: 2 }}>
+                          🎯 Monthly Target
+                        </MDTypography>
+                        <MDBox display="flex" flexDirection="column">
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={editPermissions.monthlyTarget?.view || false}
+                                onChange={() => handleEditPermissionChange('monthlyTarget', 'view')}
+                                sx={{ color: "#ca8a04" }}
+                              />
+                            }
+                            label="View Access"
+                          />
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={editPermissions.monthlyTarget?.complete || false}
+                                onChange={() => handleEditPermissionChange('monthlyTarget', 'complete')}
+                                sx={{ color: "#ca8a04" }}
+                              />
+                            }
+                            label="Complete Access"
+                          />
+                        </MDBox>
+                      </MDBox>
+                    </Grid>
+
+                    {/* User Management Permissions */}
+                    <Grid item xs={12} md={6}>
+                      <MDBox p={3} sx={{ backgroundColor: "#fef3f2", borderRadius: "12px", border: "1px solid #fecaca" }}>
+                        <MDTypography variant="h6" fontWeight="600" sx={{ color: "#dc2626", mb: 2 }}>
+                          👥 User Management
+                        </MDTypography>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={editPermissions.userManagement?.complete || false}
+                              onChange={() => handleEditPermissionChange('userManagement', 'complete')}
+                              sx={{ color: "#dc2626" }}
+                            />
+                          }
+                          label="Complete Access"
+                        />
+                      </MDBox>
+                    </Grid>
+
+                    {/* Password History Permissions */}
+                    <Grid item xs={12} md={6}>
+                      <MDBox p={3} sx={{ backgroundColor: "#f0f9ff", borderRadius: "12px", border: "1px solid #bae6fd" }}>
+                        <MDTypography variant="h6" fontWeight="600" sx={{ color: "#0284c7", mb: 2 }}>
+                          🔐 Password History
+                        </MDTypography>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={editPermissions.passwordHistory?.complete || false}
+                              onChange={() => handleEditPermissionChange('passwordHistory', 'complete')}
+                              sx={{ color: "#0284c7" }}
+                            />
+                          }
+                          label="Complete Access"
+                        />
+                      </MDBox>
+                    </Grid>
+
+                    {/* Reset Password Permission */}
+                    <Grid item xs={12} md={6}>
+                      <MDBox p={3} sx={{ backgroundColor: "#fffbeb", borderRadius: "12px", border: "1px solid #fed7aa" }}>
+                        <MDTypography variant="h6" fontWeight="600" sx={{ color: "#ea580c", mb: 2 }}>
+                          🔒 Reset Password
+                        </MDTypography>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={editPermissions.resetPassword || false}
+                              onChange={() => setEditPermissions(prev => ({
+                                ...prev,
+                                resetPassword: !prev.resetPassword
+                              }))}
+                              sx={{ color: "#ea580c" }}
+                            />
+                          }
+                          label="Allow Password Reset"
+                        />
+                        <MDTypography variant="caption" sx={{ color: "#6b7280", display: "block", mt: 1 }}>
+                          User can reset their own password
+                        </MDTypography>
+                      </MDBox>
+                    </Grid>
+                  </Grid>
+
+                  <MDBox display="flex" justifyContent="flex-end" gap={2} mt={4}>
+                    <MDButton
+                      variant="outlined"
+                      color="secondary"
+                      onClick={() => setEditingPermissions(null)}
+                      disabled={loading}
+                    >
+                      Cancel
+                    </MDButton>
+                    <MDButton
+                      variant="gradient"
+                      color="info"
+                      onClick={handleSavePermissions}
+                      disabled={loading}
+                      sx={{
+                        backgroundColor: "#ec4899",
+                        "&:hover": {
+                          backgroundColor: "#be185d",
+                        },
+                      }}
+                    >
+                      {loading ? "Saving..." : "Save Permissions"}
+                    </MDButton>
+                  </MDBox>
+                </Card>
+              </Grid>
+            </Grid>
+          )}
+
           {/* Password History Tab */}
-          {activeTab === "history" && (
+          {activeTab === "history" && (isAdmin() || (isCustom() && hasPermission('passwordHistory', 'complete'))) && (
             <Grid container>
               <Grid item xs={12}>
                 <Card
@@ -1337,7 +2253,7 @@ function AdminPanel() {
           )}
 
           {/* Monthly Target Tab */}
-          {activeTab === "monthly-target" && (
+          {activeTab === "monthly-target" && (isAdmin() || (isCustom() && (hasPermission('monthlyTarget', 'view') || hasPermission('monthlyTarget', 'complete')))) && (
             <Grid container spacing={4}>
               {/* Monthly Target Form */}
               <Grid item xs={12}>
@@ -1432,6 +2348,7 @@ function AdminPanel() {
                                 value={monthlyTarget.amount}
                                 onChange={handleMonthlyTargetChange("amount")}
                                 placeholder=""
+                                disabled={isCustom() && !hasPermission('monthlyTarget', 'complete')}
                                 sx={{
                                   "& .MuiOutlinedInput-root": {
                                     borderRadius: "12px",
@@ -1492,6 +2409,7 @@ function AdminPanel() {
                                     <Select
                                       value={monthlyTarget.selectedMonth}
                                       onChange={(e) => handleMonthYearChange('selectedMonth', e.target.value)}
+                                      disabled={isCustom() && !hasPermission('monthlyTarget', 'complete')}
                                       sx={{
                                         borderRadius: "12px",
                                         backgroundColor: "#f8fafc",
@@ -1537,6 +2455,7 @@ function AdminPanel() {
                                     <Select
                                       value={monthlyTarget.selectedYear}
                                       onChange={(e) => handleMonthYearChange('selectedYear', e.target.value)}
+                                      disabled={isCustom() && !hasPermission('monthlyTarget', 'complete')}
                                       sx={{
                                         borderRadius: "12px",
                                         backgroundColor: "#f8fafc",
@@ -1606,6 +2525,7 @@ function AdminPanel() {
                                     fullWidth
                                     value={monthlyTarget.startDate ? monthlyTarget.startDate.toISOString().split('T')[0] : ''}
                                     onChange={(e) => handleDateChange('startDate', e.target.value)}
+                                    disabled={isCustom() && !hasPermission('monthlyTarget', 'complete')}
                                     InputLabelProps={{
                                       shrink: true,
                                     }}
@@ -1632,6 +2552,7 @@ function AdminPanel() {
                                     fullWidth
                                     value={monthlyTarget.endDate ? monthlyTarget.endDate.toISOString().split('T')[0] : ''}
                                     onChange={(e) => handleDateChange('endDate', e.target.value)}
+                                    disabled={isCustom() && !hasPermission('monthlyTarget', 'complete')}
                                     InputLabelProps={{
                                       shrink: true,
                                     }}
@@ -1686,6 +2607,7 @@ function AdminPanel() {
                                 onChange={handleMonthlyTargetChange("days")}
                                 placeholder="Auto-calculated or enter manually"
                                 inputProps={{ min: 1, max: 31 }}
+                                disabled={isCustom() && !hasPermission('monthlyTarget', 'complete')}
                                 sx={{
                                   "& .MuiOutlinedInput-root": {
                                     borderRadius: "12px",
@@ -1848,7 +2770,7 @@ function AdminPanel() {
                         color="success"
                         fullWidth
                         size="large"
-                        disabled={loading || !monthlyTarget.amount || calculatedTargets.workingDays <= 0}
+                        disabled={loading || !monthlyTarget.amount || calculatedTargets.workingDays <= 0 || (isCustom() && !hasPermission('monthlyTarget', 'complete'))}
                         sx={{
                           borderRadius: "12px",
                           textTransform: "none",

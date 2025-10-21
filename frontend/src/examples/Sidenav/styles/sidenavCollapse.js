@@ -27,7 +27,7 @@ function collapseItem(theme, ownerState) {
       : transparent.main,
     color:
       (transparentSidenav && !darkMode && !active) || (whiteSidenav && !active)
-        ? dark.main
+        ? "#1a202c" // Darker color for better contrast
         : white.main,
     display: "flex",
     alignItems: "center",
@@ -53,8 +53,8 @@ function collapseItem(theme, ownerState) {
         if (!active) {
           backgroundValue =
             transparentSidenav && !darkMode
-              ? grey[300]
-              : rgba(whiteSidenav ? grey[400] : white.main, 0.2);
+              ? grey[400] // Darker hover for better contrast
+              : rgba(whiteSidenav ? grey[500] : white.main, 0.3); // Increased opacity
         }
 
         return backgroundValue;
@@ -76,7 +76,7 @@ function collapseIconBox(theme, ownerState) {
     minHeight: pxToRem(32),
     color:
       (transparentSidenav && !darkMode && !active) || (whiteSidenav && !active)
-        ? dark.main
+        ? "#1a202c" // Darker color for better contrast
         : white.main,
     borderRadius: borderRadius.md,
     display: "grid",
@@ -87,7 +87,7 @@ function collapseIconBox(theme, ownerState) {
     }),
 
     "& svg, svg g": {
-      color: transparentSidenav || whiteSidenav ? dark.main : white.main,
+      color: transparentSidenav || whiteSidenav ? "#1a202c" : white.main, // Better contrast
     },
   };
 }

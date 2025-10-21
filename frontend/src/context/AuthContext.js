@@ -84,14 +84,74 @@ export const AuthProvider = ({ children }) => {
     sessionService.startSession(logout);
   };
 
-  // Check if user is admin
+  // Check if user is admin or has view_only access
   const isAdmin = () => {
-    return user?.role === "admin";
+    return user?.role === "admin" || user?.role === "view_only";
   };
 
   // Check if user is regular user
   const isUser = () => {
     return user?.role === "user";
+  };
+
+  // Check if user has view-only access
+  const isViewOnly = () => {
+    return user?.role === "view_only";
+  };
+
+
+  // Check if user has custom permissions
+  const isCustom = () => {
+    return user?.role === "custom";
+  };
+
+  // Check if user is full admin (not view-only)
+  const isFullAdmin = () => {
+    return user?.role === "admin";
+  };
+
+  // Check specific permissions for custom users
+  const hasPermission = (page, level = 'view') => {
+    console.log("🔐 hasPermission called:", { page, level, userRole: user?.role, userPermissions: user?.permissions });
+    
+    if (user?.role !== 'custom') return false;
+    
+    // First try to get permissions from user object
+    if (user?.permissions) {
+      try {
+        const permissions = typeof user.permissions === 'string' 
+          ? JSON.parse(user.permissions) 
+          : user.permissions;
+        
+        return permissions?.[page]?.[level] === true;
+      } catch (error) {
+        console.error('Error parsing permissions:', error, 'Raw value:', user.permissions);
+        // If permissions is just "123" or invalid, provide default permissions
+        if (user.permissions === "123") {
+          console.warn('⚠️ Invalid permissions format detected, using default permissions');
+          const defaultPermissions = {
+            fdoPanel: { view: true, complete: false },
+            rooms: { view: true, complete: false },
+            revenue: { view: true, complete: false },
+            resetPassword: true
+          };
+          return defaultPermissions?.[page]?.[level] === true;
+        }
+      }
+    }
+    
+    // Fallback: get permissions from localStorage
+    try {
+      const storedPermissions = localStorage.getItem(`permissions_${user.username}`);
+      if (storedPermissions) {
+        const permissions = JSON.parse(storedPermissions);
+        return permissions?.[page]?.[level] === true;
+      }
+    } catch (error) {
+      console.error('Error getting permissions from localStorage:', error);
+    }
+    
+    return false;
   };
 
   const value = {
@@ -102,6 +162,10 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAdmin,
     isUser,
+    isViewOnly,
+    isCustom,
+    isFullAdmin,
+    hasPermission,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

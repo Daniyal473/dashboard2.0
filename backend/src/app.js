@@ -20,12 +20,14 @@ const corsOptions = {
     const developmentOrigins = [
       'http://localhost:3000',
       'http://localhost:3001',
+      'http://localhost:5000',
       'http://localhost:5173', // Vite dev server
       'http://127.0.0.1:3000',
-      'http://127.0.0.1:3001', 
+      'http://127.0.0.1:3001',
+      'http://127.0.0.1:5000', 
       'http://127.0.0.1:5173', // Vite dev server
-      /^http:\/\/localhost:\d+$/, // Allow any localhost port
-      /^http:\/\/127\.0\.0\.1:\d+$/ // Allow any 127.0.0.1 port
+      /^http:\/\/localhost:\d+\/?$/, // Allow any localhost port with optional trailing slash
+      /^http:\/\/127\.0\.0\.1:\d+\/?$/ // Allow any 127.0.0.1 port with optional trailing slash
     ];
     
     // Production Origins
@@ -46,8 +48,11 @@ const corsOptions = {
     
     const isAllowed = allowedOrigins.some(allowedOrigin => {
       if (typeof allowedOrigin === 'string') {
-        const match = allowedOrigin === origin;
-        if (match) console.log(`✅ CORS: Matched string origin "${allowedOrigin}"`);
+        // Check exact match and also match without trailing slash
+        const originWithoutSlash = origin.replace(/\/$/, '');
+        const allowedWithoutSlash = allowedOrigin.replace(/\/$/, '');
+        const match = allowedOrigin === origin || allowedWithoutSlash === originWithoutSlash;
+        if (match) console.log(`✅ CORS: Matched string origin "${allowedOrigin}" for "${origin}"`);
         return match;
       }
       if (allowedOrigin instanceof RegExp) {

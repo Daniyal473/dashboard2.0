@@ -167,12 +167,17 @@ class AuthService {
   }
 
   // Create new user (Admin only)
-  async createUser(username, password, role = 'user') {
+  async createUser(username, password, role = 'user', permissions = null) {
     try {
       // Check if service is properly configured
       if (!this.isConfigured) {
         console.warn('⚠️  AuthService not properly configured - user creation not available');
         throw new Error('User creation service not available');
+      }
+
+      // Validate role
+      if (!['user', 'admin', 'view_only', 'custom'].includes(role)) {
+        throw new Error('Invalid role. Must be "user", "admin", "view_only" (View Access Only), or "custom" (Custom Permissions)');
       }
 
       // Check if user already exists
@@ -185,25 +190,56 @@ class AuthService {
       const hashedPassword = await this.hashPassword(password);
 
       // Create user data
+      const userFields = {
+        "Username": username,
+        "Password": hashedPassword,
+        "role": role,
+        "Created Date and Time ": this.getPakistanDateTime()
+      };
+
+      // Add permissions field if permissions are provided and role is custom
+      if (permissions && role === 'custom') {
+        // Use the existing misspelled field name in database
+        userFields["Premission "] = JSON.stringify(permissions);
+      }
+
       const userData = {
         records: [{
-          fields: {
-            "Username": username,
-            "Password": hashedPassword,
-            "role": role,
-            "Created Date and Time ": this.getPakistanDateTime()
-          }
+          fields: userFields
         }]
       };
 
-      const response = await this.makeTeableRequest(this.USERS_TABLE_URL, 'POST', userData);
-      console.log(`✅ User created successfully: ${username}`);
-      
-      return {
-        success: true,
-        message: 'User created successfully',
-        user: response.records[0]
-      };
+      try {
+        const response = await this.makeTeableRequest(this.USERS_TABLE_URL, 'POST', userData);
+        console.log(`✅ User created successfully: ${username}`);
+        
+        return {
+          success: true,
+          message: 'User created successfully',
+          user: response.records[0]
+        };
+      } catch (error) {
+        // If permissions field doesn't exist, try without it
+        if (error.message.includes('Premission') && userFields["Premission "]) {
+          console.warn('⚠️  Premission field error in database. Creating user without permissions.');
+          delete userFields["Premission "];
+          const fallbackUserData = {
+            records: [{
+              fields: userFields
+            }]
+          };
+          const response = await this.makeTeableRequest(this.USERS_TABLE_URL, 'POST', fallbackUserData);
+          console.log('⚠️  User created without permissions. Please fix "Premission " field in Teable database.');
+          
+          return {
+            success: true,
+            message: 'User created successfully (without permissions - please fix Premission field in database)',
+            user: response.records[0]
+          };
+        } else {
+          throw error;
+        }
+      }
     } catch (error) {
       console.error('❌ Error creating user:', error.message);
       throw error;
@@ -246,16 +282,28 @@ class AuthService {
 
       console.log(`✅ User authenticated successfully: ${username}`);
       
+      // Prepare user data
+      const userData = {
+        id: user.id,
+        username: user.fields.Username,
+        role: user.fields.role || 'user',
+        createdDate: user.fields['Created Date and Time ']
+      };
+
+      // Add permissions for custom users (check both field names)
+      if (user.fields.role === 'custom') {
+        if (user.fields.permissions) {
+          userData.permissions = user.fields.permissions;
+        } else if (user.fields["Premission "]) {
+          userData.permissions = user.fields["Premission "];
+        }
+      }
+
       return {
         success: true,
         message: 'Login successful',
         token,
-        user: {
-          id: user.id,
-          username: user.fields.Username,
-          role: user.fields.role || 'user',
-          createdDate: user.fields['Created Date and Time ']
-        }
+        user: userData
       };
     } catch (error) {
       console.error('❌ Authentication error:', error.message);
@@ -423,12 +471,25 @@ class AuthService {
 
       const response = await this.makeTeableRequest(this.USERS_TABLE_URL);
       
-      const users = response.records.map(record => ({
-        id: record.id,
-        username: record.fields.Username,
-        role: record.fields.role || 'user',
-        createdDate: record.fields['Created Date and Time ']
-      }));
+      const users = response.records.map(record => {
+        const userData = {
+          id: record.id,
+          username: record.fields.Username,
+          role: record.fields.role || 'user',
+          createdDate: record.fields['Created Date and Time ']
+        };
+        
+        // Add permissions for custom users (check both field names)
+        if (record.fields.role === 'custom') {
+          if (record.fields.permissions) {
+            userData.permissions = record.fields.permissions;
+          } else if (record.fields["Premission "]) {
+            userData.permissions = record.fields["Premission "];
+          }
+        }
+        
+        return userData;
+      });
 
       return {
         success: true,
@@ -528,11 +589,11 @@ class AuthService {
   }
 
   // Update user role (Admin only)
-  async updateUserRole(username, newRole) {
+  async updateUserRole(username, newRole, permissions = null) {
     try {
       // Validate role
-      if (!['user', 'admin'].includes(newRole)) {
-        throw new Error('Invalid role. Must be "user" or "admin"');
+      if (!['user', 'admin', 'view_only', 'custom'].includes(newRole)) {
+        throw new Error('Invalid role. Must be "user", "admin", "view_only" (View Access Only), or "custom" (Custom Permissions)');
       }
 
       // Find user
@@ -541,17 +602,43 @@ class AuthService {
         throw new Error('User not found');
       }
 
-      // Update user role
+      // Update user role and permissions
+      const updateFields = {
+        "role": newRole
+      };
+      
+      // Add permissions field if permissions are provided and role is custom
+      if (permissions && newRole === 'custom') {
+        // Use the existing misspelled field name in database
+        updateFields["Premission "] = JSON.stringify(permissions);
+      }
+      
       const updateData = {
         records: [{
           id: user.id,
-          fields: {
-            "role": newRole
-          }
+          fields: updateFields
         }]
       };
 
-      await this.makeTeableRequest(this.USERS_TABLE_URL, 'PATCH', updateData);
+      try {
+        await this.makeTeableRequest(this.USERS_TABLE_URL, 'PATCH', updateData);
+      } catch (error) {
+        // If permissions field doesn't exist, try without it
+        if (error.message.includes('Premission') && updateFields["Premission "]) {
+          console.warn('⚠️  Premission field error in database. Updating role without permissions.');
+          delete updateFields["Premission "];
+          const fallbackUpdateData = {
+            records: [{
+              id: user.id,
+              fields: updateFields
+            }]
+          };
+          await this.makeTeableRequest(this.USERS_TABLE_URL, 'PATCH', fallbackUpdateData);
+          console.log('⚠️  Role updated without permissions. Please fix "Premission " field in Teable database.');
+        } else {
+          throw error;
+        }
+      }
 
       console.log(`✅ User role updated successfully: ${username} -> ${newRole}`);
       
@@ -561,6 +648,54 @@ class AuthService {
       };
     } catch (error) {
       console.error('❌ Error updating user role:', error.message);
+      throw error;
+    }
+  }
+
+  // Update username (Admin only)
+  async updateUsername(oldUsername, newUsername) {
+    try {
+      // Validate input
+      if (!oldUsername || !newUsername) {
+        throw new Error('Both old and new usernames are required');
+      }
+
+      if (oldUsername === newUsername) {
+        throw new Error('New username must be different from current username');
+      }
+
+      // Check if new username already exists
+      const existingUser = await this.findUserByUsername(newUsername);
+      if (existingUser) {
+        throw new Error('Username already exists');
+      }
+
+      // Find user with old username
+      const user = await this.findUserByUsername(oldUsername);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Update username
+      const updateData = {
+        records: [{
+          id: user.id,
+          fields: {
+            "Username": newUsername
+          }
+        }]
+      };
+
+      await this.makeTeableRequest(this.USERS_TABLE_URL, 'PATCH', updateData);
+
+      console.log(`✅ Username updated successfully: ${oldUsername} -> ${newUsername}`);
+      
+      return {
+        success: true,
+        message: `Username updated to ${newUsername} successfully`
+      };
+    } catch (error) {
+      console.error('❌ Error updating username:', error.message);
       throw error;
     }
   }

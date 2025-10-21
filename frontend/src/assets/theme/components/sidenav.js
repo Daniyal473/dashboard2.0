@@ -33,11 +33,12 @@ const sidenav = {
 
     paper: {
       width: pxToRem(250),
-      backgroundColor: white.main,
+      backgroundColor: "#f8fafc", // Slightly darker background for better contrast
       height: `calc(100vh - ${pxToRem(32)})`,
       margin: pxToRem(16),
       borderRadius: borderRadius.xl,
-      border: "none",
+      border: "1px solid #e2e8f0", // Add subtle border for definition
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", // Add subtle shadow
     },
 
     paperAnchorDockedLeft: {

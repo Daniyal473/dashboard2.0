@@ -106,7 +106,7 @@ router.post('/admin/verify', async (req, res) => {
 // Create User Route (Admin only)
 router.post('/admin/create-user', async (req, res) => {
   try {
-    const { username, password, role } = req.body;
+    const { username, password, role, permissions } = req.body;
 
     console.log('👤 Admin creating user:', username);
 
@@ -119,17 +119,17 @@ router.post('/admin/create-user', async (req, res) => {
     }
 
     // Validate role if provided
-    if (role && !['user', 'admin'].includes(role)) {
+    if (role && !['user', 'admin', 'view_only', 'custom'].includes(role)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid role. Must be "user" or "admin"'
+        message: 'Invalid role. Must be "user", "admin", "view_only" (View Access Only), or "custom" (Custom Permissions)'
       });
     }
 
     console.log(`👤 Admin creating user: ${username}`);
 
     // Create user
-    const result = await authService.createUser(username, password, role || 'user');
+    const result = await authService.createUser(username, password, role || 'user', permissions);
 
     res.status(201).json(result);
   } catch (error) {
@@ -273,7 +273,7 @@ router.post('/verify-token', async (req, res) => {
 // Update User Role Route (Admin only)
 router.put('/admin/update-role', async (req, res) => {
   try {
-    const { username, role } = req.body;
+    const { username, role, permissions } = req.body;
 
     // Validate input
     if (!username || !role) {
@@ -284,17 +284,17 @@ router.put('/admin/update-role', async (req, res) => {
     }
 
     // Validate role
-    if (!['user', 'admin'].includes(role)) {
+    if (!['user', 'admin', 'view_only', 'custom'].includes(role)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid role. Must be "user" or "admin"'
+        message: 'Invalid role. Must be "user", "admin", "view_only" (View Access Only), or "custom" (Custom Permissions)'
       });
     }
 
     console.log(`🔄 Admin updating role for user: ${username} -> ${role}`);
 
     // Update user role
-    const result = await authService.updateUserRole(username, role);
+    const result = await authService.updateUserRole(username, role, permissions);
 
     res.status(200).json(result);
   } catch (error) {
@@ -306,7 +306,47 @@ router.put('/admin/update-role', async (req, res) => {
   }
 });
 
-// Health check for authentication service
+// Update username (Admin only)
+router.put('/admin/update-username', async (req, res) => {
+  try {
+    // Get parameters
+    const { adminPassword, oldUsername, newUsername } = req.body;
+    
+    // Skip admin verification if bypass is used
+    if (adminPassword !== "bypass") {
+      const isValidAdmin = await authService.verifyAdminPassword(adminPassword);
+      if (!isValidAdmin) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid admin password'
+        });
+      }
+    }
+
+    // Validate input
+    if (!oldUsername || !newUsername) {
+      return res.status(400).json({
+        success: false,
+        message: 'Both old and new usernames are required'
+      });
+    }
+
+    console.log(`🔄 Admin updating username: ${oldUsername} -> ${newUsername}`);
+
+    // Update username
+    const result = await authService.updateUsername(oldUsername, newUsername);
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('❌ Update username error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Health check endpoint
 router.get('/health', (req, res) => {
   res.status(200).json({
     success: true,

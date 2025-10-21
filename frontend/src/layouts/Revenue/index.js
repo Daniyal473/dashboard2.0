@@ -1593,7 +1593,7 @@ PaymentKanbanView.propTypes = {
 };
 
 function Revenue() {
-  const { user, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, isAdmin, isViewOnly, isCustom, hasPermission, loading: authLoading } = useAuth();
   const [revenueData, setRevenueData] = useState(null);
   const [monthlyData, setMonthlyData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1607,10 +1607,115 @@ function Revenue() {
   
   // View toggle state for Payment Details
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'kanban'
+  
+  // Room type dropdown states
+  const [roomTypeExpanded, setRoomTypeExpanded] = useState({});
 
   // Add mobile detection
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md")); // Hide on tablets and mobile
+  
+  // Sample apartment data for room types (this would come from your API)
+  const apartmentData = {
+    'Studio': [
+      { id: 'ST001', name: 'Studio Apartment A1', status: 'Available', floor: 'G', cleaningStatus: 'Clean' },
+      { id: 'ST002', name: 'Studio Apartment A2', status: 'Available', floor: 'G', cleaningStatus: 'Clean' },
+      { id: 'ST003', name: 'Studio Apartment A3', status: 'Available', floor: '1F', cleaningStatus: 'Not Clean' },
+      { id: 'ST004', name: 'Studio Apartment A4', status: 'Available', floor: '1F', cleaningStatus: 'Clean' },
+      { id: 'ST005', name: 'Studio Apartment B1', status: 'Reserved', floor: '2F', cleaningStatus: 'Clean', guestName: 'John Smith' },
+      { id: 'ST006', name: 'Studio Apartment B2', status: 'Reserved', floor: '2F', cleaningStatus: 'Not Clean', guestName: 'Sarah Johnson' },
+      { id: 'ST007', name: 'Studio Apartment B3', status: 'Reserved', floor: '3F', cleaningStatus: 'Clean', guestName: 'Mike Wilson' }
+    ],
+    '1BR': [
+      { id: '1BR001', name: '1BR Apartment C1', status: 'Available', floor: '1F', cleaningStatus: 'Clean' },
+      { id: '1BR002', name: '1BR Apartment C2', status: 'Available', floor: '1F', cleaningStatus: 'Clean' },
+      { id: '1BR003', name: '1BR Apartment C3', status: 'Available', floor: '2F', cleaningStatus: 'Not Clean' },
+      { id: '1BR004', name: '1BR Apartment D1', status: 'Available', floor: '2F', cleaningStatus: 'Clean' },
+      { id: '1BR005', name: '1BR Apartment D2', status: 'Available', floor: '3F', cleaningStatus: 'Clean' },
+      { id: '1BR006', name: '1BR Apartment D3', status: 'Available', floor: '3F', cleaningStatus: 'Not Clean' },
+      { id: '1BR007', name: '1BR Apartment E1', status: 'Available', floor: '4F', cleaningStatus: 'Clean' },
+      { id: '1BR008', name: '1BR Apartment E2', status: 'Reserved', floor: '4F', cleaningStatus: 'Clean', guestName: 'David Brown' },
+      { id: '1BR009', name: '1BR Apartment E3', status: 'Reserved', floor: '5F', cleaningStatus: 'Not Clean', guestName: 'Lisa Davis' },
+      { id: '1BR010', name: '1BR Apartment F1', status: 'Reserved', floor: '5F', cleaningStatus: 'Clean', guestName: 'Tom Anderson' }
+    ],
+    '2BR': [
+      { id: '2BR001', name: '2BR Apartment G1', status: 'Available', floor: '1F', cleaningStatus: 'Clean' },
+      { id: '2BR002', name: '2BR Apartment G2', status: 'Available', floor: '1F', cleaningStatus: 'Clean' },
+      { id: '2BR003', name: '2BR Apartment G3', status: 'Available', floor: '2F', cleaningStatus: 'Not Clean' },
+      { id: '2BR004', name: '2BR Apartment H1', status: 'Available', floor: '2F', cleaningStatus: 'Clean' },
+      { id: '2BR005', name: '2BR Apartment H2', status: 'Available', floor: '3F', cleaningStatus: 'Clean' },
+      { id: '2BR006', name: '2BR Apartment H3', status: 'Available', floor: '3F', cleaningStatus: 'Not Clean' },
+      { id: '2BR007', name: '2BR Apartment I1', status: 'Available', floor: '4F', cleaningStatus: 'Clean' },
+      { id: '2BR008', name: '2BR Apartment I2', status: 'Available', floor: '4F', cleaningStatus: 'Clean' },
+      { id: '2BR009', name: '2BR Apartment I3', status: 'Available', floor: '5F', cleaningStatus: 'Not Clean' },
+      { id: '2BR010', name: '2BR Apartment J1', status: 'Available', floor: '5F', cleaningStatus: 'Clean' },
+      { id: '2BR011', name: '2BR Apartment J2', status: 'Available', floor: '6F', cleaningStatus: 'Clean' },
+      { id: '2BR012', name: '2BR Apartment J3', status: 'Available', floor: '6F', cleaningStatus: 'Not Clean' },
+      { id: '2BR013', name: '2BR Apartment K1', status: 'Available', floor: '7F', cleaningStatus: 'Clean' },
+      { id: '2BR014', name: '2BR Apartment K2', status: 'Available', floor: '7F', cleaningStatus: 'Clean' },
+      { id: '2BR015', name: '2BR Apartment K3', status: 'Available', floor: '8F', cleaningStatus: 'Not Clean' },
+      { id: '2BR016', name: '2BR Apartment L1', status: 'Available', floor: '8F', cleaningStatus: 'Clean' }
+    ],
+    '2BR Premium': [
+      { id: '2BRP001', name: '2BR Premium Suite A1', status: 'Available', floor: '6F', cleaningStatus: 'Clean' },
+      { id: '2BRP002', name: '2BR Premium Suite A2', status: 'Available', floor: '6F', cleaningStatus: 'Clean' },
+      { id: '2BRP003', name: '2BR Premium Suite B1', status: 'Available', floor: '7F', cleaningStatus: 'Not Clean' },
+      { id: '2BRP004', name: '2BR Premium Suite B2', status: 'Available', floor: '7F', cleaningStatus: 'Clean' },
+      { id: '2BRP005', name: '2BR Premium Suite C1', status: 'Available', floor: '8F', cleaningStatus: 'Clean' },
+      { id: '2BRP006', name: '2BR Premium Suite C2', status: 'Available', floor: '8F', cleaningStatus: 'Not Clean' },
+      { id: '2BRP007', name: '2BR Premium Suite D1', status: 'Available', floor: '9F', cleaningStatus: 'Clean' },
+      { id: '2BRP008', name: '2BR Premium Suite D2', status: 'Available', floor: '9F', cleaningStatus: 'Clean' },
+      { id: '2BRP009', name: '2BR Premium Suite E1', status: 'Available', floor: '9F', cleaningStatus: 'Not Clean' },
+      { id: '2BRP010', name: '2BR Premium Suite E2', status: 'Reserved', floor: '9F', cleaningStatus: 'Clean', guestName: 'Robert Taylor' }
+    ],
+    '3BR': [
+      { id: '3BR001', name: '3BR Penthouse P1', status: 'Available', floor: '9F', cleaningStatus: 'Clean' },
+      { id: '3BR002', name: '3BR Apartment X1', status: 'Reserved', floor: '8F', cleaningStatus: 'Clean', guestName: 'Jennifer White' },
+      { id: '3BR003', name: '3BR Apartment X2', status: 'Reserved', floor: '7F', cleaningStatus: 'Not Clean', guestName: 'Michael Green' },
+      { id: '3BR004', name: '3BR Apartment X3', status: 'Reserved', floor: '6F', cleaningStatus: 'Clean', guestName: 'Emily Clark' }
+    ]
+  };
+  
+  // Handle room type card click
+  const handleRoomTypeClick = (roomType) => {
+    setRoomTypeExpanded(prev => ({
+      ...prev,
+      [roomType]: !prev[roomType]
+    }));
+  };
+  
+  // Get room type statistics
+  const getRoomTypeStats = (roomType) => {
+    const apartments = apartmentData[roomType] || [];
+    const available = apartments.filter(apt => apt.status === 'Available').length;
+    const reserved = apartments.filter(apt => apt.status === 'Reserved').length;
+    return { available, reserved, total: apartments.length };
+  };
+  
+  // Get real reservations filtered by room type
+  const getRealReservationsByRoomType = (roomType) => {
+    return reservations.filter(reservation => {
+      const listingName = reservation.listingName?.toLowerCase() || '';
+      
+      // Filter by room type based on listing name
+      switch(roomType) {
+        case 'Studio':
+          return listingName.includes('studio') || listingName.includes('st ');
+        case '1BR':
+          return listingName.includes('1br') || listingName.includes('1 br') || listingName.includes('one bedroom');
+        case '2BR':
+          return (listingName.includes('2br') || listingName.includes('2 br') || listingName.includes('two bedroom')) && 
+                 !listingName.includes('premium') && !listingName.includes('deluxe');
+        case '2BR Premium':
+          return (listingName.includes('2br') || listingName.includes('2 br') || listingName.includes('two bedroom')) && 
+                 (listingName.includes('premium') || listingName.includes('deluxe') || listingName.includes('suite'));
+        case '3BR':
+          return listingName.includes('3br') || listingName.includes('3 br') || listingName.includes('three bedroom') || listingName.includes('penthouse');
+        default:
+          return false;
+      }
+    });
+  };
 
   const shimmer = keyframes`
     0% { transform: translateX(-100%); }
@@ -1714,10 +1819,10 @@ function Revenue() {
 
   // Fetch reservations when component mounts
   useEffect(() => {
-    if (isAuthenticated && isAdmin()) {
+    if (isAuthenticated && (isAdmin() || (isCustom() && (hasPermission('revenue', 'view') || hasPermission('revenue', 'complete'))))) {
       fetchTodayReservations();
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, isCustom, hasPermission]);
 
   // Show loading while checking authentication
   if (authLoading) {
@@ -1746,8 +1851,20 @@ function Revenue() {
     return null;
   }
 
-  // Redirect non-admin users (Revenue is admin-only)
-  if (!isAdmin()) {
+  // Debug revenue access
+  const hasRevenueAccess = isAdmin() || (isCustom() && (hasPermission('revenue', 'view') || hasPermission('revenue', 'complete')));
+  console.log('🔐 Revenue Access Check:', {
+    isAdmin: isAdmin(),
+    isCustom: isCustom(),
+    userRole: user?.role,
+    revenueView: hasPermission('revenue', 'view'),
+    revenueComplete: hasPermission('revenue', 'complete'),
+    hasRevenueAccess
+  });
+
+  // Redirect users who don't have revenue access
+  if (!hasRevenueAccess) {
+    console.log('❌ Revenue Access Denied - Redirecting to FDO Panel');
     window.location.href = "/fdo-panel";
     return null;
   }
@@ -2115,85 +2232,6 @@ function Revenue() {
           background: "#ffffff",
         }}
       >
-        {/* Header Section */}
-        <MDBox
-          mb={5}
-          sx={{
-            position: "relative",
-            zIndex: 10,
-            background: "#ffffff",
-            borderRadius: 4,
-            p: 6,
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "4px",
-              background:
-                "linear-gradient(90deg, #3b82f6 0%, #8b5cf6 25%, #06d6a0 50%, #ef4444 75%, #f59e0b 100%)",
-              borderRadius: "4px 4px 0 0",
-              zIndex: 1,
-            },
-          }}
-        >
-          <MDBox
-            sx={{
-              textAlign: "left",
-
-              "@media (max-width: 768px)": {
-                textAlign: "center",
-              },
-            }}
-          >
-            <MDTypography
-              variant="h2"
-              sx={{
-                color: "#1e293b",
-                fontWeight: 800,
-                fontSize: "2.5rem",
-                mb: 1,
-                letterSpacing: "-0.025em",
-                lineHeight: 1.2,
-
-                "@media (max-width: 768px)": {
-                  fontSize: "2rem",
-                  mb: 1.5,
-                },
-
-                "@media (max-width: 480px)": {
-                  fontSize: "1.8rem",
-                },
-              }}
-            >
-              Revenue Performance
-            </MDTypography>
-            <MDTypography
-              variant="h6"
-              sx={{
-                color: "#64748b",
-                fontWeight: 500,
-                fontSize: "1.125rem",
-                letterSpacing: "0.025em",
-
-                "@media (max-width: 768px)": {
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                },
-
-                "@media (max-width: 480px)": {
-                  fontSize: "0.9rem",
-                },
-              }}
-            >
-              Real-time insights and performance analytics
-            </MDTypography>
-          </MDBox>
-        </MDBox>
-
         {/* Today's Reservations Section */}
         <MDBox mb={4}>
           <Card sx={{ p: 3, boxShadow: 3 }}>
@@ -2207,14 +2245,15 @@ function Revenue() {
                 Payment Details
               </MDTypography>
               
-              {/* View Toggle Buttons - Only on desktop */}
+              {/* View Toggle Buttons - Only on desktop and disabled for view_only users */}
               {reservations.length > 0 && (
                 <MDBox sx={{ display: { xs: 'none', md: 'block' } }}>
                   <ToggleButtonGroup
                     value={viewMode}
                     exclusive
+                    disabled={isViewOnly()}
                     onChange={(event, newView) => {
-                      if (newView !== null) {
+                      if (newView !== null && !isViewOnly()) {
                         setViewMode(newView);
                       }
                     }}
@@ -2317,220 +2356,117 @@ function Revenue() {
                       </MDTypography>
                       
                       <MDBox 
-                        sx={{
-                          background: 'white',
+                        sx={{ 
+                          boxShadow: '0 4px 20px rgba(0,0,0,0.08)', 
                           borderRadius: 3,
-                          overflow: 'hidden',
-                          boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+                          maxHeight: '600px',
+                          overflow: 'auto',
+                          backgroundColor: 'white'
                         }}
                       >
-                        {/* Table Header */}
-                        <MDBox 
-                          sx={{
-                            display: 'grid',
-                            gridTemplateColumns: '120px 200px 160px 120px 120px 150px 140px 130px 130px',
-                            backgroundColor: 'white',
-                            color: '#1e293b',
-                            fontWeight: 'bold',
-                            fontSize: '0.9rem',
-                            minHeight: '60px',
-                            borderBottom: '2px solid #e2e8f0'
-                          }}
-                        >
-                      <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                        Reservation ID
-                      </MDBox>
-                      <MDBox sx={{ display: 'flex', alignItems: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                        Guest Name
-                      </MDBox>
-                      <MDBox sx={{ display: 'flex', alignItems: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                        Listing Name
-                      </MDBox>
-                      <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                        Check In Date
-                      </MDBox>
-                      <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                        Check Out Date
-                      </MDBox>
-                      <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                        Actual Check In Time
-                      </MDBox>
-                      <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                        Amount
-                      </MDBox>
-                      <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                        Payment Status
-                      </MDBox>
-                      <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-                        Reservation Status
+                        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                          <thead>
+                            <tr style={{ backgroundColor: 'white', borderBottom: '2px solid #e2e8f0' }}>
+                              <th style={{ width: '100px', textAlign: 'center', fontWeight: 'bold', fontSize: '0.85rem', color: '#1e293b', borderRight: '1px solid #e2e8f0', padding: '12px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                Reservation ID
+                              </th>
+                              <th style={{ width: '180px', textAlign: 'left', fontWeight: 'bold', fontSize: '0.85rem', color: '#1e293b', borderRight: '1px solid #e2e8f0', padding: '12px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                Guest Name
+                              </th>
+                              <th style={{ width: '150px', textAlign: 'left', fontWeight: 'bold', fontSize: '0.85rem', color: '#1e293b', borderRight: '1px solid #e2e8f0', padding: '12px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                Listing Name
+                              </th>
+                              <th style={{ width: '100px', textAlign: 'center', fontWeight: 'bold', fontSize: '0.85rem', color: '#1e293b', borderRight: '1px solid #e2e8f0', padding: '12px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                Arrival Date
+                              </th>
+                              <th style={{ width: '100px', textAlign: 'center', fontWeight: 'bold', fontSize: '0.85rem', color: '#1e293b', borderRight: '1px solid #e2e8f0', padding: '12px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                Departure Date
+                              </th>
+                              <th style={{ width: '120px', textAlign: 'center', fontWeight: 'bold', fontSize: '0.85rem', color: '#1e293b', borderRight: '1px solid #e2e8f0', padding: '12px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                Check In Time
+                              </th>
+                              <th style={{ width: '100px', textAlign: 'center', fontWeight: 'bold', fontSize: '0.85rem', color: '#1e293b', borderRight: '1px solid #e2e8f0', padding: '12px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                Amount
+                              </th>
+                              <th style={{ width: '120px', textAlign: 'center', fontWeight: 'bold', fontSize: '0.85rem', color: '#1e293b', padding: '12px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                Payment Status
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                    
+                            {reservations.map((reservation, index) => (
+                              <tr 
+                                key={reservation.id}
+                                style={{
+                                  backgroundColor: index % 2 === 0 ? '#f8fafc' : 'white',
+                                  borderBottom: '1px solid #e2e8f0'
+                                }}
+                                onMouseEnter={(e) => e.target.style.backgroundColor = '#e0f2fe'}
+                                onMouseLeave={(e) => e.target.style.backgroundColor = index % 2 === 0 ? '#f8fafc' : 'white'}
+                              >
+                                <td style={{ width: '100px', textAlign: 'center', padding: '12px 8px', borderRight: '1px solid #e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <span style={{ color: '#1976d2', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                                    {reservation.reservationId}
+                                  </span>
+                                </td>
+                                
+                                <td style={{ width: '180px', textAlign: 'left', padding: '12px 8px', borderRight: '1px solid #e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <span style={{ fontSize: '0.8rem' }}>
+                                    {reservation.guestName}
+                                  </span>
+                                </td>
+                                
+                                <td style={{ width: '150px', textAlign: 'left', padding: '12px 8px', borderRight: '1px solid #e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                    {reservation.listingName}
+                                  </span>
+                                </td>
+                                
+                                <td style={{ width: '100px', textAlign: 'center', padding: '12px 8px', borderRight: '1px solid #e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <span style={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>
+                                    {reservation.checkInDate}
+                                  </span>
+                                </td>
+                                
+                                <td style={{ width: '100px', textAlign: 'center', padding: '12px 8px', borderRight: '1px solid #e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <span style={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>
+                                    {reservation.checkOutDate}
+                                  </span>
+                                </td>
+                                
+                                <td style={{ width: '120px', textAlign: 'center', padding: '12px 8px', borderRight: '1px solid #e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <span style={{ fontSize: '0.8rem', color: reservation.actualCheckInTime === 'N/A' ? '#9ca3af' : '#374151' }}>
+                                    {reservation.actualCheckInTime}
+                                  </span>
+                                </td>
+                                
+                                <td style={{ width: '100px', textAlign: 'center', padding: '12px 8px', borderRight: '1px solid #e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <span style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 'bold' }}>
+                                    {reservation.currency} {reservation.baseRate?.toLocaleString() || '0'}
+                                  </span>
+                                </td>
+                                
+                                <td style={{ width: '120px', textAlign: 'center', padding: '12px 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <Chip 
+                                    label={reservation.paymentStatus === 'Unknown' ? 'Due' : reservation.paymentStatus}
+                                    color={
+                                      reservation.paymentStatus === 'Paid' ? 'success' :
+                                      reservation.paymentStatus === 'Partially paid' ? 'warning' :
+                                      reservation.paymentStatus === 'Unpaid' ? 'error' :
+                                      reservation.paymentStatus === 'Unknown' ? 'secondary' :
+                                      'default'
+                                    }
+                                    size="small"
+                                    sx={{ fontWeight: 600, fontSize: '0.7rem', minWidth: '60px' }}
+                                  />
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </MDBox>
                     </MDBox>
-                    
-                    {/* Table Body */}
-                    <MDBox sx={{ maxHeight: '600px', overflow: 'auto' }}>
-                      {reservations.map((reservation, index) => (
-                        <MDBox 
-                          key={reservation.id}
-                          sx={{
-                            display: 'grid',
-                            gridTemplateColumns: '120px 200px 160px 120px 120px 150px 140px 130px 130px',
-                            backgroundColor: index % 2 === 0 ? '#f8fafc' : 'white',
-                            borderBottom: '1px solid #e2e8f0',
-                            minHeight: '70px',
-                            '&:hover': {
-                              backgroundColor: '#e0f2fe',
-                              transform: 'scale(1.005)',
-                              transition: 'all 0.2s ease'
-                            }
-                          }}
-                        >
-                          {/* Reservation ID */}
-                          <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                            <MDTypography 
-                              variant="body2" 
-                              fontWeight="bold" 
-                              sx={{ color: '#1976d2', fontSize: '0.85rem' }}
-                            >
-                              {reservation.reservationId}
-                            </MDTypography>
-                          </MDBox>
-                          
-                          {/* Guest Name */}
-                          <MDBox sx={{ display: 'flex', alignItems: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                            <MDTypography 
-                              variant="body2" 
-                              fontWeight="medium"
-                              sx={{ 
-                                fontSize: '0.85rem',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                width: '100%'
-                              }}
-                            >
-                              {reservation.guestName}
-                            </MDTypography>
-                          </MDBox>
-                          
-                          {/* Listing Name */}
-                          <MDBox sx={{ display: 'flex', alignItems: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                            <MDTypography 
-                              variant="body2"
-                              sx={{ 
-                                fontSize: '0.85rem',
-                                color: '#64748b',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                width: '100%'
-                              }}
-                            >
-                              {reservation.listingName}
-                            </MDTypography>
-                          </MDBox>
-                          
-                          {/* Check In Date */}
-                          <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                            <MDTypography 
-                              variant="body2"
-                              sx={{ 
-                                fontSize: '0.85rem',
-                                fontFamily: 'monospace',
-                                color: '#374151'
-                              }}
-                            >
-                              {reservation.checkInDate}
-                            </MDTypography>
-                          </MDBox>
-                          
-                          {/* Check Out Date */}
-                          <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                            <MDTypography 
-                              variant="body2"
-                              sx={{ 
-                                fontSize: '0.85rem',
-                                fontFamily: 'monospace',
-                                color: '#374151'
-                              }}
-                            >
-                              {reservation.checkOutDate}
-                            </MDTypography>
-                          </MDBox>
-                          
-                          {/* Actual Check In Time */}
-                          <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                            <MDTypography 
-                              variant="body2"
-                              sx={{ 
-                                fontSize: '0.85rem',
-                                color: reservation.actualCheckInTime === 'N/A' ? '#9ca3af' : '#374151',
-                                fontStyle: reservation.actualCheckInTime === 'N/A' ? 'italic' : 'normal'
-                              }}
-                            >
-                              {reservation.actualCheckInTime}
-                            </MDTypography>
-                          </MDBox>
-                          
-                          {/* Base Rate */}
-                          <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                            <MDTypography 
-                              variant="body2"
-                              fontWeight="bold"
-                              sx={{ 
-                                fontSize: '0.85rem',
-                                color: '#059669'
-                              }}
-                            >
-                              {reservation.currency} {reservation.baseRate?.toLocaleString() || '0'}
-                            </MDTypography>
-                          </MDBox>
-                          
-                          {/* Payment Status */}
-                          <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2, borderRight: '1px solid #e2e8f0' }}>
-                            <Chip 
-                              label={reservation.paymentStatus === 'Unknown' ? 'Due' : reservation.paymentStatus}
-                              color={
-                                reservation.paymentStatus === 'Paid' ? 'success' :
-                                reservation.paymentStatus === 'Partially paid' ? 'warning' :
-                                reservation.paymentStatus === 'Unpaid' ? 'error' :
-                                reservation.paymentStatus === 'Unknown' ? 'secondary' :
-                                'default'
-                              }
-                              size="small"
-                              sx={{
-                                fontWeight: 600,
-                                fontSize: '0.75rem',
-                                minWidth: '90px'
-                              }}
-                            />
-                          </MDBox>
-                          
-                          {/* Reservation Status */}
-                          <MDBox sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-                            <Chip 
-                              label={reservation.status || 'Unknown'}
-                              color={
-                                reservation.status === 'new' ? 'primary' :
-                                reservation.status === 'modified' ? 'secondary' :
-                                reservation.status === 'confirmed' ? 'success' :
-                                reservation.status === 'cancelled' ? 'error' :
-                                'default'
-                              }
-                              size="small"
-                              sx={{
-                                textTransform: 'capitalize',
-                                fontWeight: 600,
-                                fontSize: '0.75rem',
-                                minWidth: '90px'
-                              }}
-                            />
-                          </MDBox>
-                        </MDBox>
-                      ))}
-                    </MDBox>
-                  </MDBox>
-                </MDBox>
-                    
                   </>
                   )}
                 </MDBox>
@@ -3909,6 +3845,157 @@ function Revenue() {
             </Card>
           </MDBox>
         )}
+        
+        {/* Room Availability & Cleaning Status Section */}
+        <MDBox mt={4}>
+          <Card sx={{ p: 3, backgroundColor: 'white', boxShadow: 3 }}>
+            <MDTypography variant="h5" color="text.primary" mb={3} fontWeight="bold">
+              🏨 Room Availability & Cleaning Status:
+            </MDTypography>
+            
+            <MDBox 
+              display="grid" 
+              gridTemplateColumns="repeat(auto-fit, minmax(240px, 1fr))" 
+              gap={2}
+            >
+              {['Studio', '1BR', '2BR', '2BR Premium', '3BR'].map((roomType) => {
+                const stats = getRoomTypeStats(roomType);
+                const isExpanded = roomTypeExpanded[roomType];
+                
+                return (
+                  <MDBox key={roomType}>
+                    <Card 
+                      onClick={() => handleRoomTypeClick(roomType)}
+                      sx={{ 
+                        backgroundColor: 'white', 
+                        borderRadius: '8px', 
+                        p: 2.5,
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+                        border: '1px solid #e0e0e0',
+                        minHeight: '120px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          borderColor: '#1976d2'
+                        }
+                      }}
+                    >
+                      <MDBox textAlign="center">
+                        <MDTypography variant="h6" color="text.primary" fontWeight="bold" mb={1.5}>
+                          {roomType} {isExpanded ? '▼' : '▶'}
+                        </MDTypography>
+                        
+                        <MDTypography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                          Paid: <strong style={{ color: '#2e7d32' }}>{getRealReservationsByRoomType(roomType).filter(r => r.paymentStatus === 'Paid').length}</strong> | Pending: <strong style={{ color: '#d32f2f' }}>{getRealReservationsByRoomType(roomType).filter(r => r.paymentStatus !== 'Paid').length}</strong>
+                        </MDTypography>
+                      </MDBox>
+                    </Card>
+                    
+                    {/* Expandable Apartment Details */}
+                    {isExpanded && (
+                      <MDBox 
+                        mt={2} 
+                        sx={{
+                          backgroundColor: '#2c3e50',
+                          borderRadius: 2,
+                          p: 3,
+                          maxHeight: '400px',
+                          overflow: 'auto'
+                        }}
+                      >
+                        <MDTypography 
+                          variant="h6" 
+                          sx={{ 
+                            color: 'white', 
+                            mb: 2, 
+                            fontWeight: 'bold',
+                            textAlign: 'center'
+                          }}
+                        >
+                          {roomType} Apartments
+                        </MDTypography>
+                        
+                        <MDBox display="flex" flexDirection="column" gap={1}>
+                          {getRealReservationsByRoomType(roomType).length > 0 ? (
+                            getRealReservationsByRoomType(roomType).map((reservation) => (
+                              <MDBox 
+                                key={reservation.id}
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  p: 1.5,
+                                  backgroundColor: reservation.paymentStatus === 'Paid' ? '#27ae60' : '#e74c3c',
+                                  borderRadius: 1,
+                                  color: 'white'
+                                }}
+                              >
+                                <MDBox>
+                                  <MDTypography variant="body2" fontWeight="bold" sx={{ color: 'white' }}>
+                                    {reservation.listingName || 'Unknown Apartment'}
+                                  </MDTypography>
+                                  {reservation.guestName && (
+                                    <MDTypography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                                      Guest: {reservation.guestName}
+                                    </MDTypography>
+                                  )}
+                                  {reservation.reservationId && (
+                                    <MDTypography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', display: 'block' }}>
+                                      ID: {reservation.reservationId}
+                                    </MDTypography>
+                                  )}
+                                </MDBox>
+                                
+                                <MDBox textAlign="right">
+                                  <MDTypography variant="caption" sx={{ color: 'white', display: 'block' }}>
+                                    Payment: {reservation.paymentStatus || 'Unknown'}
+                                  </MDTypography>
+                                  <MDTypography 
+                                    variant="caption" 
+                                    sx={{ 
+                                      color: '#a8e6cf',
+                                      fontWeight: 'bold',
+                                      display: 'block'
+                                    }}
+                                  >
+                                    {reservation.currency} {reservation.baseRate?.toLocaleString() || '0'}
+                                  </MDTypography>
+                                  {reservation.checkInDate && (
+                                    <MDTypography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', display: 'block' }}>
+                                      Check-in: {reservation.checkInDate}
+                                    </MDTypography>
+                                  )}
+                                </MDBox>
+                              </MDBox>
+                            ))
+                          ) : (
+                            <MDBox 
+                              sx={{
+                                p: 2,
+                                backgroundColor: 'rgba(255,255,255,0.1)',
+                                borderRadius: 1,
+                                textAlign: 'center'
+                              }}
+                            >
+                              <MDTypography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                                No {roomType} reservations found today
+                              </MDTypography>
+                            </MDBox>
+                          )}
+                        </MDBox>
+                      </MDBox>
+                    )}
+                  </MDBox>
+                );
+              })}
+            </MDBox>
+          </Card>
+        </MDBox>
       </MDBox>
       <Footer />
     </DashboardLayout>
