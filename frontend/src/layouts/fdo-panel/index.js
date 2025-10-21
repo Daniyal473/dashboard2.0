@@ -100,7 +100,7 @@ function ReservationCard({ guest, setSnackbar, stack, isViewOnly, isCustom, hasP
         setSnackbar({ open: true, message: 'You do not have permission to print forms', severity: 'error' });
         return;
       }
-      
+
       // Fetch latest reservation from API
       const response = await fetch(`${HOSTAWAY_API}/${guest.reservationId}`, {
         method: "GET",
@@ -411,7 +411,7 @@ ul li {
   <div class="form-field"><label>Check-in Time:</label><div class="field-value">${checkInTime}</div></div>
   <div class="form-field"><label>Check-out Date:</label><div class="field-value">${departure}</div></div>
   <div class="form-field"><label>Check-out Time:</label><div class="field-value">${checkOutTime}</div></div>
-  <div class="form-field" ><label>Vehicle No:</label><div class="field-value" style="text-transform: uppercase;">${vehicleNumber}</div></div>
+  <div class="form-field" ><label>Vehicle No:</label><div class="field-value" >${vehicleNumber}</div></div>
 <div class="form-field">
   <label>Security Deposit:</label>
   <div class="field-value">
@@ -497,7 +497,7 @@ ul li {
               });
               
               const link = document.createElement('a');
-              link.download = \`${guestName}'s Checkin-form (${reservationId}).png\`;
+              link.download = \`${guestName}'s Checkin-form (${guest.reservationId}).png\`;
               link.href = canvas.toDataURL('image/png');
               link.click();
             }
@@ -582,7 +582,7 @@ ul li {
         setSnackbar({ open: true, message: 'You do not have permission to print forms', severity: 'error' });
         return;
       }
-      
+
       // ✅ Fetch latest reservation from API
       const response = await fetch(`${HOSTAWAY_API}/${guest.reservationId}`, {
         method: "GET",
@@ -780,6 +780,22 @@ ul li {
       font-weight: bold !important;
       color: #2c3e50;
       font-size: 14px;
+    }
+
+    .download-btn {
+    padding: 7px 9px;
+    background: transparent;
+    color: black;
+    border: 1px solid black;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background 0.3s, color 0.3s;
+}
+
+    .download-btn:hover {
+      background: black;
+      color: white;
     }
   </style>
 </head>
@@ -1067,7 +1083,7 @@ ${CheckOutSecurityDeposit !== "0"
     <div style="flex: 1;">
       <p style="margin: 5px 0;">
   <strong>Vehicle Number:</strong> <br>
-  <span style="text-transform: uppercase;">
+  <span>
     ${vehicleNumber || "N/A"}
   </span>
 </p>
@@ -1105,7 +1121,7 @@ ${CheckOutSecurityDeposit !== "0"
     link.click();
   }
 </script>
-</body>ce
+</body>
 </html>
   `;
 
@@ -2045,7 +2061,7 @@ ${CheckOutSecurityDeposit !== "0"
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 1.2, // tighter but breathable space
+              gap: 1, // tighter but breathable space
             }}
           >
             {/* 👁️ View Details */}
@@ -2068,7 +2084,7 @@ ${CheckOutSecurityDeposit !== "0"
               <VisibilityIcon sx={{ fontSize: "1rem" }} />
             </IconButton>
 
-            {/* 🔄 Webhook Trigger */}
+            {/* 🔄 Webhook Trigger (card sync button) */}
             <IconButton
               onClick={() => handleWebhook(guest.reservationId)}
               disabled={cooldown}
@@ -2092,7 +2108,7 @@ ${CheckOutSecurityDeposit !== "0"
               }}
             >
               {cooldown ? (
-                <span style={{ fontSize: "0.6rem" }}>🕒 0:{String(cooldownTime).padStart(2, "0")}</span>
+                <span style={{ fontSize: "0.6rem" }}>0:{String(cooldownTime).padStart(2, "0")}</span>
               ) : (
                 <SyncIcon sx={{ fontSize: "1rem" }} />
               )}
@@ -3269,7 +3285,7 @@ function KanbanView() {
 
                       <MDBox px={2} pb={2} sx={{ flex: 1, overflowY: "auto", overflowX: "hidden", maxHeight: "calc(98vh - 280px)" }}>
                         {filteredGuests.map((guest) => (
-                          <ReservationCard key={guest.id} guest={guest} setSnackbar={setSnackbar} searchTerm={searchTerm} stack={stack} isViewOnly={isViewOnly} isCustom={isCustom} hasPermission={hasPermission}/>
+                          <ReservationCard key={guest.id} guest={guest} setSnackbar={setSnackbar} searchTerm={searchTerm} stack={stack} isViewOnly={isViewOnly} isCustom={isCustom} hasPermission={hasPermission} />
                         ))}
                       </MDBox>
                     </Card>

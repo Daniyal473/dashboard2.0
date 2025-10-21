@@ -96,7 +96,7 @@ function DashboardNavbar({ absolute, light, isMini }) {
     },
   });
 
-  return (
+  {/*return (
     <AppBar
       position={absolute ? "absolute" : navbarType}
       color="inherit"
@@ -125,7 +125,7 @@ function DashboardNavbar({ absolute, light, isMini }) {
         )}
       </Toolbar>
     </AppBar>
-  );
+  );*/}
 }
 
 // Setting default values for the props of DashboardNavbar
