@@ -6,7 +6,7 @@ const getApiBaseUrl = () => {
   }
 
   // In production, use specific backend URL
-  return "https://128.199.0.150:5000";
+  return "https://portal.namuve.com/api";
 };
 
 export const API_BASE_URL = getApiBaseUrl();
