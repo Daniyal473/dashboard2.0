@@ -53,6 +53,9 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
+// API Configuration
+import { API_ENDPOINTS } from "config/api";
+
 // Chart.js components
 import {
   Chart as ChartJS,
@@ -305,7 +308,7 @@ function Overview() {
       
       // console.log('🔄 Fetching room listings from /api/rooms/listings...');
       
-      const response = await fetch('/api/rooms/listings');
+      const response = await fetch(API_ENDPOINTS.ROOMS_LISTINGS);
       console.log('📡 Response status:', response.status);
       
       const data = await response.json();
@@ -341,7 +344,7 @@ function Overview() {
       
       // console.log('🏨 Fetching occupancy data from /api/occupancy/current...');
       
-      const response = await fetch('/api/occupancy/current');
+      const response = await fetch(API_ENDPOINTS.OCCUPANCY_CURRENT);
       const data = await response.json();
       
       if (data.success) {
@@ -556,7 +559,7 @@ function Overview() {
   const testApiHealth = async () => {
     try {
       // console.log('🏥 Testing Room API health...');
-      const response = await fetch('/api/rooms/health');
+      const response = await fetch(API_ENDPOINTS.ROOMS_HEALTH);
       const data = await response.json();
       // console.log('🏥 Health check result:', data);
     } catch (err) {
