@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
 
-    console.log("🚪 User logged out successfully");
+    // User logged out successfully - logging removed for silent mode
   };
 
   // Check for existing auth on mount
@@ -58,13 +58,13 @@ export const AuthProvider = ({ children }) => {
           sessionService.startSession(logout);
         } else {
           // Session expired, clean up
-          console.log("🕐 Session expired on page load");
+          // Session expired on page load - logging removed for silent mode
           localStorage.removeItem("authToken");
           localStorage.removeItem("userData");
           sessionService.endSession();
         }
       } catch (error) {
-        console.error("Error parsing stored user data:", error);
+        // Error parsing stored user data - logging removed for silent mode
         localStorage.removeItem("authToken");
         localStorage.removeItem("userData");
         sessionService.endSession();
@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }) => {
 
   // Check specific permissions for custom users
   const hasPermission = (page, level = 'view') => {
-    console.log("🔐 hasPermission called:", { page, level, userRole: user?.role, userPermissions: user?.permissions });
+    // Removed excessive console logging for performance
     
     if (user?.role !== 'custom') return false;
     
@@ -125,10 +125,10 @@ export const AuthProvider = ({ children }) => {
         
         return permissions?.[page]?.[level] === true;
       } catch (error) {
-        console.error('Error parsing permissions:', error, 'Raw value:', user.permissions);
+        // Error parsing permissions - logging removed for silent mode
         // If permissions is just "123" or invalid, provide default permissions
         if (user.permissions === "123") {
-          console.warn('⚠️ Invalid permissions format detected, using default permissions');
+          // Invalid permissions format detected, using default permissions - logging removed for silent mode
           const defaultPermissions = {
             fdoPanel: { view: true, complete: false },
             rooms: { view: true, complete: false },
@@ -148,7 +148,7 @@ export const AuthProvider = ({ children }) => {
         return permissions?.[page]?.[level] === true;
       }
     } catch (error) {
-      console.error('Error getting permissions from localStorage:', error);
+      // Error getting permissions from localStorage - logging removed for silent mode
     }
     
     return false;

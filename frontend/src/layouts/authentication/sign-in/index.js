@@ -150,7 +150,7 @@ function Basic() {
         // Use auth context to log in as admin
         login(adminToken, adminUser);
 
-        console.log("✅ Admin access granted:", adminUser);
+        // Admin access granted - logging removed for silent mode
 
         handleAdminDialogClose();
         navigate("/admin-panel");
@@ -158,7 +158,7 @@ function Basic() {
         setAdminDialog({ ...adminDialog, loading: false, error: "Invalid admin password!" });
       }
     } catch (error) {
-      console.error("Admin verification error:", error);
+      // Admin verification error - logging removed for silent mode
       setAdminDialog({ ...adminDialog, loading: false, error: "Admin verification failed!" });
     }
   };
@@ -166,7 +166,7 @@ function Basic() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    console.log("Form submitted:", formData);
+    // Form submitted - logging removed for silent mode
 
     // Validation
     if (!formData.username.trim()) {
@@ -199,8 +199,7 @@ function Basic() {
         // Use auth context to store login data
         login(result.token, result.user);
 
-        console.log("✅ Login successful:", result.message);
-        console.log("👤 User role:", result.user.role);
+        // Login successful - logging removed for silent mode
 
         setLoginState({ loading: false, error: "", success: true });
 
@@ -210,11 +209,11 @@ function Basic() {
           navigate("/fdo-panel");
         }, 1000);
       } else {
-        console.error("❌ Login failed:", result.message);
+        // Login failed - logging removed for silent mode
         setLoginState({ loading: false, error: result.message, success: false });
       }
     } catch (error) {
-      console.error("❌ Login error:", error);
+      // Login error - logging removed for silent mode
       const errorMessage = "Login failed. Please check your connection and try again.";
       setLoginState({ loading: false, error: errorMessage, success: false });
     }
