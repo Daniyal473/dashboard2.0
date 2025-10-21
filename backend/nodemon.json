@@ -5,6 +5,10 @@
   "verbose": false,
   "quiet": true,
   "env": {
-    "NODE_ENV": "development"
+    "NODE_ENV": "development",
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "UV_THREADPOOL_SIZE": "128",
+    "KEEP_ALIVE_TIMEOUT": "65000",
+    "HEADERS_TIMEOUT": "66000"
   }
 }

@@ -8,6 +8,7 @@ console.warn = () => {}; // Suppress all console.warn output
 
 const express = require("express");
 const cors = require("cors");
+const compression = require("compression");
 const config = require("./config/config");
 
 const app = express();
@@ -85,6 +86,20 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
 };
+
+// Enable compression for all responses
+app.use(compression({
+  level: 6, // Compression level (0-9, 6 is good balance)
+  threshold: 1024, // Only compress responses > 1KB
+  filter: (req, res) => {
+    // Don't compress if the request includes a cache-control: no-transform directive
+    if (req.headers['cache-control'] && req.headers['cache-control'].includes('no-transform')) {
+      return false;
+    }
+    // Use compression for all other responses
+    return compression.filter(req, res);
+  }
+}));
 
 // Use CORS with options, but also add a fallback for development
 app.use(cors(corsOptions));

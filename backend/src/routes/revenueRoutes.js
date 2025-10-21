@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getRevenueAndOccupancy, refreshListingsCache, fetchListingsData, testMonthlyTargetPost } = require('../services/revenueService');
+const cachedRevenueService = require('../services/cachedRevenueService');
 const config = require('../config/config');
 
 // Middleware for API key authentication (optional)
@@ -52,43 +53,28 @@ const cacheMiddleware = (req, res, next) => {
  * @desc Get current revenue and occupancy data
  * @access Public (with optional API key)
  */
-router.get('/', logRequest, authenticateApiKey, cacheMiddleware, async (req, res) => {
+router.get('/', logRequest, authenticateApiKey, async (req, res) => {
   try {
-    console.log('Fetching fresh revenue and occupancy data...');
+    console.log('🚀 Revenue API called - using enhanced caching...');
     const startTime = Date.now();
     
-    const data = await getRevenueAndOccupancy();
+    // Use the new cached revenue service
+    const data = await cachedRevenueService.getRevenueData();
     
     const endTime = Date.now();
-    const processingTime = endTime - startTime;
+    const totalTime = endTime - startTime;
     
-    // Update cache
-    cachedData = data;
-    cacheTimestamp = Date.now();
-    
-    console.log(`Revenue data fetched successfully in ${processingTime}ms`);
+    console.log(`✅ Revenue data served in ${totalTime}ms (cached: ${data.cached})`);
     
     res.json({
       success: true,
       data,
-      cached: false,
-      processingTime,
+      totalTime,
       timestamp: new Date().toISOString()
     });
     
   } catch (error) {
-    console.error('Error fetching revenue data:', error);
-    
-    // If we have cached data, return it with error flag
-    if (cachedData) {
-      return res.json({
-        success: false,
-        data: cachedData,
-        cached: true,
-        error: 'Fresh data unavailable, serving cached data',
-        timestamp: new Date().toISOString()
-      });
-    }
+    console.error('❌ Error in revenue route:', error);
     
     res.status(500).json({
       success: false,
@@ -175,21 +161,16 @@ router.get('/occupancy', logRequest, authenticateApiKey, async (req, res) => {
  */
 router.post('/refresh', logRequest, authenticateApiKey, async (req, res) => {
   try {
-    // Clear cache
-    cachedData = null;
-    cacheTimestamp = null;
-    
-    console.log('Cache cleared, fetching fresh revenue data...');
+    console.log('🔄 Force refresh requested...');
     const startTime = Date.now();
     
-    const data = await getRevenueAndOccupancy();
+    // Use cached service refresh
+    const data = await cachedRevenueService.refreshCache();
     
     const endTime = Date.now();
     const processingTime = endTime - startTime;
     
-    // Update cache with fresh data
-    cachedData = data;
-    cacheTimestamp = Date.now();
+    console.log(`✅ Cache refreshed in ${processingTime}ms`);
     
     res.json({
       success: true,
@@ -200,10 +181,86 @@ router.post('/refresh', logRequest, authenticateApiKey, async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error refreshing revenue data:', error);
+    console.error('❌ Error refreshing revenue data:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to refresh revenue data',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * @route GET /api/revenue/cache-stats
+ * @desc Get cache performance statistics
+ * @access Public
+ */
+router.get('/cache-stats', logRequest, (req, res) => {
+  try {
+    const stats = cachedRevenueService.getCacheStats();
+    
+    res.json({
+      success: true,
+      data: stats,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Error getting cache stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get cache statistics',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * @route POST /api/revenue/clear-cache
+ * @desc Clear all revenue cache
+ * @access Public (with optional API key)
+ */
+router.post('/clear-cache', logRequest, authenticateApiKey, (req, res) => {
+  try {
+    cachedRevenueService.clearCache();
+    
+    res.json({
+      success: true,
+      message: 'Revenue cache cleared successfully',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Error clearing cache:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear cache',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * @route POST /api/revenue/warm-cache
+ * @desc Warm up the cache by pre-loading data
+ * @access Public (with optional API key)
+ */
+router.post('/warm-cache', logRequest, authenticateApiKey, async (req, res) => {
+  try {
+    console.log('🔥 Cache warm-up requested...');
+    await cachedRevenueService.warmUpCache();
+    
+    res.json({
+      success: true,
+      message: 'Cache warmed up successfully',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Error warming up cache:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to warm up cache',
       timestamp: new Date().toISOString()
     });
   }
