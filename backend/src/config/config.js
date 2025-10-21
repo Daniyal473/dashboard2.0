@@ -71,6 +71,15 @@ const config = {
   
   // Health Check Configuration
   HEALTH_CHECK_INTERVAL: parseInt(process.env.HEALTH_CHECK_INTERVAL) || 300000, // 5 minutes
+
+  // Production URLs
+  PRODUCTION_URL: process.env.PRODUCTION_URL || '',
+  PRODUCTION_AUTH_URL: process.env.PRODUCTION_AUTH_URL || '',
+  PRODUCTION_DASHBOARD_URL: process.env.PRODUCTION_DASHBOARD_URL || '',
+
+  // Portal Configuration
+  PORTAL_URL: process.env.PORTAL_URL || '',
+  PORTAL_AUTH_URL: process.env.PORTAL_AUTH_URL || '',
 };
 
 // Validation
