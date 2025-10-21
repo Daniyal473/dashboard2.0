@@ -6,7 +6,7 @@ const getApiBaseUrl = () => {
   }
 
   // In production, use specific backend URL
-  return "https://portal.namuve.com/api";
+  return "https://portal.namuve.com";
 };
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -36,6 +36,21 @@ export const API_ENDPOINTS = {
 
   // Monthly target
   MONTHLY_TARGET: `${API_BASE_URL}/api/monthly-target`,
+
+  // Occupancy endpoints
+  OCCUPANCY_CURRENT: `${API_BASE_URL}/api/occupancy/current`,
+
+  // Rooms endpoints
+  ROOMS_LISTINGS: `${API_BASE_URL}/api/rooms/listings`,
+  ROOMS_HEALTH: `${API_BASE_URL}/api/rooms/health`,
+  ROOMS_CLEANING_STATUS: `${API_BASE_URL}/api/rooms/cleaning-status`,
+
+  // Payment endpoints
+  PAYMENT_TODAY_RESERVATIONS: `${API_BASE_URL}/api/payment/today-reservations`,
+  PAYMENT_HEALTH: `${API_BASE_URL}/api/payment/health`,
+
+  // Portal URLs
+  PORTAL_AUTH_URL: 'https://portal.namuve.com/authentication/sign-in',
 };
 
 export default API_ENDPOINTS;
