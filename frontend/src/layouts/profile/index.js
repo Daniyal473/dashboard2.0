@@ -243,7 +243,7 @@ function Overview() {
       // console.log('  - Method: PUT');
       // console.log('  - Body:', { statusType: selectedStatusType, newStatus: newStatus });
       
-      const response = await fetch(`/api/rooms/update-cleaning-status/${selectedListing.id}`, {
+      const response = await fetch(`${API_ENDPOINTS.ROOMS_UPDATE_CLEANING_STATUS}/${selectedListing.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
