@@ -364,6 +364,9 @@ ul li {
         <body>
           <div class="form">
             <div style="position: absolute; top: 5px; right: 5px; z-index: 1000;">
+            <button onclick="printForm()" class="download-btn">
+              Print
+            </button>
   <button onclick="downloadForm()" class="download-btn">
     Download
   </button>
@@ -501,10 +504,37 @@ ul li {
               link.href = canvas.toDataURL('image/png');
               link.click();
             }
+            
+
+    // ---------- PRINT ----------
+    async function printForm() {
+      try {
+        const el = document.querySelector('.form');
+        const canvas = await html2canvas(el, {scale:3, useCORS:true, backgroundColor:'#fff'});
+        const imgData = canvas.toDataURL('image/png');
+
+        const pw = window.open('', '_blank', 'width=900,height=1000');
+        pw.document.write(\`
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Print</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:#fff;display:flex;justify-content:center;align-items:center;}
+  img{max-width:100%;max-height:100%;box-shadow:none;}
+  @page{size:A4 portrait;margin:0;}
+</style></head><body>
+  <img src="\${imgData}" onload="setTimeout(()=>{window.print();window.close();},300);">
+</body></html>\`);
+        pw.document.close();
+      } catch (e) { console.error(e); alert('Print failed – use Download'); }
+    }
           </script>
         </body>
       </html>
   `;
+
+      // ADD THESE 2 LINES:
+      formWindow.guestName = guestName;
+      formWindow.reservationId = guest.reservationId;
 
       formWindow.document.open();
       formWindow.document.write(htmlContent);
@@ -803,6 +833,9 @@ ul li {
 
   <div class="form">
     <div style="position: absolute; top: 5px; right: 5px; z-index: 1000;">
+    <button onclick="printForm()" class="download-btn">
+              Print
+            </button>
   <button onclick="downloadForm()" class="download-btn">
     Download
   </button>
@@ -827,7 +860,7 @@ ul li {
                 ${guestName}'s Same Day Check-out Form 
                 <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
               </h3>
-              <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
+              <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 13px; width: 92%;">
                 Actual Check-out Date / Time: ${actualCheckOutTime}
               </p>`;
           } else if (isEarlyCheckOut) {
@@ -835,7 +868,7 @@ ul li {
                 ${guestName}'s Early Check-out Form 
                 <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
               </h3>
-              <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
+              <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 13px; width: 92%;">
                 Actual Check-out Date / Time: ${actualCheckOutTime}
               </p>`;
           } else {
@@ -843,7 +876,7 @@ ul li {
                 ${guestName}'s Check-out Form 
                 <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
               </h3>
-              <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 15px; width: 92%;">
+              <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 13px; width: 92%;">
                 Actual Check-out Date / Time: ${actualCheckOutTime}
               </p>`;
           }
@@ -1120,10 +1153,33 @@ ${CheckOutSecurityDeposit !== "0"
     link.href = canvas.toDataURL('image/png');
     link.click();
   }
+  
+  // ---------- PRINT ----------
+    async function printForm() {
+      try {
+        const el = document.querySelector('.form');
+        const canvas = await html2canvas(el, {scale:3, useCORS:true, backgroundColor:'#fff'});
+        const imgData = canvas.toDataURL('image/png');
+
+        const pw = window.open('', '_blank', 'width=900,height=1000');
+        pw.document.write(\`
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Print</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:#fff;display:flex;justify-content:center;align-items:center;}
+  img{max-width:100%;max-height:100%;box-shadow:none;}
+  @page{size:A4 portrait;margin:0;}
+</style></head><body>
+  <img src="\${imgData}" onload="setTimeout(()=>{window.print();window.close();},300);">
+</body></html>\`);
+        pw.document.close();
+      } catch (e) { console.error(e); alert('Print failed – use Download'); }
+    }
 </script>
 </body>
 </html>
   `;
+
 
       formWindow.document.open();
       formWindow.document.write(htmlContent);
@@ -1670,7 +1726,7 @@ ${CheckOutSecurityDeposit !== "0"
 
       if (totalPrice && totalPaid >= 0) {
         const balance = totalPrice - totalPaid;
-        remainingBalance = balance > 0 ? balance.toFixed(2) : "0.00";
+        remainingBalance = balance > 0 ? balance : "0";
       }
 
       setReservationDetails({
@@ -2348,7 +2404,7 @@ ${CheckOutSecurityDeposit !== "0"
         >
           <span>
             <span style={{ fontSize: "1rem", fontWeight: 400, color: "#555" }}>
-              Reservation Details For{" "}
+              Reservation Details Of{" "}
             </span>
             <strong>{reservationDetails?.guestName}</strong>
           </span>
@@ -2432,7 +2488,7 @@ ${CheckOutSecurityDeposit !== "0"
                         </td>
                         <td>
                           {reservationDetails?.totalPrice != null
-                            ? Number(reservationDetails.totalPrice).toFixed(2)
+                            ? Number(reservationDetails.totalPrice)
                             : "N/A"}{" "}
                           {reservationDetails?.currency || ""}
                         </td>
@@ -2453,8 +2509,8 @@ ${CheckOutSecurityDeposit !== "0"
                         <td>
                           {reservationDetails?.earlyCheckinCharges &&
                             !isNaN(Number(reservationDetails.earlyCheckinCharges))
-                            ? Number(reservationDetails.earlyCheckinCharges).toFixed(2)
-                            : "0.00"}{" "}
+                            ? Number(reservationDetails.earlyCheckinCharges)
+                            : "0"}{" "}
                           {reservationDetails?.currency || ""}
                         </td>
                       </tr>
@@ -2463,10 +2519,10 @@ ${CheckOutSecurityDeposit !== "0"
                           <strong>Price/Night</strong>
                         </td>
                         <td>
-                          {reservationDetails?.pricePerNight != null
-                            ? Number(reservationDetails.pricePerNight).toFixed(2)
-                            : "N/A"}{" "}
-                          {reservationDetails?.currency || ""}
+                          {reservationDetails?.pricePerNight &&
+                            !isNaN(parseFloat(reservationDetails.pricePerNight))
+                            ? `${parseFloat(reservationDetails.pricePerNight)} ${reservationDetails?.currency || ""}`
+                            : "Not provided"}
                         </td>
                       </tr>
                       <tr>
@@ -2586,8 +2642,8 @@ ${CheckOutSecurityDeposit !== "0"
                         <td>
                           {reservationDetails?.securityDeposit &&
                             !isNaN(Number(reservationDetails.securityDeposit))
-                            ? Number(reservationDetails.securityDeposit).toFixed(2)
-                            : "0.00"}{" "}
+                            ? Number(reservationDetails.securityDeposit)
+                            : "0"}{" "}
                           {reservationDetails?.currency || ""}
                         </td>
                       </tr>
@@ -3126,7 +3182,7 @@ function KanbanView() {
               alignItems="center"
             >
               {/* Left side title */}
-              <MDTypography variant="h5">Reservations</MDTypography>
+              <MDTypography variant="h5" mr={2}>Reservations</MDTypography>
 
               {/* Right side (Search + Button) */}
               <MDBox display="flex" alignItems="center" gap={2}>
