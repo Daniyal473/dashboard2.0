@@ -1689,7 +1689,7 @@ function Revenue() {
       
       // console.log('🔄 Fetching today\'s reservations...');
       
-      const response = await fetch('/api/payment/today-reservations');
+      const response = await fetch(API_ENDPOINTS.PAYMENT_TODAY_RESERVATIONS);
       const data = await response.json();
       
       if (data.success) {
