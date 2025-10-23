@@ -93,8 +93,8 @@ function AdminPanel() {
   const [monthlyTarget, setMonthlyTarget] = useState({
     amount: "",
     days: "",
-    selectedMonth: new Date().getMonth() + 1, // Current month (1-12)
-    selectedYear: new Date().getFullYear(),
+    selectedMonth: "", // Empty by default
+    selectedYear: "", // Empty by default
     startDate: null,
     endDate: null
   });
@@ -668,8 +668,8 @@ function AdminPanel() {
         setMonthlyTarget({
           amount: "",
           days: "",
-          selectedMonth: targetData.selectedMonth || new Date().getMonth() + 1,
-          selectedYear: targetData.selectedYear || new Date().getFullYear(),
+          selectedMonth: targetData.selectedMonth || "",
+          selectedYear: targetData.selectedYear || "",
           startDate: targetData.startDate ? new Date(targetData.startDate) : null,
           endDate: targetData.endDate ? new Date(targetData.endDate) : null
         });
@@ -2508,27 +2508,34 @@ function AdminPanel() {
                                 🗓️ Custom Date Range
                               </MDTypography>
                               <MDTypography
-                                variant="caption"
+                                variant="body2"
+                                fontWeight="500"
                                 sx={{
-                                  color: "#64748b",
+                                  color: "#6b7280",
                                   mb: 2,
                                   display: "block",
                                 }}
                               >
-                                Optional: Override month selection with specific dates
                               </MDTypography>
                               <Grid container spacing={3}>
                                 <Grid item xs={6}>
+                                  <MDTypography
+                                    variant="body2"
+                                    fontWeight="600"
+                                    sx={{
+                                      color: "#374151",
+                                      fontSize: "0.875rem",
+                                      mb: 1,
+                                    }}
+                                  >
+                                    Start Date
+                                  </MDTypography>
                                   <TextField
                                     type="date"
-                                    label="Start Date"
                                     fullWidth
                                     value={monthlyTarget.startDate ? monthlyTarget.startDate.toISOString().split('T')[0] : ''}
                                     onChange={(e) => handleDateChange('startDate', e.target.value)}
                                     disabled={isCustom() && !hasPermission('monthlyTarget', 'complete')}
-                                    InputLabelProps={{
-                                      shrink: true,
-                                    }}
                                     sx={{
                                       "& .MuiOutlinedInput-root": {
                                         borderRadius: "12px",
@@ -2546,16 +2553,23 @@ function AdminPanel() {
                                   />
                                 </Grid>
                                 <Grid item xs={6}>
+                                  <MDTypography
+                                    variant="body2"
+                                    fontWeight="600"
+                                    sx={{
+                                      color: "#374151",
+                                      fontSize: "0.875rem",
+                                      mb: 1,
+                                    }}
+                                  >
+                                    End Date
+                                  </MDTypography>
                                   <TextField
                                     type="date"
-                                    label="End Date"
                                     fullWidth
                                     value={monthlyTarget.endDate ? monthlyTarget.endDate.toISOString().split('T')[0] : ''}
                                     onChange={(e) => handleDateChange('endDate', e.target.value)}
                                     disabled={isCustom() && !hasPermission('monthlyTarget', 'complete')}
-                                    InputLabelProps={{
-                                      shrink: true,
-                                    }}
                                     sx={{
                                       "& .MuiOutlinedInput-root": {
                                         borderRadius: "12px",

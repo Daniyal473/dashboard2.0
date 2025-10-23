@@ -1010,7 +1010,7 @@ function Overview() {
             <MDBox display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} gap={{ xs: 2, md: 0 }} mb={4}>
               <MDBox>
                 <MDTypography variant="h4" fontWeight="bold" sx={{ 
-                  background: 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 50%, #059669 100%)',
+                  background: 'linear-gradient(135deg, #4F7CFF 0%, #3B82F6 50%, #2563EB 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
@@ -1035,7 +1035,7 @@ function Overview() {
                     startAdornment: (
                       <InputAdornment position="start">
                         <SearchIcon sx={{ 
-                          color: '#7C3AED', 
+                          color: '#4F7CFF', 
                           fontSize: '1.2rem',
                           animation: searchTerm ? 'pulse 2s infinite' : 'none'
                         }} />
@@ -1098,7 +1098,7 @@ function Overview() {
               <Box sx={{ display: { xs: 'none', md: 'block' } }}>
                 <Box sx={{
                   display: focusedCard ? 'flex' : 'grid',
-                  gridTemplateColumns: focusedCard ? 'none' : 'repeat(auto-fill, minmax(200px, 1fr))',
+                  gridTemplateColumns: focusedCard ? 'none' : 'repeat(auto-fill, minmax(350px, 1fr))',
                   justifyContent: focusedCard ? 'center' : 'initial',
                   alignItems: focusedCard ? 'center' : 'initial',
                   gap: 2,
@@ -1131,14 +1131,14 @@ function Overview() {
                           '&:hover': {
                             animation: hoveredCard === listing.id ? 'float 3s ease-in-out infinite' : 'none',
                           },
-                          background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-                          borderRadius: focusedCard?.id === listing.id ? '24px' : '20px',
+                          background: 'linear-gradient(145deg, #fefefe 0%, #fafafa 100%)',
+                          borderRadius: focusedCard?.id === listing.id ? '16px' : '12px',
                           p: 0,
-                          border: focusedCard?.id === listing.id ? '2px solid #e2e8f0' : '1px solid #f1f5f9',
+                          border: focusedCard?.id === listing.id ? '1px solid #f8fafc' : '1px solid #f8fafc',
                           boxShadow: focusedCard?.id === listing.id 
-                            ? '0 25px 50px rgba(0, 0, 0, 0.15), 0 12px 24px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)' 
-                            : '0 8px 25px rgba(0, 0, 0, 0.08), 0 3px 10px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
-                          minHeight: focusedCard?.id === listing.id ? '420px' : '300px',
+                            ? '0 12px 24px rgba(0, 0, 0, 0.03), 0 4px 8px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 1)' 
+                            : '0 2px 8px rgba(0, 0, 0, 0.02), 0 1px 3px rgba(0, 0, 0, 0.01), inset 0 1px 0 rgba(255, 255, 255, 1)',
+                          minHeight: focusedCard?.id === listing.id ? '420px' : '100px',
                           maxWidth: focusedCard?.id === listing.id ? '650px' : 'none',
                           width: focusedCard?.id === listing.id ? '100%' : 'auto',
                           display: 'flex',
@@ -1154,13 +1154,14 @@ function Overview() {
                           // Enhanced hover effects with animations
                           '&:hover': {
                             transform: focusedCard?.id === listing.id 
-                              ? 'scale(1.03) translateY(-12px) rotateY(2deg)' 
-                              : 'scale(1.05) translateY(-8px) rotateY(1deg)',
+                              ? 'scale(1.01) translateY(-2px)' 
+                              : 'scale(1.005) translateY(-1px)',
                             boxShadow: focusedCard?.id === listing.id 
-                              ? '0 35px 70px rgba(124, 58, 237, 0.25), 0 15px 30px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9)' 
-                              : '0 20px 40px rgba(124, 58, 237, 0.15), 0 8px 20px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
-                            border: focusedCard?.id === listing.id ? '2px solid #7C3AED' : '1px solid #7C3AED',
-                            filter: 'brightness(1.02) saturate(1.1)',
+                              ? '0 8px 16px rgba(221, 214, 254, 0.15), 0 4px 8px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 1)' 
+                              : '0 4px 12px rgba(221, 214, 254, 0.1), 0 2px 6px rgba(0, 0, 0, 0.015), inset 0 1px 0 rgba(255, 255, 255, 1)',
+                            border: focusedCard?.id === listing.id ? '1px solid #f3f4f6' : '1px solid #f9fafb',
+                            filter: 'brightness(1.005) saturate(1.01)',
+                            background: 'linear-gradient(145deg, #ffffff 0%, #fcfcfc 100%)',
                           },
                           // Ripple effect
                           '&::before': rippleEffect.active && hoveredCard === listing.id ? {
@@ -1194,14 +1195,14 @@ function Overview() {
                             '#374151'
                           } 100%)`,
                           color: 'white',
-                          p: 3.5,
+                          p: 1.5,
                           textAlign: 'center',
                           position: 'relative',
-                          borderRadius: '20px 20px 0 0',
-                          boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1)',
+                          borderRadius: '12px 12px 0 0',
+                          boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.2)',
                           textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                         }}>
-                          <MDTypography variant="h6" fontWeight="bold" sx={{ fontSize: focusedCard?.id === listing.id ? '1.2rem' : '0.9rem' }}>
+                          <MDTypography variant="h6" fontWeight="bold" sx={{ fontSize: '0.8rem' }}>
                             {listing.name || 'Unknown'}
                           </MDTypography>
                           
@@ -1234,18 +1235,18 @@ function Overview() {
                           )}
                         </MDBox>
 
-                      {/* Clean Apartment Details */}
-                      <MDBox sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
+                      {/* Compact Apartment Details */}
+                      <MDBox sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1 }}>
                         {/* Guest Information */}
                         {listing.guestName && listing.guestName !== 'N/A' && (
-                          <MDBox sx={{ mb: 3 }}>
+                          <MDBox sx={{ mb: 0.5 }}>
                             <MDTypography variant="body2" sx={{ 
-                              color: '#64748b', 
+                              color: '#6366f1', 
                               fontSize: '0.75rem', 
                               fontWeight: 500,
                               mb: 0.5,
                               textTransform: 'uppercase',
-                              letterSpacing: '0.5px'
+                              letterSpacing: '0.8px'
                             }}>
                               Guest
                             </MDTypography>
@@ -1262,9 +1263,9 @@ function Overview() {
 
                         {/* Dates Information */}
                         {listing.checkInDate && listing.checkInDate !== 'N/A' && listing.checkOutDate && listing.checkOutDate !== 'N/A' && (
-                          <MDBox sx={{ mb: 3 }}>
+                          <MDBox sx={{ mb: 0.5 }}>
                             <MDTypography variant="body2" sx={{ 
-                              color: '#64748b', 
+                              color: '#6366f1', 
                               fontSize: '0.75rem', 
                               fontWeight: 500,
                               mb: 0.5,
@@ -1275,7 +1276,7 @@ function Overview() {
                             </MDTypography>
                             <MDTypography variant="body1" sx={{ 
                               color: '#475569', 
-                              fontSize: '0.9rem', 
+                              fontSize: '0.85rem', 
                               fontWeight: 600
                             }}>
                               {listing.checkInDate} - {listing.checkOutDate}
@@ -1285,12 +1286,12 @@ function Overview() {
 
                           {/* Reservation ID */}
                           {listing.reservationId && listing.reservationId !== 'N/A' && (
-                            <MDBox sx={{ mb: 3 }}>
+                            <MDBox sx={{ mb: 0.5 }}>
                               <MDTypography variant="body2" sx={{ 
                                 color: '#64748b', 
                                 fontSize: '0.75rem', 
                                 fontWeight: 500,
-                                mb: 0.5,
+                                mb: 0.3,
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.5px'
                               }}>
@@ -1298,7 +1299,7 @@ function Overview() {
                               </MDTypography>
                               <MDTypography variant="body1" sx={{ 
                                 color: '#475569', 
-                                fontSize: '0.9rem', 
+                                fontSize: '0.85rem', 
                                 fontWeight: 600,
                                 fontFamily: 'monospace'
                               }}>
@@ -1309,7 +1310,7 @@ function Overview() {
 
                           {/* Reservation Status */}
                           {listing.reservationStatus && listing.reservationStatus !== 'N/A' && (
-                            <MDBox sx={{ mb: 3 }}>
+                            <MDBox sx={{ mb: 0.5 }}>
                               <MDTypography variant="body2" sx={{ 
                                 color: '#64748b', 
                                 fontSize: '0.75rem', 
@@ -1372,16 +1373,16 @@ function Overview() {
                             {/* Cleaning Status */}
                             <MDBox sx={{ mb: 2 }}>
                               <MDTypography variant="body2" sx={{ 
-                                color: '#64748b', 
-                                fontSize: '0.75rem', 
-                                fontWeight: 500,
-                                mb: 1,
+                                color: '#6366f1', 
+                                fontSize: '0.7rem', 
+                                fontWeight: 700,
+                                mb: 0.8,
                                 textTransform: 'uppercase',
-                                letterSpacing: '0.5px'
+                                letterSpacing: '0.8px'
                               }}>
                                 Cleaning Status
                               </MDTypography>
-                              <MDBox sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                              <MDBox sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                                 {/* Enhanced HA Status Button with Animations */}
                                 <MDBox 
                                   onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HA')}
@@ -1391,12 +1392,12 @@ function Overview() {
                                       listing.hwStatus === 'Clean' ? '#0E7490' : '#EA580C'
                                     } 100%)`,
                                     color: 'white',
-                                    px: 3,
-                                    py: 3,
-                                    minHeight: '85px',
-                                    borderRadius: '12px',
+                                    px: 1.5,
+                                    py: 0.5,
+                                    minHeight: '35px',
+                                    borderRadius: '8px',
                                     cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer',
-                                    transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -1409,10 +1410,9 @@ function Overview() {
                                     // Pulse animation for interactive buttons
                                     animation: !(isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) ? 'heartbeat 3s ease-in-out infinite' : 'none',
                                     '&:hover': {
-                                      transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'translateY(-3px) scale(1.05) rotateX(5deg)',
-                                      boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : `0 12px 30px ${getStatusColor('hw', listing.hwStatus)}60, inset 0 1px 0 rgba(255, 255, 255, 0.4)`,
-                                      filter: 'brightness(1.15) saturate(1.2)',
-                                      animation: !(isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) ? 'pulse 1.5s ease-in-out infinite' : 'none'
+                                      transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'translateY(-1px) scale(1.02)',
+                                      boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : `0 4px 12px ${getStatusColor('hw', listing.hwStatus)}40, inset 0 1px 0 rgba(255, 255, 255, 0.3)`,
+                                      filter: 'brightness(1.08) saturate(1.1)',
                                     },
                                     // Shimmer effect
                                     '&::before': {
@@ -1460,12 +1460,12 @@ function Overview() {
                                       listing.hkStatus === 'Clean' ? '#C2410C' : '#BE185D'
                                     } 100%)`,
                                     color: 'white',
-                                    px: 3,
-                                    py: 3,
-                                    minHeight: '85px',
-                                    borderRadius: '12px',
+                                    px: 1.5,
+                                    py: 0.5,
+                                    minHeight: '35px',
+                                    borderRadius: '8px',
                                     cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer',
-                                    transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -1478,10 +1478,9 @@ function Overview() {
                                     // Pulse animation for interactive buttons (delayed)
                                     animation: !(isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) ? 'heartbeat 3s ease-in-out infinite 1.5s' : 'none',
                                     '&:hover': {
-                                      transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'translateY(-3px) scale(1.05) rotateX(5deg)',
-                                      boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : `0 12px 30px ${getStatusColor('hk', listing.hkStatus)}60, inset 0 1px 0 rgba(255, 255, 255, 0.4)`,
-                                      filter: 'brightness(1.15) saturate(1.2)',
-                                      animation: !(isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) ? 'pulse 1.5s ease-in-out infinite' : 'none'
+                                      transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'translateY(-1px) scale(1.02)',
+                                      boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : `0 4px 12px ${getStatusColor('hk', listing.hkStatus)}40, inset 0 1px 0 rgba(255, 255, 255, 0.3)`,
+                                      filter: 'brightness(1.08) saturate(1.1)',
                                     },
                                     // Shimmer effect
                                     '&::before': {
@@ -1741,21 +1740,6 @@ function Overview() {
                 📊 Daily Occupancy & Revenue Report
               </MDTypography>
               
-              <MDBox sx={{ 
-                backgroundColor: '#f8fafc',
-                borderRadius: 2,
-                p: 2,
-                mt: 2,
-                border: '1px solid #e2e8f0',
-                display: 'inline-block'
-              }}>
-                <MDTypography variant="h6" color="text.primary" sx={{ 
-                  color: '#475569',
-                  fontWeight: 'medium'
-                }}>
-                  Report Date: {occupancyData.reportDate}
-                </MDTypography>
-              </MDBox>
             </MDBox>
             
             {/* Report Period and Occupancy Rate */}

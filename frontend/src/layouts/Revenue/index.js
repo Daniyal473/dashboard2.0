@@ -58,96 +58,96 @@ import { API_ENDPOINTS } from "config/api";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
-// CanvasJS Chart Component
-class CanvasJSChart extends Component {
-  constructor(props) {
-    super(props);
-    this.chart = null;
-  }
-
-  componentDidMount() {
-    // Load CanvasJS from CDN
-    if (!window.CanvasJS) {
-      const script = document.createElement("script");
-      script.src = "https://canvasjs.com/assets/script/canvasjs.min.js";
-      script.onload = () => {
-        this.renderChart();
-      };
-      document.head.appendChild(script);
-    } else {
-      this.renderChart();
-    }
-  }
-
-  componentDidUpdate() {
-    if (window.CanvasJS) {
-      this.renderChart();
-    }
-  }
-
-  renderChart() {
-    if (window.CanvasJS && this.chartContainer) {
-      this.chart = new window.CanvasJS.Chart(this.chartContainer, this.props.options);
-      this.chart.render();
-    }
-  }
-
-  render() {
+// Simple Revenue Chart Component
+function SimpleChart({ chartData }) {
+  if (!chartData || chartData.length === 0) {
     return (
-      <div
-        ref={(ref) => (this.chartContainer = ref)}
-        style={{
-          height: "400px",
-          width: "100%",
-          minHeight: "300px",
-        }}
-        className="revenue-chart-container"
-      />
+      <div style={{ padding: "20px", textAlign: "center" }}>
+        <MDTypography variant="h6" color="text.secondary">
+          No chart data available
+        </MDTypography>
+      </div>
     );
   }
-}
 
-// PropTypes validation for CanvasJSChart
-CanvasJSChart.propTypes = {
-  options: PropTypes.object.isRequired,
-};
-
-// Responsive Chart Wrapper
-function ResponsiveRevenueChart({ chartData }) {
-  const [screenSize, setScreenSize] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
-
-  useEffect(() => {
-    const handleResize = () => {
-      setScreenSize({
-        width: window.innerWidth,
-        height: window.innerHeight,
-      });
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const isMobile = screenSize.width <= 768;
-  const isSmallMobile = screenSize.width <= 480;
-  const isTablet = screenSize.width > 768 && screenSize.width <= 1024;
+  const maxValue = Math.max(...chartData.map(item => item.value), 1);
+  
+  // Custom scaling for better visual representation
+  const getBarWidth = (value, maxVal) => {
+    if (value === 0) return 5;
+    
+    // Use cubic root scaling for more aggressive compression of small values
+    const cubicValue = Math.pow(value, 1/3);
+    const cubicMax = Math.pow(maxVal, 1/3);
+    const percentage = (cubicValue / cubicMax) * 100;
+    
+    // More aggressive minimum reduction for small values
+    if (percentage < 30) {
+      return Math.max(percentage * 0.4, 8); // Reduce small bars by 60%
+    }
+    
+    return Math.min(percentage, 95);
+  };
 
   return (
-    <RevenueChartComponent
-      chartData={chartData}
-      isMobile={isMobile}
-      isSmallMobile={isSmallMobile}
-      isTablet={isTablet}
-      screenWidth={screenSize.width}
-    />
+    <div style={{ padding: "20px" }}>
+      <MDTypography variant="h6" sx={{ mb: 3, textAlign: "center", color: "#1e293b" }}>
+        Revenue Analytics
+      </MDTypography>
+      
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {chartData.map((item, index) => (
+          <div key={index} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ 
+              minWidth: "120px", 
+              fontSize: "12px", 
+              fontWeight: "600", 
+              color: "#374151",
+              textAlign: "right"
+            }}>
+              {item.label}
+            </div>
+            
+            <div style={{ 
+              flex: 1, 
+              height: "40px", 
+              backgroundColor: "#f1f5f9", 
+              borderRadius: "6px",
+              position: "relative",
+              overflow: "hidden"
+            }}>
+              <div style={{
+                height: "100%",
+                width: `${getBarWidth(item.value, maxValue)}%`,
+                background: `linear-gradient(135deg, ${item.color} 0%, ${item.color}dd 100%)`,
+                borderRadius: "6px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+                paddingRight: "8px",
+                transition: "width 1s ease-out"
+              }}>
+                <span style={{
+                  fontSize: "11px",
+                  fontWeight: "bold",
+                  color: "#ffffff",
+                  textShadow: "0 1px 2px rgba(0,0,0,0.5)"
+                }}>
+                  Rs{item.value >= 1000000 ? `${(item.value/1000000).toFixed(1)}M` : 
+                      item.value >= 1000 ? `${Math.round(item.value/1000)}K` : 
+                      Math.round(item.value)}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
-ResponsiveRevenueChart.propTypes = {
-  chartData: PropTypes.array.isRequired,
+SimpleChart.propTypes = {
+  chartData: PropTypes.array,
 };
 
 // Custom Horizontal Bar Chart Component
@@ -604,7 +604,7 @@ function ImprovedListingRevenue({ revenueData, formatCurrency }) {
                 },
               }}
             >
-              LISTING REVENUE
+              TODAY LISTING REVENUE
             </MDTypography>
             <MDTypography
               sx={{
@@ -1263,46 +1263,28 @@ function Revenue() {
     100% { transform: translateX(100%); }
   `;
 
-  // Monitor localStorage changes for admin target data
+  // Optimized localStorage monitoring
   useEffect(() => {
-    const checkAdminTargetData = () => {
-      const data = JSON.parse(localStorage.getItem('monthlyTargetData') || '{}');
-      setAdminTargetData(data);
-    };
-
-    // Check initially
-    checkAdminTargetData();
-
-    // Set up storage event listener for cross-tab updates
-    window.addEventListener('storage', checkAdminTargetData);
-    
-    // Set up interval to check for same-tab updates (since storage event doesn't fire for same tab)
-    const interval = setInterval(checkAdminTargetData, 1000);
-
-    return () => {
-      window.removeEventListener('storage', checkAdminTargetData);
-      clearInterval(interval);
-    };
+    const data = JSON.parse(localStorage.getItem('monthlyTargetData') || '{}');
+    setAdminTargetData(data);
   }, []);
 
-  // Fetch revenue data and monthly target data from backend
+  // Optimized data fetching - faster loading
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Fetch revenue data
-        // console.log("🔗 Connecting to:", API_ENDPOINTS.REVENUE);
-        const revenueResponse = await fetch(API_ENDPOINTS.REVENUE);
-        // console.log("📡 Revenue response status:", revenueResponse.status);
-        const revenueResult = await revenueResponse.json();
-        // console.log("📊 Revenue API Result:", revenueResult);
+        
+        // Parallel fetch for faster loading
+        const [revenueResponse, monthlyResponse] = await Promise.all([
+          fetch(API_ENDPOINTS.REVENUE),
+          fetch(API_ENDPOINTS.MONTHLY_TARGET)
+        ]);
 
-        // Fetch monthly target data
-        // console.log("🔗 Connecting to:", API_ENDPOINTS.MONTHLY_TARGET);
-        const monthlyResponse = await fetch(API_ENDPOINTS.MONTHLY_TARGET);
-        // console.log("📡 Monthly response status:", monthlyResponse.status);
-        const monthlyResult = await monthlyResponse.json();
-        // console.log("📊 Monthly API Result:", monthlyResult);
+        const [revenueResult, monthlyResult] = await Promise.all([
+          revenueResponse.json(),
+          monthlyResponse.json()
+        ]);
 
         if (revenueResult.success) {
           setRevenueData(revenueResult.data);
@@ -1312,24 +1294,15 @@ function Revenue() {
           setMonthlyData(monthlyResult.data);
         }
 
-        if (revenueResult.success || monthlyResult.success) {
-          setError(null);
-        } else {
-          setError("Failed to fetch data from backend");
-        }
+        setError(null);
       } catch (err) {
         setError("Unable to connect to backend server");
-        console.error("Data fetch error:", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-
-    // Refresh data every 5 minutes
-    const interval = setInterval(fetchData, 5 * 60 * 1000);
-    return () => clearInterval(interval);
   }, []);
 
   // Fetch today's reservations
@@ -1358,12 +1331,12 @@ function Revenue() {
     }
   };
 
-  // Fetch reservations when component mounts
+  // Load reservations after main data loads (non-blocking)
   useEffect(() => {
-    if (isAuthenticated && (isAdmin() || (isCustom() && (hasPermission('revenue', 'view') || hasPermission('revenue', 'complete'))))) {
-      fetchTodayReservations();
+    if (!loading && isAuthenticated && (isAdmin() || (isCustom() && (hasPermission('revenue', 'view') || hasPermission('revenue', 'complete'))))) {
+      setTimeout(() => fetchTodayReservations(), 100);
     }
-  }, [isAuthenticated, isAdmin, isCustom, hasPermission]);
+  }, [loading, isAuthenticated, isAdmin, isCustom, hasPermission]);
 
   // Show loading while checking authentication
   if (authLoading) {
@@ -3380,7 +3353,7 @@ function Revenue() {
                     zIndex: 2,
                   }}
                 >
-                  <ResponsiveRevenueChart chartData={chartData} />
+                  <SimpleChart chartData={chartData} />
                 </MDBox>
               </MDBox>
             </Card>

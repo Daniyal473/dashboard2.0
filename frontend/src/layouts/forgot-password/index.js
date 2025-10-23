@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import { API_ENDPOINTS } from "config/api";
 
 // @mui material components
 import Card from "@mui/material/Card";
 import Container from "@mui/material/Container";
 import Alert from "@mui/material/Alert";
+import TextField from "@mui/material/TextField";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -23,12 +28,22 @@ function ForgotPassword() {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleInputChange = (field) => (event) => {
     setFormData({
       ...formData,
       [field]: event.target.value,
     });
+  };
+
+  const handleToggleNewPasswordVisibility = () => {
+    setShowNewPassword(!showNewPassword);
+  };
+
+  const handleToggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
 
   const handleSubmit = async (event) => {
@@ -266,12 +281,29 @@ function ForgotPassword() {
                     >
                       New Password
                     </MDTypography>
-                    <MDInput
-                      type="password"
+                    <TextField
+                      type={showNewPassword ? "text" : "password"}
                       placeholder="Enter new password"
                       fullWidth
                       value={formData.newPassword}
                       onChange={handleInputChange("newPassword")}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={handleToggleNewPasswordVisibility}
+                              edge="end"
+                              sx={{ 
+                                color: "#6b7280",
+                                padding: "8px",
+                                marginRight: "4px"
+                              }}
+                            >
+                              {showNewPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
                       sx={{
                         "& .MuiOutlinedInput-root": {
                           borderRadius: "6px",
@@ -296,6 +328,7 @@ function ForgotPassword() {
                         },
                         "& .MuiInputBase-input": {
                           padding: "12px 16px",
+                          paddingRight: "48px",
                           fontSize: "0.875rem",
                           color: "#374151",
                           "&::placeholder": {
@@ -319,12 +352,29 @@ function ForgotPassword() {
                     >
                       Confirm Password
                     </MDTypography>
-                    <MDInput
-                      type="password"
+                    <TextField
+                      type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm new password"
                       fullWidth
                       value={formData.confirmPassword}
                       onChange={handleInputChange("confirmPassword")}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={handleToggleConfirmPasswordVisibility}
+                              edge="end"
+                              sx={{ 
+                                color: "#6b7280",
+                                padding: "8px",
+                                marginRight: "4px"
+                              }}
+                            >
+                              {showConfirmPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
                       sx={{
                         "& .MuiOutlinedInput-root": {
                           borderRadius: "6px",
@@ -349,6 +399,7 @@ function ForgotPassword() {
                         },
                         "& .MuiInputBase-input": {
                           padding: "12px 16px",
+                          paddingRight: "48px",
                           fontSize: "0.875rem",
                           color: "#374151",
                           "&::placeholder": {
