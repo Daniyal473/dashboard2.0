@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { API_ENDPOINTS } from "config/api";
 
 // @mui material components
 import Card from "@mui/material/Card";
@@ -63,7 +64,7 @@ function ForgotPassword() {
       setLoading(true);
 
       try {
-        const response = await fetch(`http://localhost:5000/api/auth/reset-password`, {
+        const response = await fetch(API_ENDPOINTS.FORGOT_PASSWORD, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
