@@ -320,9 +320,8 @@ class RevenueChartComponent extends Component {
                 backgroundColor: "#fafbfc",
                 border: "1px solid #f1f5f9",
                 transition: "all 0.3s ease",
-                cursor: "pointer",
+                cursor: "default",
               }}
-              onClick={() => this.handleBarClick(item, index)}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = "#f8fafc";
                 e.currentTarget.style.borderColor = "#e2e8f0";
@@ -484,254 +483,6 @@ class RevenueChartComponent extends Component {
           </div>
         )}
 
-        {/* Details Modal */}
-        {this.state.showDetails && this.state.selectedBar && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.7)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 9999,
-              padding: "20px",
-            }}
-            onClick={this.closeDetails}
-          >
-            <div
-              style={{
-                backgroundColor: "#ffffff",
-                borderRadius: "12px",
-                padding: isMobile ? "20px" : "30px",
-                maxWidth: isMobile ? "90%" : "500px",
-                width: "100%",
-                maxHeight: "80vh",
-                overflowY: "auto",
-                boxShadow:
-                  "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-                position: "relative",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Close Button */}
-              <button
-                onClick={this.closeDetails}
-                style={{
-                  position: "absolute",
-                  top: "15px",
-                  right: "15px",
-                  background: "none",
-                  border: "none",
-                  fontSize: "24px",
-                  cursor: "pointer",
-                  color: "#64748b",
-                  padding: "5px",
-                  borderRadius: "4px",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.backgroundColor = "#f1f5f9";
-                  e.target.style.color = "#374151";
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.backgroundColor = "transparent";
-                  e.target.style.color = "#64748b";
-                }}
-              >
-                ×
-              </button>
-
-              {/* Modal Header */}
-              <div style={{ marginBottom: "20px" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    marginBottom: "8px",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "20px",
-                      height: "20px",
-                      backgroundColor: this.state.selectedBar.color,
-                      borderRadius: "4px",
-                    }}
-                  />
-                  <h3
-                    style={{
-                      fontSize: isMobile ? "18px" : "20px",
-                      fontFamily: "Inter, sans-serif",
-                      fontWeight: "700",
-                      color: "#1e293b",
-                      margin: 0,
-                    }}
-                  >
-                    {this.state.selectedBar.label}
-                  </h3>
-                </div>
-                <div
-                  style={{
-                    fontSize: isMobile ? "24px" : "28px",
-                    fontFamily: "Inter, sans-serif",
-                    fontWeight: "800",
-                    color: this.state.selectedBar.color,
-                    marginBottom: "8px",
-                  }}
-                >
-                  {this.formatValue(this.state.selectedBar.value)}
-                </div>
-              </div>
-
-              {/* Modal Content */}
-              {(() => {
-                const details = this.getBarDetails(this.state.selectedBar);
-                return (
-                  <div>
-                    <p
-                      style={{
-                        fontSize: isMobile ? "14px" : "16px",
-                        fontFamily: "Inter, sans-serif",
-                        color: "#64748b",
-                        lineHeight: "1.5",
-                        marginBottom: "20px",
-                      }}
-                    >
-                      {details.description}
-                    </p>
-
-                    {/* Breakdown */}
-                    <div style={{ marginBottom: "20px" }}>
-                      <h4
-                        style={{
-                          fontSize: isMobile ? "14px" : "16px",
-                          fontFamily: "Inter, sans-serif",
-                          fontWeight: "600",
-                          color: "#374151",
-                          marginBottom: "10px",
-                        }}
-                      >
-                        Breakdown:
-                      </h4>
-                      <ul
-                        style={{
-                          listStyle: "none",
-                          padding: 0,
-                          margin: 0,
-                        }}
-                      >
-                        {details.breakdown?.map((item, idx) => (
-                          <li
-                            key={idx}
-                            style={{
-                              fontSize: isMobile ? "13px" : "14px",
-                              fontFamily: "Inter, sans-serif",
-                              color: "#64748b",
-                              marginBottom: "6px",
-                              paddingLeft: "16px",
-                              position: "relative",
-                            }}
-                          >
-                            <span
-                              style={{
-                                position: "absolute",
-                                left: "0",
-                                color: this.state.selectedBar.color,
-                                fontWeight: "bold",
-                              }}
-                            >
-                              •
-                            </span>
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Stats */}
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "20px",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <div
-                        style={{
-                          flex: 1,
-                          minWidth: "120px",
-                          padding: "12px",
-                          backgroundColor: "#f8fafc",
-                          borderRadius: "8px",
-                          border: "1px solid #e2e8f0",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: isMobile ? "11px" : "12px",
-                            fontFamily: "Inter, sans-serif",
-                            color: "#64748b",
-                            fontWeight: "500",
-                            marginBottom: "4px",
-                          }}
-                        >
-                          Trend
-                        </div>
-                        <div
-                          style={{
-                            fontSize: isMobile ? "13px" : "14px",
-                            fontFamily: "Inter, sans-serif",
-                            color: "#059669",
-                            fontWeight: "600",
-                          }}
-                        >
-                          {details.trend}
-                        </div>
-                      </div>
-                      <div
-                        style={{
-                          flex: 1,
-                          minWidth: "120px",
-                          padding: "12px",
-                          backgroundColor: "#f8fafc",
-                          borderRadius: "8px",
-                          border: "1px solid #e2e8f0",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontSize: isMobile ? "11px" : "12px",
-                            fontFamily: "Inter, sans-serif",
-                            color: "#64748b",
-                            fontWeight: "500",
-                            marginBottom: "4px",
-                          }}
-                        >
-                          Target
-                        </div>
-                        <div
-                          style={{
-                            fontSize: isMobile ? "13px" : "14px",
-                            fontFamily: "Inter, sans-serif",
-                            color: "#374151",
-                            fontWeight: "600",
-                          }}
-                        >
-                          {details.target}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-        )}
 
         {/* Enhanced Animation Keyframes */}
         <style>
@@ -1877,12 +1628,12 @@ function Revenue() {
           actual: formatCurrency(actualRevenue), // API Actual Revenue: 175480.55 PKR
           expected: formatCurrency(expectedRevenue), // Dynamic Expected Revenue from backend
         },
-        progress: (actualRevenueProgress + expectedRevenueProgress) / 2 || 35, // Average progress
+        progress: expectedRevenue > 0 ? Math.min((actualRevenue / expectedRevenue) * 100, 100) : 0, // Actual/Expected percentage
         color: "success",
         icon: "trending_up",
         gradient: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
         target: formatCurrency(targetRevenue),
-        description: `${((actualRevenueProgress + expectedRevenueProgress) / 2).toFixed(2)}% of actual and expected revenue`,
+        description: expectedRevenue > 0 ? `${((actualRevenue / expectedRevenue) * 100).toFixed(2)}% of actual and expected revenue` : "0% of actual and expected revenue",
       },
       {
         title: "Daily Target",
@@ -1891,11 +1642,11 @@ function Revenue() {
           actual: formatCurrency(targetRevenue), // Dynamic target value
           achieved: formatCurrency(expectedRevenue),
         },
-        progress: targetAchievementProgress || 70, // Test with 70% if no data
+        progress: targetRevenue > 0 ? Math.min((expectedRevenue / targetRevenue) * 100, 100) : 0, // Achieved/Actual percentage
         color: "primary",
         icon: "flag",
         gradient: "linear-gradient(135deg, #06d6a0 0%, #059669 100%)",
-        description: `${(targetAchievementProgress || 70).toFixed(2)}% of daily target completed`,
+        description: targetRevenue > 0 ? `${((expectedRevenue / targetRevenue) * 100).toFixed(2)}% of daily target completed` : "0% of daily target completed",
       },
       {
         title: "MONTHLY TARGET",
@@ -1904,11 +1655,11 @@ function Revenue() {
           actual: formatCurrency(monthlyTarget), // Monthly target from API
           achieved: formatCurrency(monthlyAchievedRevenue), // Monthly achieved revenue from Teable
         },
-        progress: monthlyProgress || 35, // Test with 35% if no data
+        progress: monthlyTarget > 0 ? Math.min((monthlyAchievedRevenue / monthlyTarget) * 100, 100) : 0, // Achieved/Actual percentage
         color: "warning",
         icon: "flag",
         gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-        description: `${(monthlyProgress || 35).toFixed(2)}% of monthly target achieved`,
+        description: monthlyTarget > 0 ? `${((monthlyAchievedRevenue / monthlyTarget) * 100).toFixed(2)}% of monthly target achieved` : "0% of monthly target achieved",
       },
       {
         title: "QUARTERLY TARGET",
@@ -1932,7 +1683,7 @@ function Revenue() {
   if (loading) {
     return (
       <DashboardLayout>
-        <DashboardNavbar absolute isMini />
+        <DashboardNavbar absolute />
         <MDBox
           pt={6}
           pb={3}
@@ -1979,7 +1730,7 @@ function Revenue() {
   if (error) {
     return (
       <DashboardLayout>
-        <DashboardNavbar absolute isMini />
+        <DashboardNavbar absolute />
         <MDBox
           pt={6}
           pb={3}
@@ -2013,7 +1764,7 @@ function Revenue() {
         minHeight: "100vh",
       }}
     >
-      <DashboardNavbar absolute isMini />
+      <DashboardNavbar absolute />
       <MDBox
         pt={6}
         pb={3}

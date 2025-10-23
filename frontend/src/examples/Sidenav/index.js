@@ -15,6 +15,9 @@ Coded by www.creative-tim.com
 
 import { useEffect } from "react";
 
+// @mui material components
+import { useTheme, useMediaQuery } from "@mui/material";
+
 // react-router-dom components
 import { useLocation, NavLink, useNavigate } from "react-router-dom";
 
@@ -57,6 +60,10 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const collapseName = location.pathname.replace("/", "");
+  
+  // Check if screen is mobile (below 1200px)
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down(1200));
 
 
   // Handle logout functionality with proper navigation
@@ -167,7 +174,15 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   return (
     <SidenavRoot
       {...rest}
-      variant="permanent"
+      variant={isMobile ? "temporary" : "permanent"}
+      open={isMobile ? !miniSidenav : true}
+      onClose={() => setMiniSidenav(dispatch, true)}
+      ModalProps={{
+        keepMounted: true, // Better open performance on mobile
+        BackdropProps: {
+          sx: { backgroundColor: 'rgba(0, 0, 0, 0.5)' }
+        }
+      }}
       ownerState={{ transparentSidenav, whiteSidenav, miniSidenav, darkMode }}
     >
       <MDBox pt={3} pb={1} px={4} textAlign="center">
@@ -184,16 +199,20 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
             <Icon sx={{ fontWeight: "bold" }}>close</Icon>
           </MDTypography>
         </MDBox>
-        <MDBox component={NavLink} to="/" display="flex" alignItems="center">
-          {brand && <MDBox component="img" src={brand} alt="Brand" width="2rem" />}
-          <MDBox
-            width={!brandName && "100%"}
-            sx={(theme) => sidenavLogoLabel(theme, { miniSidenav })}
-          >
-            <MDTypography component="h6" variant="button" fontWeight="medium" color={textColor}>
-              {brandName}
-            </MDTypography>
-          </MDBox>
+        <MDBox component={NavLink} to="/" display="flex" alignItems="center" justifyContent="center">
+          {brand && (
+            <MDBox 
+              component="img" 
+              src={brand} 
+              alt="Brand" 
+              width="7rem" 
+              height="7rem"
+              sx={{
+                borderRadius: '8px',
+                padding: '8px',
+              }}
+            />
+          )}
         </MDBox>
       </MDBox>
       <Divider

@@ -96,7 +96,7 @@ function DashboardNavbar({ absolute, light, isMini }) {
     },
   });
 
-  {/*return (
+  return (
     <AppBar
       position={absolute ? "absolute" : navbarType}
       color="inherit"
@@ -110,13 +110,19 @@ function DashboardNavbar({ absolute, light, isMini }) {
           <MDBox sx={(theme) => navbarRow(theme, { isMini })}>
             <MDBox color={light ? "white" : "inherit"}>
               <IconButton
-                size="small"
+                size="large"
                 disableRipple
                 color="inherit"
-                sx={navbarMobileMenu}
+                sx={(theme) => ({
+                  ...navbarMobileMenu(theme),
+                  padding: 2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                  }
+                })}
                 onClick={handleMiniSidenav}
               >
-                <Icon sx={iconsStyle} fontSize="medium">
+                <Icon sx={iconsStyle} fontSize="large">
                   {miniSidenav ? "menu_open" : "menu"}
                 </Icon>
               </IconButton>
@@ -125,7 +131,7 @@ function DashboardNavbar({ absolute, light, isMini }) {
         )}
       </Toolbar>
     </AppBar>
-  );*/}
+  );
 }
 
 // Setting default values for the props of DashboardNavbar

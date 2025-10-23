@@ -4,7 +4,7 @@ import Dashboard from "layouts/dashboard";
 import Tables from "layouts/tables";
 import Revenue from "layouts/Revenue";
 import RTL from "layouts/rtl";
-import Profile from "layouts/profile";
+import Profile from "layouts/Rooms";
 import SignIn from "layouts/authentication/sign-in";
 import ForgotPassword from "layouts/forgot-password";
 import AdminPanel from "layouts/admin-panel";

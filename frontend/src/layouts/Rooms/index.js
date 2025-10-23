@@ -92,7 +92,7 @@ function Overview() {
   // Dropdown menu state
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedListing, setSelectedListing] = useState(null);
-  const [selectedStatusType, setSelectedStatusType] = useState(null); // 'HW' or 'HK'
+  const [selectedStatusType, setSelectedStatusType] = useState(null); // 'HA' or 'HK'
   const [isUpdating, setIsUpdating] = useState(false);
   const [updatingOption, setUpdatingOption] = useState(null); // Track which option is updating
   const updateInProgress = useRef(false);
@@ -100,26 +100,45 @@ function Overview() {
   // Focus mode state
   const [focusedCard, setFocusedCard] = useState(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [originalScrollPosition, setOriginalScrollPosition] = useState(0);
+  
+  // Animation states
+  const [cardsLoaded, setCardsLoaded] = useState(false);
+  const [animationDelay, setAnimationDelay] = useState(0);
+  const [hoveredCard, setHoveredCard] = useState(null);
+  const [rippleEffect, setRippleEffect] = useState({ active: false, x: 0, y: 0 });
 
-  // Color scheme matching the provided image
+  // Enhanced color scheme with better contrast and professional appearance
   const statusColors = {
-    // Activity Status Colors
+    // Activity Status Colors - Unique colors not used elsewhere
     activity: {
-      'Vacant': '#A78BFA',      // Light Purple (Car 1)
-      'Occupied': '#F472B6',    // Pink (Car 2)  
-      'Checkin': '#60A5FA',     // Light Blue (Truck)
-      'Checkout': '#FB7185',    // Coral Pink (Scooter)
-      'Unknown': '#9CA3AF'      // Gray (Van 1)
+      'Vacant': '#06B6D4',      // Cyan 500 - Available/Free (unique cyan)
+      'Occupied': '#EC4899',    // Pink 500 - Busy/Occupied (unique pink)
+      'Checkin': '#3B82F6',     // Blue 500 - Arriving (unique blue)
+      'Checkout': '#F59E0B',    // Orange 500 - Departing (unique orange)
+      'Unknown': '#6B7280'      // Gray 500 - Unknown status
     },
-    // HW Status Colors
+    // HA Status Colors - Professional blue and amber theme
     hw: {
-      'Clean': '#6B7280',       // Grey color
-      'Not Clean': '#F59E0B'    // Orange (instead of red)
+      'Clean': '#0891B2',       // Cyan 600 - Clean/Good (high contrast)
+      'Not Clean': '#F59E0B'    // Amber 500 - Needs attention (high contrast)
     },
-    // HK Status Colors  
+    // HK Status Colors - Professional orange and rose theme
     hk: {
-      'Clean': '#34D399',       // Green (alternative to red)
-      'Not Clean': '#F87171'    // Light Red/Coral
+      'Clean': '#EA580C',       // Orange 600 - Clean/Fresh (unique color)
+      'Not Clean': '#E11D48'    // Rose 600 - Needs cleaning (high contrast)
+    },
+    // Reservation Status Colors - Professional high contrast scheme
+    reservation: {
+      'Confirmed': '#2563EB',        // Blue 600 - Confirmed (high contrast)
+      'Upcoming Stay': '#7C3AED',    // Violet 600 - Future (high contrast)
+      'Current Stay': '#059669',     // Emerald 600 - Active/Current (high contrast)
+      'Staying Guest': '#6B7280',    // Gray 500 - Staying Guest (neutral)
+      'Checked In': '#059669',       // Emerald 600 - Active (high contrast)
+      'Cancelled': '#DC2626',        // Red 600 - Cancelled (high contrast)
+      'Checkout': '#D97706',         // Amber 600 - Ending (high contrast)
+      'Pending': '#6B7280',          // Gray 500 - Waiting (neutral)
+      'N/A': '#9CA3AF'               // Gray 400 - Not applicable
     }
   };
 
@@ -132,6 +151,8 @@ function Overview() {
         return statusColors.hw[statusValue] || statusColors.hw['Not Clean'];
       case 'hk':
         return statusColors.hk[statusValue] || statusColors.hk['Not Clean'];
+      case 'reservation':
+        return statusColors.reservation[statusValue] || statusColors.reservation['N/A'];
       default:
         return '#6B7280'; // Default gray
     }
@@ -149,7 +170,7 @@ function Overview() {
       listing.guestName,              // Guest name
       listing.reservationId,          // Reservation ID
       listing.activity,               // Activity status
-      listing.hwStatus,               // HW status
+      listing.hwStatus,               // HA status
       listing.hkStatus,               // HK status
       listing.reservationStatus,      // Reservation status
       listing.checkInDate,            // Check-in date
@@ -172,11 +193,24 @@ function Overview() {
       // If clicking the same card, exit focus mode
       exitFocusMode();
     } else {
+      // Store current scroll position before focusing
+      setOriginalScrollPosition(window.scrollY);
       // Focus on new card
       setIsAnimating(true);
       setTimeout(() => {
         setFocusedCard(listing);
         setIsAnimating(false);
+        // Scroll focused card into view
+        setTimeout(() => {
+          const focusedElement = document.querySelector(`[data-listing-id="${listing.id}"]`);
+          if (focusedElement) {
+            focusedElement.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'center',
+              inline: 'center'
+            });
+          }
+        }, 200);
       }, 150);
     }
   };
@@ -187,6 +221,13 @@ function Overview() {
     setTimeout(() => {
       setFocusedCard(null);
       setIsAnimating(false);
+      // Restore original scroll position
+      setTimeout(() => {
+        window.scrollTo({
+          top: originalScrollPosition,
+          behavior: 'smooth'
+        });
+      }, 200);
     }, 150);
   };
 
@@ -198,7 +239,7 @@ function Overview() {
     
     // Check permissions - only allow users with complete access to rooms
     if (isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) {
-      // console.log('❌ User does not have permission to modify HW/HK status');
+      // console.log('❌ User does not have permission to modify HA/HK status');
       alert('You do not have permission to modify room status. View-only access.');
       return;
     }
@@ -228,7 +269,7 @@ function Overview() {
     
     // Check permissions - only allow users with complete access to rooms
     if (isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) {
-      // console.log('❌ User does not have permission to update HW/HK status');
+      // console.log('❌ User does not have permission to update HA/HK status');
       alert('You do not have permission to modify room status. View-only access.');
       return;
     }
@@ -243,13 +284,16 @@ function Overview() {
       // console.log('  - Method: PUT');
       // console.log('  - Body:', { statusType: selectedStatusType, newStatus: newStatus });
       
+      // Map HA back to HW for API compatibility
+      const apiStatusType = selectedStatusType === 'HA' ? 'HW' : selectedStatusType;
+      
       const response = await fetch(`${API_ENDPOINTS.ROOMS_UPDATE_CLEANING_STATUS}/${selectedListing.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          statusType: selectedStatusType,
+          statusType: apiStatusType,
           newStatus: newStatus
         })
       });
@@ -275,7 +319,7 @@ function Overview() {
             listing.id === selectedListing.id 
               ? { 
                   ...listing, 
-                  [selectedStatusType === 'HW' ? 'hwStatus' : 'hkStatus']: newStatus 
+                  [selectedStatusType === 'HA' ? 'hwStatus' : 'hkStatus']: newStatus 
                 }
               : listing
           )
@@ -316,13 +360,12 @@ function Overview() {
       
       if (data.success) {
         setListings(data.data);
-        // console.log(`✅ Loaded ${data.data.length} room listings`);
-        // console.log('📋 First listing data:', data.data[0]);
-        // console.log('🧹 Cleaning status check:', data.data.map(listing => ({
-        //   id: listing.id,
-        //   name: listing.name,
-        //   cleaningStatus: listing.cleaningStatus
-        // })));
+        console.log(`✅ Loaded ${data.data.length} room listings`);
+        console.log('🔍 Reservation Status check:', data.data.map(listing => ({
+          id: listing.id,
+          name: listing.name,
+          reservationStatus: listing.reservationStatus
+        })));
       } else {
         setError(data.message || 'Failed to fetch room listings');
         console.error('❌ Failed to fetch listings:', data.error);
@@ -696,6 +739,116 @@ function Overview() {
     }
   };
 
+  // Animation keyframes for enhanced effects
+  const animationStyles = `
+    @keyframes slideUpFadeIn {
+      0% {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-8px);
+      }
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4);
+      }
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(124, 58, 237, 0);
+      }
+    }
+    
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+      100% {
+        background-position: 200% 0;
+      }
+    }
+    
+    @keyframes ripple {
+      0% {
+        transform: scale(0);
+        opacity: 0.6;
+      }
+      100% {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+    
+    @keyframes bounce {
+      0%, 20%, 53%, 80%, 100% {
+        transform: translate3d(0, 0, 0);
+      }
+      40%, 43% {
+        transform: translate3d(0, -8px, 0);
+      }
+      70% {
+        transform: translate3d(0, -4px, 0);
+      }
+      90% {
+        transform: translate3d(0, -2px, 0);
+      }
+    }
+    
+    @keyframes glow {
+      0%, 100% {
+        box-shadow: 0 0 5px rgba(124, 58, 237, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 20px rgba(124, 58, 237, 0.6), 0 0 30px rgba(124, 58, 237, 0.4);
+      }
+    }
+    
+    @keyframes heartbeat {
+      0%, 100% {
+        transform: scale(1);
+      }
+      14% {
+        transform: scale(1.1);
+      }
+      28% {
+        transform: scale(1);
+      }
+      42% {
+        transform: scale(1.1);
+      }
+      70% {
+        transform: scale(1);
+      }
+    }
+  `;
+  
+  // Handle card click with ripple effect
+  const handleCardClickWithRipple = (event, listing) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    setRippleEffect({ active: true, x, y });
+    
+    setTimeout(() => {
+      setRippleEffect({ active: false, x: 0, y: 0 });
+      handleCardFocus(listing);
+    }, 300);
+  };
+
   // Fetch listings when component mounts
   useEffect(() => {
     if (isAuthenticated && (isAdmin() || (isCustom() && hasPermission('rooms', 'view')))) {
@@ -714,6 +867,11 @@ function Overview() {
         // console.log('✅ Both room listings and occupancy data loaded');
         setLoading(false);
         setOccupancyLoading(false);
+        
+        // Trigger staggered card animations
+        setTimeout(() => {
+          setCardsLoaded(true);
+        }, 300);
       }).catch((error) => {
         console.error('❌ Error loading data:', error);
         setLoading(false);
@@ -780,10 +938,44 @@ function Overview() {
             alignItems="center"
             minHeight="40vh"
             flexDirection="column"
+            sx={{
+              background: 'linear-gradient(45deg, #f8fafc 25%, transparent 25%), linear-gradient(-45deg, #f8fafc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f8fafc 75%), linear-gradient(-45deg, transparent 75%, #f8fafc 75%)',
+              backgroundSize: '20px 20px',
+              backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+              animation: 'shimmer 2s linear infinite'
+            }}
           >
-            <CircularProgress sx={{ mb: 2 }} />
-            <MDTypography variant="h6" color="text.secondary" textAlign="center">
-              Loading please wait...
+            <CircularProgress 
+              sx={{ 
+                mb: 2,
+                animation: 'pulse 2s ease-in-out infinite',
+                '& .MuiCircularProgress-circle': {
+                  stroke: 'url(#gradient)',
+                }
+              }} 
+            />
+            <svg width="0" height="0">
+              <defs>
+                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#7C3AED" />
+                  <stop offset="50%" stopColor="#3B82F6" />
+                  <stop offset="100%" stopColor="#059669" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <MDTypography 
+              variant="h6" 
+              color="text.secondary" 
+              textAlign="center"
+              sx={{
+                animation: 'bounce 2s ease-in-out infinite',
+                background: 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 50%, #059669 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}
+            >
+              Loading...
             </MDTypography>
           </MDBox>
         ) : (listings.length > 0 && !occupancyLoading) ? (
@@ -815,42 +1007,91 @@ function Overview() {
       {listings.length > 0 && (
         <MDBox px={3} mb={3}>
           <Card sx={{ p: 3, backgroundColor: 'white', boxShadow: 3 }}>
-            <MDBox display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} gap={{ xs: 2, md: 0 }} mb={3}>
-              <MDTypography variant="h5" color="text.primary" fontWeight="bold">
-                🏢 Apartment Management
-              </MDTypography>
+            <MDBox display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} gap={{ xs: 2, md: 0 }} mb={4}>
+              <MDBox>
+                <MDTypography variant="h4" fontWeight="bold" sx={{ 
+                  background: 'linear-gradient(135deg, #7C3AED 0%, #3B82F6 50%, #059669 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  fontSize: '1.75rem',
+                  letterSpacing: '-0.025em',
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                  mb: 0.5
+                }}>
+                  🏢 Apartment Management
+                </MDTypography>
+              </MDBox>
               
-              {/* Search Bar */}
-              <MDBox sx={{ minWidth: { xs: '100%', md: '300px' } }}>
+              {/* Enhanced Search Bar with Animation */}
+              <MDBox sx={{ minWidth: { xs: '100%', md: '320px' } }}>
                 <TextField
                   fullWidth
-                  size="small"
-                  placeholder="Search anything..."
+                  size="medium"
+                  placeholder="Search apartments, guests, or status..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon sx={{ color: '#64748b' }} />
+                        <SearchIcon sx={{ 
+                          color: '#7C3AED', 
+                          fontSize: '1.2rem',
+                          animation: searchTerm ? 'pulse 2s infinite' : 'none'
+                        }} />
                       </InputAdornment>
                     ),
-                    sx: {
-                      borderRadius: 2,
-                      backgroundColor: '#f8fafc',
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        border: '1px solid #e2e8f0'
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '16px',
+                      backgroundColor: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                      fontSize: '0.9rem',
+                      fontWeight: 500,
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+                      border: '1px solid #e2e8f0',
+                      transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      '& fieldset': {
+                        border: 'none',
                       },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        border: '1px solid #cbd5e1'
+                      '&:hover': {
+                        boxShadow: '0 8px 25px rgba(124, 58, 237, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+                        transform: 'translateY(-2px) scale(1.02)',
+                        backgroundColor: '#ffffff',
+                        animation: 'glow 2s ease-in-out infinite alternate'
                       },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        border: '2px solid #3b82f6'
+                      '&.Mui-focused': {
+                        boxShadow: '0 8px 25px rgba(124, 58, 237, 0.15), inset 0 1px 0 rgba(255, 255, 255, 1)',
+                        transform: 'translateY(-2px) scale(1.02)',
+                        backgroundColor: '#ffffff',
+                        animation: 'glow 1.5s ease-in-out infinite alternate'
+                      },
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: '-100%',
+                        width: '100%',
+                        height: '100%',
+                        background: 'linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.1), transparent)',
+                        transition: 'left 0.5s ease-in-out',
+                      },
+                      '&:hover::before': {
+                        left: '100%',
                       }
-                    }
+                    },
+                    '& .MuiInputBase-input': {
+                      padding: '12px 16px 12px 8px',
+                    },
                   }}
                 />
               </MDBox>
             </MDBox>
+            
+            {/* Add animation styles */}
+            <style>{animationStyles}</style>
             
             <Box sx={{ width: '100%', overflow: 'hidden' }}>
               {/* Desktop Grid View */}
@@ -862,7 +1103,8 @@ function Overview() {
                   alignItems: focusedCard ? 'center' : 'initial',
                   gap: 2,
                   width: '100%',
-                  minHeight: focusedCard ? '60vh' : 'auto'
+                  minHeight: focusedCard ? '60vh' : 'auto',
+                  position: 'relative'
                 }}>
                   {/* Generate apartment cards */}
                   {listings
@@ -878,36 +1120,86 @@ function Overview() {
                     .map((listing, index) => (
                       <Card
                         key={listing.id}
-                        onClick={() => handleCardFocus(listing)}
+                        data-listing-id={listing.id}
+                        onClick={(e) => handleCardClickWithRipple(e, listing)}
+                        onMouseEnter={() => setHoveredCard(listing.id)}
+                        onMouseLeave={() => setHoveredCard(null)}
                         sx={{
-                          backgroundColor: 'white',
-                          borderRadius: focusedCard?.id === listing.id ? 4 : 2,
-                          p: focusedCard?.id === listing.id ? 4 : 2,
-                          border: focusedCard?.id === listing.id ? '2px solid #3B82F6' : '1px solid #e2e8f0',
-                          boxShadow: focusedCard?.id === listing.id ? '0 20px 40px rgba(0,0,0,0.15)' : '0 2px 8px rgba(0,0,0,0.06)',
-                          minHeight: focusedCard?.id === listing.id ? '400px' : '180px',
-                          maxWidth: focusedCard?.id === listing.id ? '600px' : 'none',
+                          // Staggered animation
+                          animation: cardsLoaded ? `slideUpFadeIn 0.6s ease-out ${index * 0.1}s both` : 'none',
+                          // Floating animation on hover
+                          '&:hover': {
+                            animation: hoveredCard === listing.id ? 'float 3s ease-in-out infinite' : 'none',
+                          },
+                          background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                          borderRadius: focusedCard?.id === listing.id ? '24px' : '20px',
+                          p: 0,
+                          border: focusedCard?.id === listing.id ? '2px solid #e2e8f0' : '1px solid #f1f5f9',
+                          boxShadow: focusedCard?.id === listing.id 
+                            ? '0 25px 50px rgba(0, 0, 0, 0.15), 0 12px 24px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8)' 
+                            : '0 8px 25px rgba(0, 0, 0, 0.08), 0 3px 10px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+                          minHeight: focusedCard?.id === listing.id ? '420px' : '300px',
+                          maxWidth: focusedCard?.id === listing.id ? '650px' : 'none',
                           width: focusedCard?.id === listing.id ? '100%' : 'auto',
                           display: 'flex',
                           flexDirection: 'column',
                           cursor: 'pointer',
-                          transform: focusedCard?.id === listing.id ? 'scale(1.02)' : 'scale(1)',
+                          transform: focusedCard?.id === listing.id ? 'scale(1.02) translateY(-8px)' : 'scale(1)',
                           opacity: isAnimating ? 0.7 : 1,
                           zIndex: focusedCard?.id === listing.id ? 1001 : 1,
                           position: focusedCard?.id === listing.id ? 'relative' : 'static',
+                          transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                          overflow: 'hidden',
+                          backdropFilter: 'blur(10px)',
+                          // Enhanced hover effects with animations
+                          '&:hover': {
+                            transform: focusedCard?.id === listing.id 
+                              ? 'scale(1.03) translateY(-12px) rotateY(2deg)' 
+                              : 'scale(1.05) translateY(-8px) rotateY(1deg)',
+                            boxShadow: focusedCard?.id === listing.id 
+                              ? '0 35px 70px rgba(124, 58, 237, 0.25), 0 15px 30px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9)' 
+                              : '0 20px 40px rgba(124, 58, 237, 0.15), 0 8px 20px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
+                            border: focusedCard?.id === listing.id ? '2px solid #7C3AED' : '1px solid #7C3AED',
+                            filter: 'brightness(1.02) saturate(1.1)',
+                          },
+                          // Ripple effect
+                          '&::before': rippleEffect.active && hoveredCard === listing.id ? {
+                            content: '""',
+                            position: 'absolute',
+                            top: rippleEffect.y,
+                            left: rippleEffect.x,
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            background: 'rgba(124, 58, 237, 0.3)',
+                            transform: 'translate(-50%, -50%)',
+                            animation: 'ripple 0.6s linear',
+                            zIndex: 1000,
+                          } : {}
                         }}
                       >
-                        {/* Apartment ID Header */}
+                        {/* Enhanced Apartment Header */}
                         <MDBox sx={{ 
-                          backgroundColor: '#f8fafc',
-                          color: '#1e293b',
-                          px: 2,
-                          py: 1,
-                          borderRadius: 1,
-                          mb: 2,
+                          background: `linear-gradient(135deg, ${
+                            listing.reservationStatus === 'Upcoming Stay' ? getStatusColor('reservation', 'Upcoming Stay') : 
+                            listing.reservationStatus === 'Checked In' ? getStatusColor('reservation', 'Checked In') : 
+                            (listing.reservationStatus === 'Current Stay' || listing.reservationStatus === 'Staying Guest') ? getStatusColor('reservation', 'Staying Guest') : 
+                            (listing.guestName === 'N/A' || !listing.guestName || listing.reservationStatus === 'N/A') ? '#E2E8F0' : 
+                            getStatusColor('activity', listing.activity)
+                          } 0%, ${
+                            listing.reservationStatus === 'Upcoming Stay' ? '#6D28D9' : 
+                            listing.reservationStatus === 'Checked In' ? '#047857' : 
+                            (listing.reservationStatus === 'Current Stay' || listing.reservationStatus === 'Staying Guest') ? '#4B5563' : 
+                            (listing.guestName === 'N/A' || !listing.guestName || listing.reservationStatus === 'N/A') ? '#CBD5E1' : 
+                            '#374151'
+                          } 100%)`,
+                          color: 'white',
+                          p: 3.5,
                           textAlign: 'center',
-                          border: '1px solid #e2e8f0',
                           position: 'relative',
+                          borderRadius: '20px 20px 0 0',
+                          boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1)',
+                          textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                         }}>
                           <MDTypography variant="h6" fontWeight="bold" sx={{ fontSize: focusedCard?.id === listing.id ? '1.2rem' : '0.9rem' }}>
                             {listing.name || 'Unknown'}
@@ -942,92 +1234,292 @@ function Overview() {
                           )}
                         </MDBox>
 
-                        {/* Apartment Details */}
-                        <MDBox sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                          {/* Guest Info */}
-                          <MDBox sx={{ mb: 1 }}>
-                            <MDTypography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem' }}>
-                              👤 {listing.guestName || 'N/A'}
+                      {/* Clean Apartment Details */}
+                      <MDBox sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
+                        {/* Guest Information */}
+                        {listing.guestName && listing.guestName !== 'N/A' && (
+                          <MDBox sx={{ mb: 3 }}>
+                            <MDTypography variant="body2" sx={{ 
+                              color: '#64748b', 
+                              fontSize: '0.75rem', 
+                              fontWeight: 500,
+                              mb: 0.5,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              Guest
+                            </MDTypography>
+                            <MDTypography variant="body1" sx={{ 
+                              color: '#1e293b', 
+                              fontSize: '0.9rem', 
+                              fontWeight: 600,
+                              lineHeight: 1.2
+                            }}>
+                              {listing.guestName}
                             </MDTypography>
                           </MDBox>
-                          
-                          {/* Status Info */}
-                          <MDBox sx={{ mb: 1 }}>
-                            <MDTypography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem' }}>
-                              📅 {listing.checkInDate || 'N/A'} - {listing.checkOutDate || 'N/A'}
+                        )}
+
+                        {/* Dates Information */}
+                        {listing.checkInDate && listing.checkInDate !== 'N/A' && listing.checkOutDate && listing.checkOutDate !== 'N/A' && (
+                          <MDBox sx={{ mb: 3 }}>
+                            <MDTypography variant="body2" sx={{ 
+                              color: '#64748b', 
+                              fontSize: '0.75rem', 
+                              fontWeight: 500,
+                              mb: 0.5,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              Stay Period
+                            </MDTypography>
+                            <MDTypography variant="body1" sx={{ 
+                              color: '#475569', 
+                              fontSize: '0.9rem', 
+                              fontWeight: 600
+                            }}>
+                              {listing.checkInDate} - {listing.checkOutDate}
                             </MDTypography>
                           </MDBox>
-                          
+                        )}
+
                           {/* Reservation ID */}
-                          <MDBox sx={{ mb: 2 }}>
-                            <MDTypography variant="caption" sx={{ color: '#64748b', fontSize: '0.75rem' }}>
-                              🆔 {listing.reservationId || 'N/A'}
-                            </MDTypography>
-                          </MDBox>
-                          
-                          {/* Status Bars */}
-                          <MDBox sx={{ mt: 'auto' }}>
-                            {/* Activity Status Bar */}
-                            <MDBox 
-                              sx={{
-                                backgroundColor: getStatusColor('activity', listing.activity),
-                                color: 'black',
+                          {listing.reservationId && listing.reservationId !== 'N/A' && (
+                            <MDBox sx={{ mb: 3 }}>
+                              <MDTypography variant="body2" sx={{ 
+                                color: '#64748b', 
+                                fontSize: '0.75rem', 
+                                fontWeight: 500,
+                                mb: 0.5,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}>
+                                Reservation ID
+                              </MDTypography>
+                              <MDTypography variant="body1" sx={{ 
+                                color: '#475569', 
+                                fontSize: '0.9rem', 
+                                fontWeight: 600,
+                                fontFamily: 'monospace'
+                              }}>
+                                {listing.reservationId}
+                              </MDTypography>
+                            </MDBox>
+                          )}
+
+                          {/* Reservation Status */}
+                          {listing.reservationStatus && listing.reservationStatus !== 'N/A' && (
+                            <MDBox sx={{ mb: 3 }}>
+                              <MDTypography variant="body2" sx={{ 
+                                color: '#64748b', 
+                                fontSize: '0.75rem', 
+                                fontWeight: 500,
+                                mb: 1,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}>
+                                Status
+                              </MDTypography>
+                              <MDBox sx={{
+                                display: 'inline-block',
                                 px: 2,
                                 py: 1,
-                                borderRadius: 1,
-                                mb: 1,
-                                textAlign: 'center',
-                                fontWeight: 'bold',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                border: '1px solid #e2e8f0'
-                              }}
-                            >
-                              <MDTypography variant="caption" fontWeight="bold" sx={{ fontSize: '0.75rem', color: 'black' }}>
+                                borderRadius: '8px',
+                                backgroundColor: getStatusColor('reservation', listing.reservationStatus),
+                                color: 'white'
+                              }}>
+                                <MDTypography variant="body2" sx={{ 
+                                  fontSize: '0.8rem', 
+                                  fontWeight: 600
+                                }}>
+                                  {listing.reservationStatus}
+                                </MDTypography>
+                              </MDBox>
+                            </MDBox>
+                          )}
+
+                          {/* Activity Status */}
+                          <MDBox sx={{ mb: 3 }}>
+                            <MDTypography variant="body2" sx={{ 
+                              color: '#64748b', 
+                              fontSize: '0.75rem', 
+                              fontWeight: 500,
+                              mb: 1,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              Activity
+                            </MDTypography>
+                            <MDBox sx={{
+                              display: 'inline-block',
+                              px: 2,
+                              py: 1,
+                              borderRadius: '8px',
+                              backgroundColor: getStatusColor('activity', listing.activity),
+                              color: 'white'
+                            }}>
+                              <MDTypography variant="body2" sx={{ 
+                                fontSize: '0.8rem', 
+                                fontWeight: 600
+                              }}>
                                 {listing.activity || 'Unknown'}
                               </MDTypography>
                             </MDBox>
-                            
-                            {/* HW Status Display - Conditionally Clickable */}
-                            <MDBox 
-                              onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HW')}
-                              sx={{
-                                backgroundColor: getStatusColor('hw', listing.hwStatus),
-                                color: 'black',
-                                px: 2,
-                                py: 1,
-                                borderRadius: 1,
+                          </MDBox>
+                          
+                          {/* Clean Status Section */}
+                          <MDBox sx={{ mt: 'auto' }}>
+                            {/* Cleaning Status */}
+                            <MDBox sx={{ mb: 2 }}>
+                              <MDTypography variant="body2" sx={{ 
+                                color: '#64748b', 
+                                fontSize: '0.75rem', 
+                                fontWeight: 500,
                                 mb: 1,
-                                textAlign: 'center',
-                                fontWeight: 'bold',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                border: '1px solid #e2e8f0',
-                                cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer'
-                              }}
-                            >
-                              <MDTypography variant="caption" fontWeight="bold" sx={{ fontSize: '0.75rem', color: 'black' }}>
-                                HW: {listing.hwStatus || 'Not Clean'}
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                              }}>
+                                Cleaning Status
                               </MDTypography>
-                            </MDBox>
-                            
-                            {/* HK Status Display - Conditionally Clickable */}
-                            <MDBox 
-                              onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HK')}
-                              sx={{
-                                backgroundColor: getStatusColor('hk', listing.hkStatus),
-                                color: 'black',
-                                px: 2,
-                                py: 1,
-                                borderRadius: 1,
-                                textAlign: 'center',
-                                fontWeight: 'bold',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                border: '1px solid #e2e8f0',
-                                cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer'
-                              }}
-                            >
-                              <MDTypography variant="caption" fontWeight="bold" sx={{ fontSize: '0.75rem', color: 'black' }}>
-                                HK: {listing.hkStatus || 'Not Clean'}
-                              </MDTypography>
+                              <MDBox sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                {/* Enhanced HA Status Button with Animations */}
+                                <MDBox 
+                                  onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HA')}
+                                  sx={{
+                                    flex: 1,
+                                    background: `linear-gradient(135deg, ${getStatusColor('hw', listing.hwStatus)} 0%, ${
+                                      listing.hwStatus === 'Clean' ? '#0E7490' : '#EA580C'
+                                    } 100%)`,
+                                    color: 'white',
+                                    px: 3,
+                                    py: 3,
+                                    minHeight: '85px',
+                                    borderRadius: '12px',
+                                    cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer',
+                                    transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    textAlign: 'center',
+                                    boxShadow: `0 4px 15px ${getStatusColor('hw', listing.hwStatus)}40, inset 0 1px 0 rgba(255, 255, 255, 0.2)`,
+                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    // Pulse animation for interactive buttons
+                                    animation: !(isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) ? 'heartbeat 3s ease-in-out infinite' : 'none',
+                                    '&:hover': {
+                                      transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'translateY(-3px) scale(1.05) rotateX(5deg)',
+                                      boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : `0 12px 30px ${getStatusColor('hw', listing.hwStatus)}60, inset 0 1px 0 rgba(255, 255, 255, 0.4)`,
+                                      filter: 'brightness(1.15) saturate(1.2)',
+                                      animation: !(isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) ? 'pulse 1.5s ease-in-out infinite' : 'none'
+                                    },
+                                    // Shimmer effect
+                                    '&::before': {
+                                      content: '""',
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: '-100%',
+                                      width: '100%',
+                                      height: '100%',
+                                      background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
+                                      transition: 'left 0.5s ease-in-out',
+                                    },
+                                    '&:hover::before': {
+                                      left: '100%',
+                                    }
+                                  }}
+                                >
+                                  <MDTypography variant="body2" sx={{ 
+                                    fontSize: '1rem', 
+                                    fontWeight: 600,
+                                    color: 'white',
+                                    textAlign: 'center',
+                                    lineHeight: 1.3,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 0.5,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden'
+                                  }}>
+                                    <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>HA</span>
+                                    <span style={{ fontSize: '1rem' }}>
+                                      {listing.hwStatus === 'Clean' ? '✓' : '⚠'}
+                                    </span>
+                                    <span style={{ fontSize: '1rem' }}>{listing.hwStatus === 'Clean' ? 'Clean' : 'Not Clean'}</span>
+                                  </MDTypography>
+                                </MDBox>
+
+                                {/* Enhanced HK Status Button with Animations */}
+                                <MDBox 
+                                  onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HK')}
+                                  sx={{
+                                    flex: 1,
+                                    background: `linear-gradient(135deg, ${getStatusColor('hk', listing.hkStatus)} 0%, ${
+                                      listing.hkStatus === 'Clean' ? '#C2410C' : '#BE185D'
+                                    } 100%)`,
+                                    color: 'white',
+                                    px: 3,
+                                    py: 3,
+                                    minHeight: '85px',
+                                    borderRadius: '12px',
+                                    cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer',
+                                    transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    textAlign: 'center',
+                                    boxShadow: `0 4px 15px ${getStatusColor('hk', listing.hkStatus)}40, inset 0 1px 0 rgba(255, 255, 255, 0.2)`,
+                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    // Pulse animation for interactive buttons (delayed)
+                                    animation: !(isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) ? 'heartbeat 3s ease-in-out infinite 1.5s' : 'none',
+                                    '&:hover': {
+                                      transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'translateY(-3px) scale(1.05) rotateX(5deg)',
+                                      boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : `0 12px 30px ${getStatusColor('hk', listing.hkStatus)}60, inset 0 1px 0 rgba(255, 255, 255, 0.4)`,
+                                      filter: 'brightness(1.15) saturate(1.2)',
+                                      animation: !(isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) ? 'pulse 1.5s ease-in-out infinite' : 'none'
+                                    },
+                                    // Shimmer effect
+                                    '&::before': {
+                                      content: '""',
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: '-100%',
+                                      width: '100%',
+                                      height: '100%',
+                                      background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
+                                      transition: 'left 0.5s ease-in-out',
+                                    },
+                                    '&:hover::before': {
+                                      left: '100%',
+                                    }
+                                  }}
+                                >
+                                  <MDTypography variant="body2" sx={{ 
+                                    fontSize: '1rem', 
+                                    fontWeight: 600,
+                                    color: 'white',
+                                    textAlign: 'center',
+                                    lineHeight: 1.3,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 0.5,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden'
+                                  }}>
+                                    <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>HK</span>
+                                    <span style={{ fontSize: '1rem' }}>
+                                      {listing.hkStatus === 'Clean' ? '✓' : '⚠'}
+                                    </span>
+                                    <span style={{ fontSize: '1rem' }}>{listing.hkStatus === 'Clean' ? 'Clean' : 'Not Clean'}</span>
+                                  </MDTypography>
+                                </MDBox>
+                              </MDBox>
                             </MDBox>
                           </MDBox>
                         </MDBox>
@@ -1056,7 +1548,15 @@ function Overview() {
                         backgroundColor: 'white',
                         boxShadow: 2,
                         borderRadius: 3,
-                        border: '1px solid #e0e0e0'
+                        border: '1px solid #e0e0e0',
+                        // Mobile card animations
+                        animation: cardsLoaded ? `slideUpFadeIn 0.5s ease-out ${index * 0.08}s both` : 'none',
+                        transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                        '&:hover': {
+                          transform: 'translateY(-2px) scale(1.02)',
+                          boxShadow: '0 8px 25px rgba(124, 58, 237, 0.12), 0 3px 10px rgba(0, 0, 0, 0.08)',
+                          border: '1px solid #7C3AED'
+                        }
                       }}
                     >
                       {/* Header with Listing Name and Status */}
@@ -1064,12 +1564,12 @@ function Overview() {
                         <MDTypography variant="h6" fontWeight="bold" color="text.primary" sx={{ fontSize: '1.1rem' }}>
                           {listing.name || 'No Name Available'}
                         </MDTypography>
-                        {/* Mobile HW and HK Status */}
+                        {/* Mobile HA and HK Status */}
                         <Box sx={{ display: 'flex', gap: 1 }}>
                           <Chip
-                            label={`HW: ${listing.hwStatus || 'Not Clean'}`}
+                            label={`HA: ${listing.hwStatus || 'Not Clean'}`}
                             size="small"
-                            onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HW')}
+                            onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HA')}
                             sx={{ 
                               fontSize: '0.7rem', 
                               height: '24px',
@@ -1077,7 +1577,13 @@ function Overview() {
                               backgroundColor: getStatusColor('hw', listing.hwStatus),
                               color: '#000000',
                               border: '1px solid #e2e8f0',
-                              cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer'
+                              cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer',
+                              transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                              animation: !(isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) ? 'pulse 4s ease-in-out infinite' : 'none',
+                              '&:hover': {
+                                transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'scale(1.1) translateY(-1px)',
+                                boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : `0 4px 12px ${getStatusColor('hw', listing.hwStatus)}40`
+                              }
                             }}
                           />
                           <Chip
@@ -1091,7 +1597,13 @@ function Overview() {
                               backgroundColor: getStatusColor('hk', listing.hkStatus),
                               color: '#000000',
                               border: '1px solid #e2e8f0',
-                              cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer'
+                              cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer',
+                              transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                              animation: !(isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) ? 'pulse 4s ease-in-out infinite 2s' : 'none',
+                              '&:hover': {
+                                transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'scale(1.1) translateY(-1px)',
+                                boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : `0 4px 12px ${getStatusColor('hk', listing.hkStatus)}40`
+                              }
                             }}
                           />
                         </Box>
@@ -1130,12 +1642,17 @@ function Overview() {
                           <MDTypography variant="body1" fontWeight="bold" color="text.primary" sx={{ minWidth: '120px', flexShrink: 0 }}>
                             Guest Name
                           </MDTypography>
-                          <MDTypography variant="body1" color="text.primary" sx={{ textAlign: 'right', wordBreak: 'break-word', maxWidth: '60%' }}>
+                          <MDTypography variant="body2" color="text.primary" sx={{ textAlign: 'right', wordBreak: 'break-word', maxWidth: '60%', fontSize: '0.85rem' }}>
                             {listing.guestName || 'N/A'}
                           </MDTypography>
                         </Box>
                         
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          minHeight: '32px'
+                        }}>
                           <MDTypography variant="body1" fontWeight="bold" color="text.primary" sx={{ flex: 1, pr: 2 }}>
                             Status
                           </MDTypography>
@@ -1147,22 +1664,24 @@ function Overview() {
                               height: '24px',
                               fontWeight: 'bold',
                               flexShrink: 0,
-                              backgroundColor: 
-                                listing.reservationStatus === 'Upcoming Stay' || listing.reservationStatus === 'Confirmed' ? '#3B82F6' : 
-                                listing.reservationStatus === 'Cancelled' || listing.reservationStatus === 'Checkout' ? '#EF4444' : 
-                                listing.reservationStatus === 'Current Stay' || listing.reservationStatus === 'Checked In' ? '#F59E0B' : '#6B7280',
+                              backgroundColor: getStatusColor('reservation', listing.reservationStatus),
                               color: '#FFFFFF',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
                               '&:hover': {
-                                backgroundColor: 
-                                  listing.reservationStatus === 'Upcoming Stay' || listing.reservationStatus === 'Confirmed' ? '#2563EB' : 
-                                  listing.reservationStatus === 'Cancelled' || listing.reservationStatus === 'Checkout' ? '#DC2626' : 
-                                  listing.reservationStatus === 'Current Stay' || listing.reservationStatus === 'Checked In' ? '#D97706' : '#4B5563'
+                                opacity: 0.8
                               }
                             }}
                           />
                         </Box>
                         
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          minHeight: '32px'
+                        }}>
                           <MDTypography variant="body1" fontWeight="bold" color="text.primary" sx={{ minWidth: '120px', flexShrink: 0 }}>
                             Activity
                           </MDTypography>
@@ -1173,9 +1692,16 @@ function Overview() {
                               fontSize: '0.75rem', 
                               height: '24px',
                               fontWeight: 'bold',
-                              backgroundColor: getStatusColor('activity', listing.activity),
+                              backgroundColor: listing.reservationStatus === 'Upcoming Stay' ? '#8B5CF6' : 
+                                               listing.reservationStatus === 'Checked In' ? '#22C55E' : 
+                                               (listing.reservationStatus === 'Current Stay' || listing.reservationStatus === 'Staying Guest') ? '#6B7280' : 
+                                               (listing.guestName === 'N/A' || !listing.guestName || listing.reservationStatus === 'N/A') ? '#F8BBD0' : 
+                                               getStatusColor('activity', listing.activity),
                               color: '#000000',
-                              border: '1px solid #e2e8f0'
+                              border: '1px solid #e2e8f0',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
                             }}
                           />
                         </Box>
@@ -1457,7 +1983,11 @@ function Overview() {
                               >
                                 {/* Apartment Name Header */}
                                 <MDBox sx={{ 
-                                  backgroundColor: '#ffffff',
+                                  backgroundColor: listing.reservationStatus === 'Upcoming Stay' ? '#8B5CF6' : 
+                                                   listing.reservationStatus === 'Checked In' ? '#22C55E' : 
+                                                   (listing.reservationStatus === 'Current Stay' || listing.reservationStatus === 'Staying Guest') ? '#6B7280' : 
+                                                   (listing.guestName === 'N/A' || !listing.guestName || listing.reservationStatus === 'N/A') ? '#F8BBD0' : 
+                                                   getStatusColor('activity', listing.activity),
                                   borderRadius: 1,
                                   p: 1.5,
                                   mb: 2,
@@ -1465,7 +1995,7 @@ function Overview() {
                                   textAlign: 'left'
                                 }}>
                                   <MDTypography variant="h6" fontWeight="bold" sx={{ 
-                                    color: '#1e293b',
+                                    color: 'white',
                                     fontSize: '1rem',
                                     mb: 0
                                   }}>
@@ -1484,7 +2014,8 @@ function Overview() {
                                     backgroundColor: '#ffffff',
                                     p: 1.5,
                                     borderRadius: 1,
-                                    border: '1px solid #f1f5f9'
+                                    border: '1px solid #f1f5f9',
+                                    minHeight: '48px'
                                   }}>
                                     <MDBox sx={{ display: 'flex', alignItems: 'center' }}>
                                       <MDBox sx={{ 
@@ -1515,9 +2046,17 @@ function Overview() {
                                       sx={{ 
                                         fontSize: '0.75rem',
                                         fontWeight: 'bold',
-                                        backgroundColor: getStatusColor('activity', listing.activity),
+                                        height: '24px',
+                                        backgroundColor: listing.reservationStatus === 'Upcoming Stay' ? '#8B5CF6' : 
+                                                         listing.reservationStatus === 'Checked In' ? '#22C55E' : 
+                                                         (listing.reservationStatus === 'Current Stay' || listing.reservationStatus === 'Staying Guest') ? '#6B7280' : 
+                                                         (listing.guestName === 'N/A' || !listing.guestName || listing.reservationStatus === 'N/A') ? '#F8BBD0' : 
+                                                         getStatusColor('activity', listing.activity),
                                         color: '#000000',
-                                        border: '1px solid #e2e8f0'
+                                        border: '1px solid #e2e8f0',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
                                       }}
                                     />
                                   </MDBox>
@@ -1567,7 +2106,7 @@ function Overview() {
                                     </MDTypography>
                                   </MDBox>
 
-                                  {/* HW Status Row */}
+                                  {/* HA Status Row */}
                                   <MDBox sx={{ 
                                     display: 'flex', 
                                     alignItems: 'center', 
@@ -1597,7 +2136,7 @@ function Overview() {
                                         fontWeight: 'medium',
                                         minWidth: '60px'
                                       }}>
-                                        HW:
+                                        HA:
                                       </MDTypography>
                                     </MDBox>
                                     <Chip
@@ -1846,17 +2385,35 @@ function Overview() {
         />
       )}
       
-      {/* Status Update Dropdown Menu */}
+      {/* Enhanced Status Update Dropdown Menu with Animations */}
       <Menu
         key={`status-menu-${selectedListing?.id}-${selectedStatusType}`}
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
+        TransitionProps={{
+          timeout: 400,
+        }}
         PaperProps={{
           sx: {
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            borderRadius: 2,
-            minWidth: 150
+            boxShadow: '0 12px 40px rgba(124, 58, 237, 0.15), 0 4px 16px rgba(0,0,0,0.08)',
+            borderRadius: '16px',
+            mt: 1,
+            overflow: 'hidden',
+            background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+            border: '1px solid rgba(124, 58, 237, 0.1)',
+            backdropFilter: 'blur(10px)',
+            animation: 'slideUpFadeIn 0.3s ease-out',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '2px',
+              background: 'linear-gradient(90deg, #7C3AED, #3B82F6, #059669)',
+              animation: 'shimmer 2s linear infinite'
+            }
           }
         }}
       >
@@ -1867,6 +2424,17 @@ function Overview() {
           }}
           disabled={isUpdating}
           sx={{
+            py: 1.5,
+            px: 2,
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            color: '#059669',
+            transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            '&:hover': {
+              backgroundColor: 'rgba(5, 150, 105, 0.1)',
+              transform: 'translateX(4px)',
+              boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)'
+            },
             color: '#3B82F6',
             fontWeight: 'bold',
             '&:hover': {
