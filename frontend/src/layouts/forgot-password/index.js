@@ -64,7 +64,7 @@ function ForgotPassword() {
       setLoading(true);
 
       try {
-        const response = await fetch(API_ENDPOINTS.FORGOT_PASSWORD, {
+        const response = await fetch(API_ENDPOINTS.RESET_PASSWORD, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
