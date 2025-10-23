@@ -477,17 +477,7 @@ function Basic() {
                     },
                   }}
                 >
-                  {loginState.loading ? (
-                    <MDBox display="flex" alignItems="center" gap={1}>
-                      <CircularProgress 
-                        size={16} 
-                        sx={{ color: "#ffffff" }} 
-                      />
-                      Signing in...
-                    </MDBox>
-                  ) : (
-                    "Login"
-                  )}
+                  Login
                 </MDButton>
               </MDBox>
 

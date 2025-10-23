@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 // @mui material components
 import Card from "@mui/material/Card";
@@ -99,15 +100,29 @@ function Cover() {
   };
 
   return (
+    <>
+      {/* Mobile-only CSS */}
+      <style>
+        {`
+          @media (min-width: 768px) {
+            .mobile-only-button {
+              display: none !important;
+            }
+          }
+        `}
+      </style>
+      
     <MDBox
       sx={{
         minHeight: "100vh",
         width: "100vw",
         background: "#ffffff",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         p: 2,
+        position: "relative",
       }}
     >
       <Container maxWidth="sm">
@@ -122,6 +137,44 @@ function Cover() {
           }}
         >
           <MDBox p={4}>
+            {/* Back Button - Mobile Only */}
+            <div style={{
+              display: "flex",
+              justifyContent: "flex-start",
+              marginBottom: "24px",
+              width: "100%",
+            }}
+            className="mobile-only-button"
+            >
+              <Link 
+                to="/authentication/sign-in"
+                style={{ 
+                  textDecoration: "none",
+                  display: "block"
+                }}
+              >
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  color: "#1f93ff",
+                  cursor: "pointer",
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  border: "2px solid #1f93ff",
+                  backgroundColor: "#f8fafc",
+                  minHeight: "48px",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                }}>
+                  <ArrowBackIcon sx={{ fontSize: "20px", color: "#1f93ff" }} />
+                  <span style={{ color: "#1f93ff", fontSize: "16px", fontWeight: "600" }}>
+                    Back to Login
+                  </span>
+                </div>
+              </Link>
+            </div>
+
             {/* Header */}
             <MDBox textAlign="left" mb={4}>
               <MDTypography
@@ -363,6 +416,7 @@ function Cover() {
         </Card>
       </Container>
     </MDBox>
+    </>
   );
 }
 
