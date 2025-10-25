@@ -31,6 +31,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import PrintIcon from "@mui/icons-material/Print";
+import EventIcon from "@mui/icons-material/Event";
 
 // Authentication context
 import { useAuth } from "context/AuthContext";
@@ -70,7 +71,7 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
 // Clear console on component load
-console.clear();
+//console.clear();
 
 function ReservationCard({ guest, setSnackbar, stack, isViewOnly, isCustom, hasPermission }) {
   const [open, setOpen] = useState(false);
@@ -84,6 +85,7 @@ function ReservationCard({ guest, setSnackbar, stack, isViewOnly, isCustom, hasP
   const [canPrintCheckIn, setCanPrintCheckIn] = useState(false);
   const [canPrintCheckOut, setCanPrintCheckOut] = useState(false);
   const { user } = useAuth(); // ✅ get logged-in user
+  const [bookingDate, setBookingDate] = useState(null);
 
   const HOSTAWAY_API = "https://api.hostaway.com/v1/reservations";
   const HOSTAWAY_TOKEN =
@@ -120,7 +122,7 @@ function ReservationCard({ guest, setSnackbar, stack, isViewOnly, isCustom, hasP
 
       const listingMapId = guest.listingName || "N/A";
       const listingType = guest.type || "N/A";
-      const contact = reservation.phone || "Contact";
+      const contact = reservation.phone || "N/A";
       const duration = reservation.nights || "N/A";
       const totalPrice = reservation.totalPrice || "N/A";
       const currencyLabel = reservation.currency || "";
@@ -173,7 +175,6 @@ function ReservationCard({ guest, setSnackbar, stack, isViewOnly, isCustom, hasP
       const vehicleNumber =
         reservation.customFieldValues?.find((field) => field.customField?.name === "Vehicle Number")
           ?.value ||
-        guest.vehicleNo ||
         "Not provided";
 
       let securityDepositFee = "N/A";
@@ -384,6 +385,11 @@ ul li {
         })</span></h2>
               <p style="text-align: center; font-family: monospace">Actual Check-in Date / Time: ${actualCheckInTime}</p>
             </div>
+            <!-- 
+            <div style="position: absolute; margin-left: 400px; margin-top: -16px; font-family: monospace; color: #b6bfb6;">
+    Printed By: ${user?.username}
+  </div>
+  -->
             </div>
             <div class="form-container">
   <div class="left-section">
@@ -453,7 +459,7 @@ ul li {
                 <div class="row-field" style="display: flex; justify-content: space-between; align-items: center; margin-top: 40px;">
                   <div class="inner-col" style="text-align: left">
                     <div style="border-bottom: 1px solid black; width:140px; margin-bottom: 5px;"></div>
-                    <h3>Management Team</h3>
+                    <h3>Management Team <br><span style="color:#b6bfb6;">(${user?.username})</span></h3>
                   </div>
                   <div class="inner-col" style="text-align: right">
                     <div style="border-bottom: 1px solid black; width: 140px; margin-bottom: 5px; margin-left: auto;"></div>
@@ -464,7 +470,6 @@ ul li {
   <h5 style="margin: 0; font-size: 17px;">CHECK OUT TIME 12:00 NOON</h5>
   <p style="margin: 4px 0 0; font-size: 11px;">(Late Check Out charges applicable @ Rs. 1000 per hour) <br> (*Subject to Availability)</p>
 </div>
-
 
                 <div style="
     display: flex;
@@ -647,7 +652,6 @@ ul li {
       const vehicleNumber =
         reservation.customFieldValues?.find((field) => field.customField?.name === "Vehicle Number")
           ?.value ||
-        guest.vehicleNo ||
         "Not provided";
 
       let CheckOutSecurityDeposit = "N/A";
@@ -846,42 +850,36 @@ ul li {
     </div>
     <div class="heading-text" style="margin: 20px 0px 0px 40px !important">
   ${(() => {
-          const sameDayData = JSON.parse(
-            localStorage.getItem(`sameDayCheckOut_${guest.reservationId}`) || "{}"
-          );
-          const earlyCheckOutData = JSON.parse(
-            localStorage.getItem(`earlyCheckOut_${guest.reservationId}`) || "{}"
-          );
-          const isSameDayCheckout = sameDayData && sameDayData.value === "Yes";
-          const isEarlyCheckOut = earlyCheckOutData && earlyCheckOutData.allowed === true;
+          const today = new Date().toISOString().split("T")[0];
+          const arrival = guest.arrivalDate ? guest.arrivalDate.split("T")[0] : null;
+          const departure = guest.departureDate ? guest.departureDate.split("T")[0] : null;
 
-          if (isSameDayCheckout) {
-            return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
-                ${guestName}'s Same Day Check-out Form 
-                <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
-              </h3>
-              <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 13px; width: 92%;">
-                Actual Check-out Date / Time: ${actualCheckOutTime}
-              </p>`;
-          } else if (isEarlyCheckOut) {
-            return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
-                ${guestName}'s Early Check-out Form 
-                <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
-              </h3>
-              <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 13px; width: 92%;">
-                Actual Check-out Date / Time: ${actualCheckOutTime}
-              </p>`;
-          } else {
-            return `<h3 style="text-align: center; margin: 0; font-size: 16px;">
-                ${guestName}'s Check-out Form 
-                <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
-              </h3>
-              <p style="text-align: center; font-family: monospace; margin:0px 0px -16px 0px !important; font-size: 13px; width: 92%;">
-                Actual Check-out Date / Time: ${actualCheckOutTime}
-              </p>`;
+          let formTitle = "Check-out Form";
+          let formSubtitle = `Actual Check-out Date / Time: ${actualCheckOutTime}`;
+
+          if (arrival === today) {
+            formTitle = "Same Day Check-out Form";
+            formSubtitle = `Actual Check-out Date / Time: ${actualCheckOutTime}`;
+          } else if (departure && departure !== today) {
+            formTitle = "Early Check-out Form";
+            formSubtitle = `Actual Check-out Date / Time: ${actualCheckOutTime}`;
           }
+
+          return `
+    <h3 style="margin: 0; font-size: 20px; font-weight: bold;">
+      ${guestName}'s ${formTitle}
+    </h3>
+    <p style="margin: 4px 0 0 0; font-size: 14px; color: #555;">
+      ${formSubtitle}
+    </p>
+  `;
         })()}
    </div>
+   <!--
+   <div style="position: absolute; margin-left: 400px; margin-top: -9px; font-family: monospace; color: #b6bfb6;">
+    Printed By: ${user?.username}
+  </div>
+  -->
 </div>
 
     <p style="text-align: center; font-size: 18px;">
@@ -994,7 +992,7 @@ ul li {
     <div class="signature-section">
       <div class="signature-block">
         <div class="signature-line"></div>
-        <p>Management Team</p>
+        <p>Management Team <span style="color:#b6bfb6;">(${user?.username})</span></p>
       </div>
       <div class="signature-block">
         <div class="signature-line"></div>
@@ -1374,28 +1372,33 @@ ${CheckOutSecurityDeposit !== "0"
         });
 
       // ✅ Send message to Google Chat
-      {/*const chatMessage = `📥 Check-In Alert for ${guest.guestName }!\n👤 ${
-      guest.guestName || "Guest"
-    } has checked in to 🏠 ${guest.listingName || "Unknown Listing"} at 🕒 ${formattedDateTime}.\n\n🔗 https://dashboard.hostaway.com/reservations/${guest.reservationId}`;
+      const chatMessage = [
+        `📥 Check-In Alert for ${guest.guestName}!`,
+        `👤 ${guest.guestName || "Guest"} has checked in to 🏠 ${guest.listingName || "Unknown Listing"} at 🕒 ${formattedDateTime}.`,
+        `🧑‍💼 User: ${user?.username || "Unknown User"}`,
+        "",
+        `🔗 https://dashboard.hostaway.com/reservations/${guest.reservationId}`
+      ].join("\n");
 
-    fetch(
-      "https://chat.googleapis.com/v1/spaces/AAQANIuKBgw/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=oSxAMzHxA2VKi4AoEK_6Wf335vxr1H5Cd7XNxzeyS-o",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: chatMessage,
-        }),
-      }
-    )
-      .then(async (response) => {
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.message || "Failed to send Chat message");
-        console.log("✅ Google Chat message sent successfully:", data);
-      })
-      .catch((error) => {
-        console.error("❌ Error sending message to Google Chat:", error);
-      });*/}
+
+      fetch(
+        "https://chat.googleapis.com/v1/spaces/AAQANIuKBgw/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=oSxAMzHxA2VKi4AoEK_6Wf335vxr1H5Cd7XNxzeyS-o",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: chatMessage,
+          }),
+        }
+      )
+        .then(async (response) => {
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.message || "Failed to send Chat message");
+          console.log("✅ Google Chat message sent successfully:", data);
+        })
+        .catch((error) => {
+          console.error("❌ Error sending message to Google Chat:", error);
+        });
 
       // ✅ Prepare Teable record
       const teablePayload = {
@@ -1562,28 +1565,32 @@ ${CheckOutSecurityDeposit !== "0"
         });
 
       // ✅ Send message to Google Chat
-      {/*const chatMessage = `📤 Check-Out Alert for ${guest.guestName }!\n👤 ${
-      guest.guestName || "Guest"
-    } has checked out from 🏠 ${guest.listingName || "Unknown Listing"} at 🕒 ${formattedDateTime}.\n\n🔗 https://dashboard.hostaway.com/reservations/${guest.reservationId}`;
+      const chatMessage = [
+        `📤 Check-Out Alert for ${guest.guestName}!`,
+        `👤 ${guest.guestName || "Guest"} has checked out from 🏠 ${guest.listingName || "Unknown Listing"} at 🕒 ${formattedDateTime}.`,
+        `🧑‍💼 User: ${user?.username || "Unknown User"}`,
+        "",
+        `🔗 https://dashboard.hostaway.com/reservations/${guest.reservationId}`
+      ].join("\n");
 
-    fetch(
-      "https://chat.googleapis.com/v1/spaces/AAQANIuKBgw/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=oSxAMzHxA2VKi4AoEK_6Wf335vxr1H5Cd7XNxzeyS-o",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: chatMessage,
-        }),
-      }
-    )
-      .then(async (response) => {
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.message || "Failed to send Chat message");
-        console.log("✅ Google Chat message sent successfully:", data);
-      })
-      .catch((error) => {
-        console.error("❌ Error sending message to Google Chat:", error);
-      });*/}
+      fetch(
+        "https://chat.googleapis.com/v1/spaces/AAQANIuKBgw/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=oSxAMzHxA2VKi4AoEK_6Wf335vxr1H5Cd7XNxzeyS-o",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: chatMessage,
+          }),
+        }
+      )
+        .then(async (response) => {
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.message || "Failed to send Chat message");
+          console.log("✅ Google Chat message sent successfully:", data);
+        })
+        .catch((error) => {
+          console.error("❌ Error sending message to Google Chat:", error);
+        });
 
       // ✅ Prepare Teable record
       const teablePayload = {
@@ -1735,6 +1742,7 @@ ${CheckOutSecurityDeposit !== "0"
         earlyCheckinCharges,
         securityDeposit,
         remainingBalance,
+        totalPaid,
       });
     } catch (err) {
       setError(err.message);
@@ -1951,10 +1959,41 @@ ${CheckOutSecurityDeposit !== "0"
     }
   };
 
+  const fetchBookingDate = async (reservationId) => {
+    try {
+      const response = await fetch(`${HOSTAWAY_API}/${reservationId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${HOSTAWAY_TOKEN}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch booking date");
+
+      const data = await response.json();
+      const date = data?.result?.reservationDate;
+
+      if (date) {
+        setBookingDate(date);
+        console.log("📅 Booking Date fetched:", date);
+      } else {
+        console.warn("⚠️ Booking date not found in reservation data");
+        setBookingDate(null);
+      }
+    } catch (error) {
+      console.error("❌ Error fetching booking date:", error);
+      setBookingDate(null);
+    }
+  };
+
+
   // Fetch when component mounts or guest changes
   useEffect(() => {
     if (guest?.reservationId) {
       fetchPrintButtonStatus(guest.reservationId);
+    }
+    if (guest?.reservationId) {
+      fetchBookingDate(guest.reservationId);
     }
   }, [guest]);
 
@@ -2021,7 +2060,15 @@ ${CheckOutSecurityDeposit !== "0"
             </MDTypography>
           </MDBox>
         </MDBox>
-
+        <MDBox display="flex" alignItems="center" mt={1} mb={1}>
+          <EventIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
+          <MDTypography variant="body2" sx={{ fontSize: "0.85rem" }}>
+            Booking Date:{" "}
+            {bookingDate
+              ? dayjs(bookingDate).format("D MMM, YYYY")
+              : "Not provided"}
+          </MDTypography>
+        </MDBox>
         <MDBox display="flex" alignItems="center" mt={1} mb={1}>
           <CalendarTodayIcon fontSize="small" sx={{ mr: 1, color: "text.secondary" }} />
           <MDTypography variant="body2" sx={{ fontSize: "0.85rem" }}>
@@ -2388,7 +2435,7 @@ ${CheckOutSecurityDeposit !== "0"
                   cursor: "not-allowed",      // ✅ cursor indicates not clickable
                 }}
               >
-                Check Out Form Printed
+                Guest Has Checked Out
               </Button>
             )}
         </MDBox>
@@ -2495,11 +2542,14 @@ ${CheckOutSecurityDeposit !== "0"
                       </tr>
                       <tr>
                         <td>
-                          <strong>Remaining Balance</strong>
+                          <strong>Remaining / Paid </strong>
                         </td>
                         <td>
-                          {reservationDetails?.remainingBalance || "N/A"}{" "}
-                          {reservationDetails?.currency || ""}
+                          {reservationDetails
+                            ? `${reservationDetails.remainingBalance ?? "N/A"} ${reservationDetails.currency || ""
+                            } / ${reservationDetails.totalPaid ?? "N/A"} ${reservationDetails.currency || ""
+                            }`
+                            : "N/A"}
                         </td>
                       </tr>
                       <tr>
