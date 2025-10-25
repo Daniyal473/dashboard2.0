@@ -1,7 +1,7 @@
 import { useAuth } from "context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
-import { AppBar, Toolbar, Typography, Box, Avatar, Tabs, Tab } from "@mui/material";
+import { AppBar, Toolbar, Typography, Box, Avatar, Tabs, Tab, Button } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MDBox from "components/MDBox";
 import MDButton from "components/MDButton";
@@ -9,6 +9,8 @@ import Logo from "components/Logo";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { Row, Col, Table } from "react-bootstrap";
 import { useEffect, useState } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const API_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI4MDA2NiIsImp0aSI6ImNhYzRlNzlkOWVmZTBiMmZmOTBiNzlkNTEzYzIyZTU1MDhiYWEwNWM2OGEzYzNhNzJhNTU1ZmMzNDI4OTQ1OTg2YWI0NTVjNmJjOWViZjFkIiwiaWF0IjoxNzM2MTY3ODExLjgzNTUyNCwibmJmIjoxNzM2MTY3ODExLjgzNTUyNiwiZXhwIjoyMDUxNzAwNjExLjgzNTUzMSwic3ViIjoiIiwic2NvcGVzIjpbImdlbmVyYWwiXSwic2VjcmV0SWQiOjUzOTUyfQ.Mmqfwt5R4CK5AHwNQFfe-m4PXypLLbAPtzCD7CxgjmagGa0AWfLzPM_panH9fCbYbC1ilNpQ-51KOQjRtaFT3vR6YKEJAUkUSOKjZupQTwQKf7QE8ZbLQDi0F951WCPl9uKz1nELm73V30a8rhDN-97I43FWfrGyqBgt7F8wPkE"; // replace with your key
 
@@ -52,6 +54,45 @@ function UserLayout({ children }) {
 
   }, [activeTab]);
 
+  function downloadPDF(data, filename, title) {
+    if (!data || data.length === 0) {
+      alert("No data to download!");
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    // Title
+    doc.setFontSize(16);
+    doc.text(title, 14, 15);
+
+    // Define table headers
+    const headers = [
+      "Guest Name",
+      "Vehicle Number",
+      "Apartment",
+      title.includes("Check-In") ? "Arrival Date" : "Departure Date",
+    ];
+
+    // Map and sanitize data
+    const rows = data.map((row) => [
+      row.guest || "-",
+      row.vehicle || "-", // ✅ use 'vehicle' to match your existing object
+      row.apartment || "-",
+      title.includes("Check-In") ? row.arrival || "-" : row.departure || "-",
+    ]);
+
+    // Generate the table
+    autoTable(doc, {
+      head: [headers],
+      body: rows,
+      startY: 25,
+      styles: { fontSize: 10, cellPadding: 4 },
+      headStyles: { fillColor: [23, 98, 27] }, // green header
+    });
+
+    doc.save(filename);
+  }
 
   useEffect(() => {
     if (activeTab !== 2) return;
@@ -137,7 +178,7 @@ function UserLayout({ children }) {
                     const vehicleNumber =
                       reservation?.customFieldValues?.find(
                         (field) => field.customField?.name === "Vehicle Number"
-                      )?.value || "Not provided";
+                      )?.value || "-";
 
                     const guestObj = {
                       guest: reservation.guestName,
@@ -393,7 +434,6 @@ function UserLayout({ children }) {
           </Box>
         );
       case 2:
-
         return (
           <Box sx={{ p: 4 }}>
             <Typography variant="h5" sx={{ mb: 3, fontWeight: "700", color: "#1f2937" }}>
@@ -408,19 +448,59 @@ function UserLayout({ children }) {
                 {/* Check-In Table */}
                 <Col md={6} className="mb-4">
                   <Box sx={{ backgroundColor: "#fff", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                    <Box sx={{
-                      backgroundColor: "#f9fafb", px: 3, py: 2, borderBottom: "1px solid #e5e7eb",
-                      display: "flex", justifyContent: "space-between"
-                    }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: "#1f2937" }}>Today Check-In</Typography>
-                      <Typography variant="body2" sx={{ color: "#6b7280" }}>Total: {todayCheckIn.length}</Typography>
+
+                    {/* Combined Header */}
+                    <Box
+                      sx={{
+                        backgroundColor: "#f9fafb",
+                        px: 3,
+                        py: 2,
+                        borderBottom: "1px solid #e5e7eb",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center"
+                      }}
+                    >
+                      <Typography variant="h6" sx={{ fontWeight: 600, color: "#1f2937" }}>
+                        Today Check-In &nbsp; <Typography component="span" variant="body2" sx={{ color: "#6b7280" }}>Total: {todayCheckIn.length}</Typography>
+                      </Typography>
+
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => downloadPDF(todayCheckIn, "today_checkin.pdf", "Today Check-In")}
+                        sx={{
+                          borderRadius: "12px",
+                          textTransform: "none",
+                          fontWeight: "bold",
+                          boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+                          color: "#17621B",
+                          border: "2px solid #17621B",
+                          transition: "all 0.2s ease",
+                          "&:hover": {
+                            backgroundColor: "#1e7a20",
+                            borderColor: "#145517",
+                            color: "#fff",
+                          },
+                          "&:focus": {
+                            backgroundColor: "#145517",
+                            color: "#fff",
+                          },
+                          "&:active": {
+                            backgroundColor: "#145517",
+                            color: "#fff",
+                          },
+                        }}
+                      >
+                        Download PDF
+                      </Button>
                     </Box>
 
                     <Table striped bordered hover responsive style={{ marginBottom: 0 }}>
                       <thead>
                         <tr>
                           <th>Guest Name</th>
-                          <th>Vehicle</th>
+                          <th>Vehicle Number</th>
                           <th>Apartment</th>
                           <th>Arrival Date</th>
                         </tr>
@@ -442,19 +522,59 @@ function UserLayout({ children }) {
                 {/* Check-Out Table */}
                 <Col md={6} className="mb-4">
                   <Box sx={{ backgroundColor: "#fff", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                    <Box sx={{
-                      backgroundColor: "#f9fafb", px: 3, py: 2, borderBottom: "1px solid #e5e7eb",
-                      display: "flex", justifyContent: "space-between"
-                    }}>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: "#1f2937" }}>Today Check-Out</Typography>
-                      <Typography variant="body2" sx={{ color: "#6b7280" }}>Total: {todayCheckOut.length}</Typography>
+
+                    {/* Combined Header */}
+                    <Box
+                      sx={{
+                        backgroundColor: "#f9fafb",
+                        px: 3,
+                        py: 2,
+                        borderBottom: "1px solid #e5e7eb",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center"
+                      }}
+                    >
+                      <Typography variant="h6" sx={{ fontWeight: 600, color: "#1f2937" }}>
+                        Today Check-Out &nbsp; <Typography component="span" variant="body2" sx={{ color: "#6b7280" }}>Total: {todayCheckOut.length}</Typography>
+                      </Typography>
+
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => downloadPDF(todayCheckOut, "today_checkout.pdf", "Today Check-Out")}
+                        sx={{
+                          borderRadius: "12px",
+                          textTransform: "none",
+                          fontWeight: "bold",
+                          boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+                          color: "#17621B",
+                          border: "2px solid #17621B",
+                          transition: "all 0.2s ease",
+                          "&:hover": {
+                            backgroundColor: "#1e7a20",
+                            borderColor: "#145517",
+                            color: "#fff",
+                          },
+                          "&:focus": {
+                            backgroundColor: "#145517",
+                            color: "#fff",
+                          },
+                          "&:active": {
+                            backgroundColor: "#145517",
+                            color: "#fff",
+                          },
+                        }}
+                      >
+                        Download PDF
+                      </Button>
                     </Box>
 
                     <Table striped bordered hover responsive style={{ marginBottom: 0 }}>
                       <thead>
                         <tr>
                           <th>Guest Name</th>
-                          <th>Vehicle</th>
+                          <th>Vehicle Number</th>
                           <th>Apartment</th>
                           <th>Departure Date</th>
                         </tr>
