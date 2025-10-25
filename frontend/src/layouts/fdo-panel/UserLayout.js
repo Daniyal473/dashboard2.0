@@ -302,7 +302,7 @@ function UserLayout({ children }) {
     switch (activeTab) {
       case 0:
         return (
-          <Box sx={{ p: 4 }}>
+          <Box sx={{ p: 0 }}>
             {loading ? (
               <Typography>Loading home data...</Typography>
             ) : (
