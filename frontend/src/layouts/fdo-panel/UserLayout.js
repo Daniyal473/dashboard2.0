@@ -31,7 +31,7 @@ function UserLayout({ children }) {
     if (activeTab !== 0) return;
 
     // 🕒 Prevent multiple rapid triggers (10s cooldown)
-    if (window.__homeCooldown && Date.now() - window.__homeCooldown < 10000) {
+    if (window.__homeCooldown && Date.now() - window.__homeCooldown < 5000) {
       console.log("⏳ Skipping Home refresh — still in cooldown");
       return;
     }
@@ -45,7 +45,7 @@ function UserLayout({ children }) {
     const timer = setTimeout(() => {
       console.log("🏠 Rendering Home tab after 10s delay");
       setLoading(false);
-    }, 10000);
+    }, 5000);
 
     return () => {
       clearTimeout(timer);
@@ -98,7 +98,7 @@ function UserLayout({ children }) {
     if (activeTab !== 2) return;
 
     // 🕒 Prevent multiple rapid triggers
-    if (window.__checkInOutCooldown && Date.now() - window.__checkInOutCooldown < 10000) {
+    if (window.__checkInOutCooldown && Date.now() - window.__checkInOutCooldown < 5000) {
       console.log("⏳ Skipping fetch — still in cooldown");
       return;
     }
@@ -212,7 +212,7 @@ function UserLayout({ children }) {
       };
 
       fetchTodayCheckInOut();
-    }, 10000); // ⏱ Wait 10 seconds before fetching
+    }, 5000); // ⏱ Wait 10 seconds before fetching
 
     // Cleanup on unmount or tab switch
     return () => {
@@ -225,10 +225,10 @@ function UserLayout({ children }) {
 
 
   const LISTINGS_DATA = {
-    Studio: [288682, 288690, 323229, 323261, 336255, 383744, 410263, 413218, 392230],
-    "1BR": [307143, 306032, 288691, 305069, 288681, 288726, 288679, 288723, 288678, 323258, 400763, 387833, 387834],
     "2BR Premium": [305055, 309909, 323227, 288688],
     "3BR": [288686, 305327, 288676, 389366],
+    "1BR": [307143, 306032, 288691, 305069, 288681, 288726, 288679, 288723, 288678, 323258, 400763, 387833, 387834],
+    Studio: [288682, 288690, 323229, 323261, 336255, 383744, 410263, 413218, 392230],
     "2BR": [288677, 288684, 288687, 288977, 288685, 288683, 306543, 288724, 378076, 378078, 400779, 400769, 395345, 414090, 421015, 422302],
   };
 
@@ -302,7 +302,7 @@ function UserLayout({ children }) {
     if (activeTab !== 1) return;
 
     // 🕒 Prevent multiple rapid triggers (10s cooldown)
-    if (window.__aptStatusCooldown && Date.now() - window.__aptStatusCooldown < 10000) {
+    if (window.__aptStatusCooldown && Date.now() - window.__aptStatusCooldown < 5000) {
       console.log("⏳ Skipping apartment fetch — still in cooldown");
       return;
     }
@@ -319,7 +319,7 @@ function UserLayout({ children }) {
     const timer = setTimeout(() => {
       console.log("🏢 Fetching Apartment Status after 10s delay");
       fetchListings();
-    }, 10000);
+    }, 5000);
 
     // Cleanup
     return () => {
@@ -343,15 +343,27 @@ function UserLayout({ children }) {
     switch (activeTab) {
       case 0:
         return (
-          <Box sx={{ p: 0 }}>
+          <Box sx={{ p: 1 }}>
+            <Typography variant="h5" sx={{ mb: 0, fontWeight: "700", color: "#1f2937" }}>
+              🏠 Home
+            </Typography>
             {loading ? (
-              <Typography>Loading home data...</Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "60vh", // adjust height as needed
+                }}
+              >
+                <Typography>Loading home data...</Typography>
+              </Box>
             ) : (
               children
             )}
           </Box>
-        );
-      // Home screen (current content)
+        );// Home screen (current content)
+
       case 1:
         return (
           <Box sx={{ p: 4 }}>
@@ -359,7 +371,17 @@ function UserLayout({ children }) {
               🏢 Apartment Status
             </Typography>
 
-            {loading && <Typography>Loading apartment data...</Typography>}
+            {loading && (
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "60vh", // adjust height as needed
+                }}
+              ><Typography>Loading apartment data...</Typography>
+              </Box>
+              )}
             {error && <Typography color="error">{error}</Typography>}
 
             {!loading && !error && Object.keys(listingSections).length > 0 && (
@@ -433,6 +455,7 @@ function UserLayout({ children }) {
             )}
           </Box>
         );
+
       case 2:
         return (
           <Box sx={{ p: 4 }}>
@@ -440,7 +463,18 @@ function UserLayout({ children }) {
               📅 Today Check-In / Check-Out
             </Typography>
 
-            {loadingCheck && <Typography>Loading data...</Typography>}
+            {loadingCheck && (
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "60vh", // adjust height as needed
+                }}
+              >
+                <Typography>Loading data...</Typography>
+              </Box>
+              )}
             {errorCheck && <Typography color="error">{errorCheck}</Typography>}
 
             {!loadingCheck && !errorCheck && (
@@ -455,7 +489,7 @@ function UserLayout({ children }) {
                         backgroundColor: "#f9fafb",
                         px: 3,
                         py: 2,
-                        borderBottom: "1px solid #e5e7eb",
+                        border: "2px solid #e5e7eb",
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center"
@@ -529,7 +563,7 @@ function UserLayout({ children }) {
                         backgroundColor: "#f9fafb",
                         px: 3,
                         py: 2,
-                        borderBottom: "1px solid #e5e7eb",
+                        border: "2px solid #e5e7eb",
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center"
@@ -621,7 +655,7 @@ function UserLayout({ children }) {
         <Toolbar sx={{ justifyContent: "space-between", px: 4, py: 1 }}>
           {/* Left: Logo & Title */}
           <Box display="flex" alignItems="center" gap={2}>
-            <Logo width="45px" height="45px" />
+            <Logo width="65px" height="65px" />
             <Box>
               <Typography variant="h5" sx={{ fontWeight: "700", color: "#1f2937" }}>
                 FDO Panel
@@ -633,6 +667,44 @@ function UserLayout({ children }) {
                 Guest Management System
               </Typography>
             </Box>
+          </Box>
+
+          {/* Center: Tabs */}
+          {/* Center: Tabs */}
+          <Box sx={{ flexGrow: 1, display: "flex", justifyContent: "center" }}>
+            <Tabs
+              value={activeTab}
+              onChange={handleTabChange}
+              sx={{
+                "& .MuiTabs-indicator": {
+                  display: "none", // hide the default underline
+                },
+                "& .MuiTab-root": {
+                  fontWeight: 600,
+                  textTransform: "none",
+                  fontSize: "0.95rem",
+                  mx: 1,
+                  px: 3,
+                  py: 1,
+                  borderRadius: "12px",
+                  transition: "all 0.3s ease",
+                  color: "#4b5563", // gray-700 for inactive
+                  backgroundColor: "transparent",
+                  "&:hover": {
+                    backgroundColor: "#f3f4f6", // subtle hover gray
+                  },
+                },
+                "& .Mui-selected": {
+                  color: "#fff !important",
+                  backgroundColor: "#249b2aff !important", // brand green active
+                  boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+                },
+              }}
+            >
+              <Tab label="Home" />
+              <Tab label="Apartment Status" />
+              <Tab label="Today Check-In/Out" />
+            </Tabs>
           </Box>
 
           {/* Right: User Info & Logout */}
@@ -679,33 +751,6 @@ function UserLayout({ children }) {
           </Box>
         </Toolbar>
       </AppBar>
-
-      {/* Tab Navigation */}
-      <Box
-        sx={{
-          backgroundColor: "#ffffff",
-          borderBottom: "1px solid #e5e7eb",
-          px: 3,
-        }}
-      >
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          textColor="primary"
-          indicatorColor="primary"
-          sx={{
-            "& .MuiTab-root": {
-              fontWeight: 600,
-              textTransform: "none",
-              fontSize: "0.95rem",
-            },
-          }}
-        >
-          <Tab label="Home" />
-          <Tab label="Apartment Status" />
-          <Tab label="Today Check-In/Out" />
-        </Tabs>
-      </Box>
 
       {/* Main Content */}
       <MDBox>{renderContent()}</MDBox>
