@@ -244,8 +244,8 @@ function ReservationCard({ guest, setSnackbar, stack, isViewOnly, isCustom, hasP
               background-color: #f0f0f0;
             }
             .form {
-              width: 150mm;
-              height: 240mm;
+              width: 170mm;
+              height: 250mm;
               padding: 10px;
               margin: auto;
               background-color: white;
@@ -713,7 +713,7 @@ ul li {
       color: #333;
     }
     .form {
-      width: 150mm;
+      width: 170mm;
       height: auto;
       min-height: 240mm;
       padding: 20px;
