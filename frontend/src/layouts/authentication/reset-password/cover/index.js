@@ -5,6 +5,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
+import { API_ENDPOINTS } from "config/api";
 
 // @mui material components
 import Card from "@mui/material/Card";
@@ -57,12 +58,34 @@ function Cover() {
       
       setLoading(true);
       
-      // Simulate API call to verify username exists
-      setTimeout(() => {
-        setLoading(false);
-        setStep(2);
-        setMessage({ type: "success", text: "Username verified! Please enter your new password." });
-      }, 1000);
+      try {
+        // Call API to verify username exists
+        const response = await fetch(API_ENDPOINTS.VALIDATE_USERNAME, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: formData.username,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.exists) {
+          // Username found, proceed to step 2
+          setStep(2);
+          setMessage({ type: "success", text: "Username verified! Please enter your new password." });
+        } else {
+          // Username not found
+          setMessage({ type: "error", text: "Username not found" });
+        }
+      } catch (error) {
+        console.error("Username validation error:", error);
+        setMessage({ type: "error", text: "Error validating username. Please try again." });
+      }
+      
+      setLoading(false);
       
     } else {
       // Second step - reset password

@@ -167,7 +167,7 @@ class AuthService {
   }
 
   // Create new user (Admin only)
-  async createUser(username, password, role = 'user', permissions = null) {
+  async createUser(username, password, role = 'user', permissions = null, createdBy = null) {
     try {
       // Check if service is properly configured
       if (!this.isConfigured) {
@@ -194,7 +194,8 @@ class AuthService {
         "Username": username,
         "Password": hashedPassword,
         "role": role,
-        "Created Date and Time ": this.getPakistanDateTime()
+        "Created Date and Time ": this.getPakistanDateTime(),
+        "Created By": createdBy || "System"
       };
 
       // Add permissions field if permissions are provided and role is custom
@@ -476,7 +477,8 @@ class AuthService {
           id: record.id,
           username: record.fields.Username,
           role: record.fields.role || 'user',
-          createdDate: record.fields['Created Date and Time ']
+          createdDate: record.fields['Created Date and Time '],
+          createdBy: record.fields['Created By'] || 'System'
         };
         
         // Add permissions for custom users (check both field names)

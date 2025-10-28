@@ -1,10 +1,9 @@
-// Global console override for silent mode
-const originalConsoleLog = console.log;
-const originalConsoleError = console.error;
-const originalConsoleWarn = console.warn;
-console.log = () => {}; // Suppress all console.log output
-console.error = () => {}; // Suppress all console.error output
-console.warn = () => {}; // Suppress all console.warn output
+// SUPPRESS ALL CONSOLE LOGS GLOBALLY
+console.log = () => {};
+console.error = () => {};
+console.warn = () => {};
+console.info = () => {};
+console.debug = () => {};
 
 const express = require("express");
 const cors = require("cors");
@@ -142,6 +141,9 @@ const roomRoutes = require("../api/Room");
 const paymentRoutes = require("../api/payment");
 const monthlyTargetHandler = require("../api/monthly-target");
 
+// Import RevenueTable integration
+const { RevenueTableService } = require("../services/RevenueTable");
+
 // Import and start scheduler
 const schedulerService = require("./services/schedulerService");
 
@@ -164,7 +166,14 @@ app.get("/", (req, res) => {
       monthlyTarget: "/api/monthly-target",
       auth: "/api/auth",
       rooms: "/api/rooms",
-      occupancy: "/api/occupancy"
+      occupancy: "/api/occupancy",
+      revenueTable: "/api/revenue-table",
+      revenueTableData: "/api/revenue-table/revenue-data",
+      revenueTableFastDashboard: "/api/revenue-table/fast-dashboard-data",
+      revenueTablePopulate: "/api/revenue-table/populate-initial",
+      listingRevenue: "/api/listing-revenue",
+      listingRevenueData: "/api/listing-revenue/listing-revenue-data",
+      listingRevenuePopulate: "/api/listing-revenue/populate-listing-initial"
     }
   });
 });
@@ -177,6 +186,12 @@ app.use("/api/auth", authRoutes);
 app.use("/api/occupancy", occupancyRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/payment", paymentRoutes);
+
+// RevenueTable API routes
+app.use("/api/revenue-table", RevenueTableService.createAPIRoutes());
+
+// Listing Revenue API routes (same routes, different path)
+app.use("/api/listing-revenue", RevenueTableService.createAPIRoutes());
 
 // Monthly target route
 app.all("/api/monthly-target", monthlyTargetHandler);

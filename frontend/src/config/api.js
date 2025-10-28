@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
   VERIFY_ADMIN: `${API_BASE_URL}/api/auth/admin/verify`,
   FORGOT_PASSWORD: `${API_BASE_URL}/auth/forgot-password`,
   RESET_PASSWORD: `${API_BASE_URL}/api/auth/reset-password`,
+  VALIDATE_USERNAME: `${API_BASE_URL}/api/auth/validate-username`,
   VERIFY_TOKEN: `${API_BASE_URL}/api/auth/verify-token`,
   AUTH_HEALTH: `${API_BASE_URL}/api/auth/health`,
 
@@ -45,6 +46,11 @@ export const API_ENDPOINTS = {
   REVENUE_CLEAR_LISTINGS_CACHE: `${API_BASE_URL}/api/revenue/clear-listings-cache`,
   REVENUE_CRON: `${API_BASE_URL}/api/revenue/cron`,
   REVENUE_TEST_MONTHLY_TARGET: `${API_BASE_URL}/api/revenue/test-monthly-target`,
+
+  // Revenue Table endpoints (Ultra Fast Database)
+  REVENUE_TABLE_FAST_DASHBOARD: `${API_BASE_URL}/api/revenue-table/fast-dashboard-data`,
+  REVENUE_TABLE_DATA: `${API_BASE_URL}/api/revenue-table/revenue-data`,
+  REVENUE_TABLE_LISTING_DATA: `${API_BASE_URL}/api/revenue-table/listing-revenue-data`,
 
   // Teable endpoints
   TEABLE_STATUS: `${API_BASE_URL}/api/teable/status`,

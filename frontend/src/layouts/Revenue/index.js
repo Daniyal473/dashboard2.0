@@ -1269,25 +1269,75 @@ function Revenue() {
     setAdminTargetData(data);
   }, []);
 
-  // Optimized data fetching - faster loading
+  // ULTRA FAST data fetching - loads in under 2 seconds using database
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        console.log('⚡ Starting ultra-fast data fetch...');
+        const startTime = Date.now();
         
-        // Parallel fetch for faster loading
-        const [revenueResponse, monthlyResponse] = await Promise.all([
-          fetch(API_ENDPOINTS.REVENUE),
+        // Use the new ultra-fast endpoint that gets all data in one call
+        const [dashboardResponse, monthlyResponse] = await Promise.all([
+          fetch(API_ENDPOINTS.REVENUE_TABLE_FAST_DASHBOARD),
           fetch(API_ENDPOINTS.MONTHLY_TARGET)
         ]);
 
-        const [revenueResult, monthlyResult] = await Promise.all([
-          revenueResponse.json(),
+        const [dashboardResult, monthlyResult] = await Promise.all([
+          dashboardResponse.json(),
           monthlyResponse.json()
         ]);
 
-        if (revenueResult.success) {
-          setRevenueData(revenueResult.data);
+        console.log(`⚡ Dashboard data loaded in: ${Date.now() - startTime}ms`);
+        console.log('📊 Dashboard result:', dashboardResult);
+
+        if (dashboardResult.success && dashboardResult.data) {
+          // Set revenue data from the ultra-fast endpoint
+          if (dashboardResult.data.revenue) {
+            // Transform data to match expected frontend format
+            const revenueWithCategories = {
+              ...dashboardResult.data.revenue,
+              categoryRevenue: {},
+              // Map backend field names to frontend expected names
+              quarterlyAchievedRevenue: dashboardResult.data.revenue.quarterlyTargetAchieved,
+              monthlyAchievedRevenue: dashboardResult.data.revenue.monthlyTargetAchieved,
+              dailyAchievedRevenue: dashboardResult.data.revenue.dailyTargetAchieved
+            };
+            
+            // Add listing revenue data if available
+            if (dashboardResult.data.listingRevenue) {
+              const listing = dashboardResult.data.listingRevenue;
+              revenueWithCategories.categoryRevenue = {
+                "Studio": parseFloat(listing.studio || 0),
+                "1BR": parseFloat(listing.oneBR || 0),
+                "2BR": parseFloat(listing.twoBR || 0),
+                "2BR Premium": parseFloat(listing.twoBRPremium || 0),
+                "3BR": parseFloat(listing.threeBR || 0)
+              };
+              console.log('🏠 Listing revenue data processed:', revenueWithCategories.categoryRevenue);
+            }
+            
+            console.log('🎯 Quarterly data mapped:', {
+              backend: dashboardResult.data.revenue.quarterlyTargetAchieved,
+              frontend: revenueWithCategories.quarterlyAchievedRevenue
+            });
+            
+            setRevenueData(revenueWithCategories);
+          }
+          
+          // Log the load time from backend
+          if (dashboardResult.loadTime) {
+            console.log(`🚀 Backend processed data in: ${dashboardResult.loadTime}`);
+          }
+        } else {
+          // Fallback to old endpoint if ultra-fast fails
+          console.log('⚠️ Ultra-fast endpoint failed, falling back to old endpoint...');
+          const revenueResponse = await fetch(API_ENDPOINTS.REVENUE);
+          const revenueResult = await revenueResponse.json();
+          
+          if (revenueResult.success) {
+            setRevenueData(revenueResult.data);
+          }
         }
 
         if (monthlyResult.success) {
@@ -1296,6 +1346,7 @@ function Revenue() {
 
         setError(null);
       } catch (err) {
+        console.error('❌ Ultra-fast fetch error:', err);
         setError("Unable to connect to backend server");
       } finally {
         setLoading(false);

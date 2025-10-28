@@ -58,12 +58,34 @@ function ForgotPassword() {
 
       setLoading(true);
 
-      // Simulate API call to verify username exists
-      setTimeout(() => {
-        setLoading(false);
-        setStep(2);
-        setMessage({ type: "success", text: "Username verified! Please enter your new password." });
-      }, 1000);
+      try {
+        // Call API to verify username exists
+        const response = await fetch(API_ENDPOINTS.VALIDATE_USERNAME, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: formData.username,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.exists) {
+          // Username found, proceed to step 2
+          setStep(2);
+          setMessage({ type: "success", text: "Username verified! Please enter your new password." });
+        } else {
+          // Username not found
+          setMessage({ type: "error", text: "Username not found" });
+        }
+      } catch (error) {
+        console.error("Username validation error:", error);
+        setMessage({ type: "error", text: "Error validating username. Please try again." });
+      }
+
+      setLoading(false);
     } else {
       // Second step - reset password
       if (!formData.newPassword || !formData.confirmPassword) {

@@ -16,6 +16,10 @@ import TextField from "@mui/material/TextField";
 import InputLabel from "@mui/material/InputLabel";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import IconButton from "@mui/material/IconButton";
+import InputAdornment from "@mui/material/InputAdornment";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -77,6 +81,10 @@ function AdminPanel() {
   const [editUsername, setEditUsername] = useState("");
   const [originalUsername, setOriginalUsername] = useState("");
   
+  // Password visibility state
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
   // Permission editing state
   const [editingPermissions, setEditingPermissions] = useState(null);
   const [editPermissions, setEditPermissions] = useState({
@@ -112,6 +120,15 @@ function AdminPanel() {
       ...createUserForm,
       [field]: event.target.value,
     });
+  };
+
+  // Handle password visibility toggle
+  const handleTogglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleToggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
 
   // Handle Monthly Target input changes
@@ -413,6 +430,7 @@ function AdminPanel() {
           username: createUserForm.username,
           password: createUserForm.password,
           role: createUserForm.role,
+          createdBy: user?.username || "Unknown Admin",
           ...(createUserForm.role === 'custom' && { permissions: customPermissions })
         }),
       });
@@ -870,12 +888,29 @@ function AdminPanel() {
                     </MDBox>
 
                     <MDBox mb={3}>
-                      <MDInput
-                        type="password"
+                      <TextField
+                        type={showPassword ? "text" : "password"}
                         label="Password"
                         fullWidth
                         value={createUserForm.password}
                         onChange={handleInputChange("password")}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                onClick={handleTogglePasswordVisibility}
+                                edge="end"
+                                sx={{ 
+                                  color: "#6b7280",
+                                  padding: "8px",
+                                  marginRight: "4px"
+                                }}
+                              >
+                                {showPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
                         sx={{
                           "& .MuiOutlinedInput-root": {
                             borderRadius: "12px",
@@ -885,12 +920,29 @@ function AdminPanel() {
                     </MDBox>
 
                     <MDBox mb={3}>
-                      <MDInput
-                        type="password"
+                      <TextField
+                        type={showConfirmPassword ? "text" : "password"}
                         label="Confirm Password"
                         fullWidth
                         value={createUserForm.confirmPassword}
                         onChange={handleInputChange("confirmPassword")}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                onClick={handleToggleConfirmPasswordVisibility}
+                                edge="end"
+                                sx={{ 
+                                  color: "#6b7280",
+                                  padding: "8px",
+                                  marginRight: "4px"
+                                }}
+                              >
+                                {showConfirmPassword ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
                         sx={{
                           "& .MuiOutlinedInput-root": {
                             borderRadius: "12px",
@@ -1458,6 +1510,14 @@ function AdminPanel() {
                                 ? new Date(user.createdDate).toLocaleDateString()
                                 : "Unknown"}
                             </MDTypography>
+                            
+                            {/* Only show Created By if createdBy exists and is not "System" */}
+                            {user.createdBy && user.createdBy !== "System" && (
+                              <MDTypography variant="caption" color="text" sx={{ mt: 1, display: 'block' }}>
+                                Created By:{" "}
+                                {user.createdBy}
+                              </MDTypography>
+                            )}
                             
                             {/* Show permissions for custom users */}
                             {user.role === "custom" && (

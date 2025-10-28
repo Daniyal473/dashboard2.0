@@ -59,8 +59,8 @@ class TeableService {
         console.log('📝 Last posted record in memory:', this.lastPostedRecord.datetime, '(ID:', this.lastPostedRecord.id + ')');
       }
       
-      // For duplicate checking, we only need recent records (last 500 should be enough)
-      const response = await this.getAllRecords(500);
+      // For duplicate checking, fetch all records (no limit)
+      const response = await this.getAllRecords();
       if (!response.success) {
         console.error('❌ Failed to fetch records for duplicate check:', response.error);
         throw new Error(`Cannot verify duplicates: ${response.error}`);
@@ -249,23 +249,23 @@ class TeableService {
 
   /**
    * Get all records from Teable database with dynamic pagination
-   * @param {number} maxRecords - Maximum records to fetch (default: 500 for performance)
+   * @param {number} maxRecords - Maximum records to fetch (null/undefined = no limit)
    * @returns {Promise<Object>} Response from Teable API
    */
-  async getAllRecords(maxRecords = 500) {
+  async getAllRecords(maxRecords = null) {
     try {
-      console.log(`📋 Fetching records from Teable with dynamic pagination (max: ${maxRecords})...`);
+      const limitText = maxRecords ? `max: ${maxRecords}` : 'no limit';
+      console.log(`📋 Fetching records from Teable with dynamic pagination (${limitText})...`);
       
       const cacheBuster = Date.now();
       const pageSize = 100; // Teable's standard page size
       let allRecords = [];
       let currentPage = 0;
       let hasMoreRecords = true;
-      const maxPages = Math.ceil(maxRecords / pageSize); // Safety limit
       
-      while (hasMoreRecords && currentPage < maxPages) {
+      while (hasMoreRecords) {
         const skip = currentPage * pageSize;
-        const take = Math.min(pageSize, maxRecords - allRecords.length);
+        const take = maxRecords ? Math.min(pageSize, maxRecords - allRecords.length) : pageSize;
         
         console.log(`📄 Fetching page ${currentPage + 1}: skip=${skip}, take=${take}`);
         
@@ -294,8 +294,8 @@ class TeableService {
             // Got fewer records than requested - this is the last page
             hasMoreRecords = false;
             console.log(`   🏁 Last page reached (got ${pageRecords.length} < ${take})`);
-          } else if (allRecords.length >= maxRecords) {
-            // Reached our maximum limit
+          } else if (maxRecords && allRecords.length >= maxRecords) {
+            // Reached our maximum limit (only if limit is set)
             hasMoreRecords = false;
             console.log(`   🛑 Maximum records limit reached (${maxRecords})`);
           }
@@ -331,7 +331,7 @@ class TeableService {
           records: allRecords,
           totalFetched: allRecords.length,
           pagesProcessed: currentPage,
-          hasMore: currentPage >= maxPages && allRecords.length === maxRecords
+          hasMore: false
         },
         timestamp: new Date().toISOString()
       };
@@ -360,9 +360,8 @@ class TeableService {
       let allRecords = [];
       let currentPage = 0;
       let hasMoreRecords = true;
-      const maxPages = 100; // Safety limit: 10,000 records max
       
-      while (hasMoreRecords && currentPage < maxPages) {
+      while (hasMoreRecords) {
         const skip = currentPage * pageSize;
         
         console.log(`📄 Fetching page ${currentPage + 1}: skip=${skip}, take=${pageSize}`);

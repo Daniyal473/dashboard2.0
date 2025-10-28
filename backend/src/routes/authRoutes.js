@@ -67,6 +67,46 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+// Validate Username Route (for password reset)
+router.post('/validate-username', async (req, res) => {
+  try {
+    const { username } = req.body;
+
+    // Validate input
+    if (!username) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username is required'
+      });
+    }
+
+    console.log(`🔍 Username validation attempt for: ${username}`);
+
+    // Check if user exists
+    const user = await authService.findUserByUsername(username);
+
+    if (user) {
+      res.status(200).json({
+        success: true,
+        message: 'Username found',
+        exists: true
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: 'Username not found',
+        exists: false
+      });
+    }
+  } catch (error) {
+    console.error('❌ Username validation error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
 // Admin Password Verification Route
 router.post('/admin/verify', async (req, res) => {
   try {
@@ -106,7 +146,7 @@ router.post('/admin/verify', async (req, res) => {
 // Create User Route (Admin only)
 router.post('/admin/create-user', async (req, res) => {
   try {
-    const { username, password, role, permissions } = req.body;
+    const { username, password, role, permissions, createdBy } = req.body;
 
     console.log('👤 Admin creating user:', username);
 
@@ -129,7 +169,7 @@ router.post('/admin/create-user', async (req, res) => {
     console.log(`👤 Admin creating user: ${username}`);
 
     // Create user
-    const result = await authService.createUser(username, password, role || 'user', permissions);
+    const result = await authService.createUser(username, password, role || 'user', permissions, createdBy);
 
     res.status(201).json(result);
   } catch (error) {
