@@ -11,6 +11,8 @@ import { Row, Col, Table } from "react-bootstrap";
 import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { TextField } from "@mui/material";
+
 
 const API_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI4MDA2NiIsImp0aSI6ImNhYzRlNzlkOWVmZTBiMmZmOTBiNzlkNTEzYzIyZTU1MDhiYWEwNWM2OGEzYzNhNzJhNTU1ZmMzNDI4OTQ1OTg2YWI0NTVjNmJjOWViZjFkIiwiaWF0IjoxNzM2MTY3ODExLjgzNTUyNCwibmJmIjoxNzM2MTY3ODExLjgzNTUyNiwiZXhwIjoyMDUxNzAwNjExLjgzNTUzMSwic3ViIjoiIiwic2NvcGVzIjpbImdlbmVyYWwiXSwic2VjcmV0SWQiOjUzOTUyfQ.Mmqfwt5R4CK5AHwNQFfe-m4PXypLLbAPtzCD7CxgjmagGa0AWfLzPM_panH9fCbYbC1ilNpQ-51KOQjRtaFT3vR6YKEJAUkUSOKjZupQTwQKf7QE8ZbLQDi0F951WCPl9uKz1nELm73V30a8rhDN-97I43FWfrGyqBgt7F8wPkE"; // replace with your key
 
@@ -21,7 +23,7 @@ function UserLayout({ children }) {
   const [listingSections, setListingSections] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
+  const [searchQuery, setSearchQuery] = useState("");
   const [todayCheckIn, setTodayCheckIn] = useState([]);
   const [todayCheckOut, setTodayCheckOut] = useState([]);
   const [loadingCheck, setLoadingCheck] = useState(false);
@@ -367,9 +369,37 @@ function UserLayout({ children }) {
       case 1:
         return (
           <Box sx={{ p: 4 }}>
-            <Typography variant="h5" sx={{ mb: 3, fontWeight: "700", color: "#1f2937" }}>
-              🏢 Apartment Status
-            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 3,
+              }}
+            >
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: "700", color: "#1f2937" }}
+              >
+                🏢 Apartment Status
+              </Typography>
+
+              <TextField
+                label="Search by Apartment Name"
+                variant="outlined"
+                size="small"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value.toLowerCase())}
+                sx={{
+                  width: "280px",
+                  backgroundColor: "#fff",
+                  borderRadius: "8px",
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "8px",
+                  },
+                }}
+              />
+            </Box>
 
             {loading && (
               <Box
@@ -381,14 +411,24 @@ function UserLayout({ children }) {
                 }}
               ><Typography>Loading apartment data...</Typography>
               </Box>
-              )}
+            )}
             {error && <Typography color="error">{error}</Typography>}
 
             {!loading && !error && Object.keys(listingSections).length > 0 && (
               <Row>
                 {Object.entries(listingSections).map(([category, entries], idx) => {
+                  // Filter entries by search query
+                  const filteredEntries = entries.filter((row) =>
+                    row.name.toLowerCase().includes(searchQuery)
+                  );
+
+                  // Skip category if no matches
+                  if (filteredEntries.length === 0) return null;
+
                   const total = entries.length;
                   const available = entries.filter((e) => e.status === "available").length;
+                  const reserved = entries.filter((e) => e.status === "reserved").length;
+                  const blocked = entries.filter((e) => e.status === "blocked").length;
 
                   return (
                     <Col key={idx} md={6} className="mb-4">
@@ -415,7 +455,11 @@ function UserLayout({ children }) {
                           </Typography>
                           <Typography variant="body2" sx={{ color: "#6b7280", fontWeight: 500 }}>
                             Total: {total} |{" "}
-                            <span style={{ color: "#10B981", fontWeight: 600 }}>Available: {available}</span>
+                            <span style={{ color: "#10B981", fontWeight: 600 }}>Available: {available}</span>{" "}
+                            |{" "}
+                            <span style={{ color: "#EF4444", fontWeight: 600 }}>Reserved: {reserved}</span>{" "}
+                            |{" "}
+                            <span style={{ color: "#6B7280", fontWeight: 600 }}>Blocked: {blocked}</span>
                           </Typography>
                         </Box>
 
@@ -427,7 +471,7 @@ function UserLayout({ children }) {
                             </tr>
                           </thead>
                           <tbody>
-                            {entries.map((row, i) => (
+                            {filteredEntries.map((row, i) => (
                               <tr key={i}>
                                 <td>{row.name}</td>
                                 <td
@@ -460,7 +504,7 @@ function UserLayout({ children }) {
         return (
           <Box sx={{ p: 4 }}>
             <Typography variant="h5" sx={{ mb: 3, fontWeight: "700", color: "#1f2937" }}>
-              📅 Today Check-In / Check-Out
+              📅 Todays Check-In / Check-Out
             </Typography>
 
             {loadingCheck && (
@@ -474,7 +518,7 @@ function UserLayout({ children }) {
               >
                 <Typography>Loading data...</Typography>
               </Box>
-              )}
+            )}
             {errorCheck && <Typography color="error">{errorCheck}</Typography>}
 
             {!loadingCheck && !errorCheck && (
@@ -502,7 +546,10 @@ function UserLayout({ children }) {
                       <Button
                         variant="outlined"
                         size="small"
-                        onClick={() => downloadPDF(todayCheckIn, "today_checkin.pdf", "Today Check-In")}
+                        onClick={() => {
+                          const today = new Date().toISOString().split("T")[0]; // e.g. 2025-10-25
+                          downloadPDF(todayCheckIn, `Checkin_${today}.pdf`, "Today Check-In");
+                        }}
                         sx={{
                           borderRadius: "12px",
                           textTransform: "none",
@@ -576,7 +623,10 @@ function UserLayout({ children }) {
                       <Button
                         variant="outlined"
                         size="small"
-                        onClick={() => downloadPDF(todayCheckOut, "today_checkout.pdf", "Today Check-Out")}
+                        onClick={() => {
+                          const today = new Date().toISOString().split("T")[0];
+                          downloadPDF(todayCheckOut, `Checkout_${today}.pdf`, "Today Check-Out");
+                        }}
                         sx={{
                           borderRadius: "12px",
                           textTransform: "none",
@@ -655,7 +705,7 @@ function UserLayout({ children }) {
         <Toolbar sx={{ justifyContent: "space-between", px: 4, py: 1 }}>
           {/* Left: Logo & Title */}
           <Box display="flex" alignItems="center" gap={2}>
-            <Logo width="65px" height="65px" />
+            <Logo width="80px" height="80px" />
             <Box>
               <Typography variant="h5" sx={{ fontWeight: "700", color: "#1f2937" }}>
                 FDO Panel
@@ -669,7 +719,6 @@ function UserLayout({ children }) {
             </Box>
           </Box>
 
-          {/* Center: Tabs */}
           {/* Center: Tabs */}
           <Box sx={{ flexGrow: 1, display: "flex", justifyContent: "center" }}>
             <Tabs
@@ -703,7 +752,7 @@ function UserLayout({ children }) {
             >
               <Tab label="Home" />
               <Tab label="Apartment Status" />
-              <Tab label="Today Check-In/Out" />
+              <Tab label="Todays Check-In/Out" />
             </Tabs>
           </Box>
 

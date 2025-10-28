@@ -244,8 +244,8 @@ function ReservationCard({ guest, setSnackbar, stack, isViewOnly, isCustom, hasP
               background-color: #f0f0f0;
             }
             .form {
-              width: 150mm;
-              height: 240mm;
+              width: 170mm;
+              height: 250mm;
               padding: 10px;
               margin: auto;
               background-color: white;
@@ -459,7 +459,7 @@ ul li {
                 <div class="row-field" style="display: flex; justify-content: space-between; align-items: center; margin-top: 40px;">
                   <div class="inner-col" style="text-align: left">
                     <div style="border-bottom: 1px solid black; width:140px; margin-bottom: 5px;"></div>
-                    <h3>Management Team <br><span style="color:#b6bfb6;">(${user?.username})</span></h3>
+                    <h3>Management Team <span style="color:#b6bfb6;">(${user?.username})</span></h3>
                   </div>
                   <div class="inner-col" style="text-align: right">
                     <div style="border-bottom: 1px solid black; width: 140px; margin-bottom: 5px; margin-left: auto;"></div>
@@ -713,7 +713,7 @@ ul li {
       color: #333;
     }
     .form {
-      width: 150mm;
+      width: 170mm;
       height: auto;
       min-height: 240mm;
       padding: 20px;
@@ -854,7 +854,7 @@ ul li {
           const arrival = guest.arrivalDate ? guest.arrivalDate.split("T")[0] : null;
           const departure = guest.departureDate ? guest.departureDate.split("T")[0] : null;
 
-          let formTitle = "Check-out Form";
+          let formTitle = "Check-out Form ";
           let formSubtitle = `Actual Check-out Date / Time: ${actualCheckOutTime}`;
 
           if (arrival === today) {
@@ -867,7 +867,8 @@ ul li {
 
           return `
     <h3 style="margin: 0; font-size: 20px; font-weight: bold;">
-      ${guestName}'s ${formTitle}
+      ${guestName}'s ${formTitle} 
+      <span style="font-size: 12px; color: #666;">(${guest.reservationId})</span>
     </h3>
     <p style="margin: 4px 0 0 0; font-size: 14px; color: #555;">
       ${formSubtitle}
@@ -1101,7 +1102,7 @@ ${CheckOutSecurityDeposit !== "0"
         }
 </div>
 <div>
-<span style="margin-left: -19px;"> ✂----------------------------------------------------------------------------------------------------------
+<span style="margin-left: -19px;"> ✂-------------------------------------------------------------------------------------------------------------------------
 </span>
 </div>
 <div>
@@ -2706,15 +2707,29 @@ ${CheckOutSecurityDeposit !== "0"
                 <Col md={12}>
                   <Table striped bordered hover size="sm">
                     <tbody>
-                      <tr>
-                        <td>
-                          <strong>Address</strong>
+                      <tr style={{ verticalAlign: "top" }}>
+                        <td
+                          style={{
+                            fontWeight: "600",
+                            border: "1px solid #ddd",
+                            width: "150px",
+                            textAlign: "left",
+                            backgroundColor: "#f9fafb",
+                          }}
+                        >
+                          Address
                         </td>
-                        <td>
+                        <td
+                          style={{
+                            border: "1px solid #ddd",
+                            padding: "8px 12px",
+                            wordBreak: "break-word", // allows long text to wrap within cell
+                            backgroundColor: "#fff",
+                          }}
+                        >
                           {reservationDetails?.customFieldValues?.find(
                             (field) => field.customField?.name === "Address"
-                          )?.value ||
-                            "Not provided"}
+                          )?.value || "Not provided"}
                         </td>
                       </tr>
                     </tbody>
