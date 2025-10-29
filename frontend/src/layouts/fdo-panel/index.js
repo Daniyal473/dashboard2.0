@@ -244,8 +244,8 @@ function ReservationCard({ guest, setSnackbar, stack, isViewOnly, isCustom, hasP
               background-color: #f0f0f0;
             }
             .form {
-              width: 170mm;
-              height: 250mm;
+              width: 160mm;
+              height: 240mm;
               padding: 10px;
               margin: auto;
               background-color: white;
@@ -257,7 +257,7 @@ function ReservationCard({ guest, setSnackbar, stack, isViewOnly, isCustom, hasP
               display: flex;
               justify-content: center;
               height: 60px;
-              margin: 10px auto;
+              margin: 10px 0px 20px 0px;
             }
             .logo-img img {
               height: 100%;
@@ -274,6 +274,7 @@ function ReservationCard({ guest, setSnackbar, stack, isViewOnly, isCustom, hasP
               display: flex;
               gap: 20px;
               padding: 10px;
+              font-family: Helvetica;
             }
             .left-section,
             .right-section {
@@ -299,7 +300,7 @@ function ReservationCard({ guest, setSnackbar, stack, isViewOnly, isCustom, hasP
   word-break: break-word;
   font-size: 11.5px;
   min-height: 16px;
-  font-family: math;
+  font-family: Arial;
 }
 
   /* To style readonly input fields consistently */
@@ -323,7 +324,7 @@ function ReservationCard({ guest, setSnackbar, stack, isViewOnly, isCustom, hasP
 }
 
 ul li {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   font-size: 11px;
   line-height: 1;   /* slightly increased for readability */
   margin-bottom: 6px; /* adds space between list items */
@@ -331,6 +332,7 @@ ul li {
 
             .space {
               padding: 8px !important;
+              font-family: Arial;
             }
             .row .row-field {
               margin-top: 5px;
@@ -338,6 +340,7 @@ ul li {
             .row .row-field h3 {
               font-size: 13px;
               margin: 4px 0 !important;
+              font-family: Arial;
             }
             .row .row-field h4 {
               font-size: 12px;
@@ -380,13 +383,13 @@ ul li {
                 alt="Booknrent Logo"
               />
             </div>
-            <div class="heading-text" style="margin: 25px 40px 10px 20px">
-              <h2 style="text-align: center; margin: 0; font-size: 16px;"> ${guestName}'s Check-in Form <span style="font-size: 12px; color: #666;">(${guest.reservationId
-        })</span></h2>
-              <p style="text-align: center; font-family: monospace">Actual Check-in Date / Time: ${actualCheckInTime}</p>
+            <div class="heading-text" style="margin: 20px 0px 0px 40px !important">
+              <h3 style="margin: 0; font-size: 20px; font-weight: bold; "> ${guestName}'s Check-in Form <span style="font-size: 12px; color: #666;">(${guest.reservationId
+        })</span></h3>
+              <p style="margin: 4px 0 0 0; font-size: 14px; color: #555; font-family: Arial;">Actual Check-in Date / Time: ${actualCheckInTime}</p>
             </div>
             <!-- 
-            <div style="position: absolute; margin-left: 400px; margin-top: -16px; font-family: monospace; color: #b6bfb6;">
+            <div style="position: absolute; margin-left: 400px; margin-top: -16px; font-family: Arial; color: #b6bfb6;">
     Printed By: ${user?.username}
   </div>
   -->
@@ -434,7 +437,7 @@ ul li {
             
             <div class="space" style="padding: 15px">
               <div class="terms">
-                <h3 style="margin: -15px 0px -15px 0px; text-align: left">Terms and Conditions</h3>
+                <h3 style="margin: -15px 0px -15px 0px; text-align: left" >Terms and Conditions</h3>
                 <ul>
                   <li>Original CNIC or Passport is required at the time of Check-in.</li>
                   <li>Only one car parking is allowed inside the building, Extra vehicles will be charged accordingly.</li>
@@ -459,7 +462,7 @@ ul li {
                 <div class="row-field" style="display: flex; justify-content: space-between; align-items: center; margin-top: 40px;">
                   <div class="inner-col" style="text-align: left">
                     <div style="border-bottom: 1px solid black; width:140px; margin-bottom: 5px;"></div>
-                    <h3>Management Team <span style="color:#b6bfb6;">(${user?.username})</span></h3>
+                    <h3>Management Team <span style="color:#b6bfb6; font-size:9px;">(${user?.username})</span></h3>
                   </div>
                   <div class="inner-col" style="text-align: right">
                     <div style="border-bottom: 1px solid black; width: 140px; margin-bottom: 5px; margin-left: auto;"></div>
@@ -1375,8 +1378,7 @@ ${CheckOutSecurityDeposit !== "0"
       // ✅ Send message to Google Chat
       const chatMessage = [
         `📥 Check-In Alert for ${guest.guestName}!`,
-        `👤 ${guest.guestName || "Guest"} has checked in to 🏠 ${guest.listingName || "Unknown Listing"} at 🕒 ${formattedDateTime}.`,
-        `🧑‍💼 User: ${user?.username || "Unknown User"}`,
+        `👤 ${guest.guestName || "Guest"} has checked in to 🏠 ${guest.listingName || "Unknown Listing"} at 🕒 ${formattedDateTime} by ${user?.username || "Unknown User"}.`,
         "",
         `🔗 https://dashboard.hostaway.com/reservations/${guest.reservationId}`
       ].join("\n");
@@ -1568,8 +1570,7 @@ ${CheckOutSecurityDeposit !== "0"
       // ✅ Send message to Google Chat
       const chatMessage = [
         `📤 Check-Out Alert for ${guest.guestName}!`,
-        `👤 ${guest.guestName || "Guest"} has checked out from 🏠 ${guest.listingName || "Unknown Listing"} at 🕒 ${formattedDateTime}.`,
-        `🧑‍💼 User: ${user?.username || "Unknown User"}`,
+        `👤 ${guest.guestName || "Guest"} has checked out from 🏠 ${guest.listingName || "Unknown Listing"} at 🕒 ${formattedDateTime} by ${user?.username || "Unknown User"}.`,
         "",
         `🔗 https://dashboard.hostaway.com/reservations/${guest.reservationId}`
       ].join("\n");
@@ -2707,12 +2708,12 @@ ${CheckOutSecurityDeposit !== "0"
                 <Col md={12}>
                   <Table striped bordered hover size="sm">
                     <tbody>
-                      <tr style={{ verticalAlign: "top" }}>
+                      <tr>
                         <td
                           style={{
                             fontWeight: "600",
                             border: "1px solid #ddd",
-                            width: "150px",
+                            width: "220px",
                             textAlign: "left",
                             backgroundColor: "#f9fafb",
                           }}
@@ -3236,12 +3237,12 @@ function KanbanView() {
 
   // Main content for both user and admin
   const mainContent = (
-    <MDBox mt={user?.role === "user" ? 2 : 4} mb={0}>
+    <MDBox mt={user?.role === "user" ? 1 : 4} mb={0}>
       <Grid container spacing={3} justifyContent="center">
         <Grid item xs={12}>
           <Card>
             <MDBox
-              p={2}
+              p={1}
               display="flex"
               justifyContent="space-between"
               alignItems="center"
