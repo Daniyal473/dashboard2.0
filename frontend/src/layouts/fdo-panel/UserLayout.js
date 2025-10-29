@@ -689,29 +689,28 @@ function UserLayout({ children }) {
                 📅 Todays Check-In / Check-Out
               </Typography>
 
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={downloadPDF}
-                disabled={loadingCheck}
-                sx={{
-                  borderRadius: "12px",
-                  textTransform: "none",
-                  fontWeight: "bold",
-                  boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                  color: loadingCheck ? "#aaa" : "#17621B",
-                  border: `2px solid ${loadingCheck ? "#ddd" : "#17621B"}`,
-                  opacity: loadingCheck ? 0.6 : 1,
-                  cursor: loadingCheck ? "not-allowed" : "pointer",
-                  "&:hover": {
-                    backgroundColor: loadingCheck ? "transparent" : "#1e7a20",
-                    borderColor: loadingCheck ? "#ddd" : "#145517",
-                    color: loadingCheck ? "#aaa" : "#fff",
-                  },
-                }}
-              >
-                {loadingCheck ? "Loading..." : "Download PDF"}
-              </Button>
+              {!loadingCheck && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={downloadPDF}
+                  sx={{
+                    borderRadius: "12px",
+                    textTransform: "none",
+                    fontWeight: "bold",
+                    boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+                    color: "#17621B",
+                    border: "2px solid #17621B",
+                    "&:hover": {
+                      backgroundColor: "#1e7a20",
+                      borderColor: "#145517",
+                      color: "#fff",
+                    },
+                  }}
+                >
+                  Download PDF
+                </Button>
+              )}
             </Box>
 
             {loadingCheck && (
