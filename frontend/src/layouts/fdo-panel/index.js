@@ -462,8 +462,10 @@ ul li {
                 <div class="row-field" style="display: flex; justify-content: space-between; align-items: center; margin-top: 40px;">
                   <div class="inner-col" style="text-align: left">
                     <div style="border-bottom: 1px solid black; width:140px; margin-bottom: 5px;"></div>
-                    <h3>Management Team <span style="color:#b6bfb6; font-size:9px;">(${user?.username})</span></h3>
-                  </div>
+<h3 style="margin-bottom: 2px;">Management Team</h3>
+  <span style="color:#b6bfb6; font-size:9px; display:block; margin-top:2px;">
+    (${user?.username})
+  </span>                  </div>
                   <div class="inner-col" style="text-align: right">
                     <div style="border-bottom: 1px solid black; width: 140px; margin-bottom: 5px; margin-left: auto;"></div>
                     <h3>Guest Signature</h3>
