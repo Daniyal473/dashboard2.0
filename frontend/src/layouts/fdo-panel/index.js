@@ -390,7 +390,7 @@ ul li {
             </div>
             <!-- 
             <div style="position: absolute; margin-left: 400px; margin-top: -16px; font-family: Arial; color: #b6bfb6;">
-    Printed By: ${user?.username}
+    Printed By: ${user?.name}
   </div>
   -->
             </div>
@@ -462,7 +462,7 @@ ul li {
                 <div class="row-field" style="display: flex; justify-content: space-between; align-items: center; margin-top: 40px;">
                   <div class="inner-col" style="text-align: left">
                     <div style="border-bottom: 1px solid black; width:140px; margin-bottom: 5px;"></div>
-                    <h3>Management Team <br><span style="color:#b6bfb6; font-size:9px;">(${user?.username})</span></h3>
+                    <h3>Management Team <br><span style="color:#b6bfb6; font-size:9px;">(${user?.name})</span></h3>
                   </div>
                   <div class="inner-col" style="text-align: right">
                     <div style="border-bottom: 1px solid black; width: 140px; margin-bottom: 5px; margin-left: auto;"></div>
@@ -581,7 +581,7 @@ ul li {
         records: [
           {
             fields: {
-              User: user?.username,
+              User: user?.name,
               "Button Clicked": "Print Check In",
               "Date & Time": formattedDateTime,
             },
@@ -881,7 +881,7 @@ ul li {
    </div>
    <!--
    <div style="position: absolute; margin-left: 400px; margin-top: -9px; font-family: monospace; color: #b6bfb6;">
-    Printed By: ${user?.username}
+    Printed By: ${user?.name}
   </div>
   -->
 </div>
@@ -996,7 +996,7 @@ ul li {
     <div class="signature-section">
       <div class="signature-block">
         <div class="signature-line"></div>
-        <p>Management Team <span style="color:#b6bfb6;">(${user?.username})</span></p>
+        <p>Management Team <span style="color:#b6bfb6;">(${user?.name})</span></p>
       </div>
       <div class="signature-block">
         <div class="signature-line"></div>
@@ -1211,7 +1211,7 @@ ${CheckOutSecurityDeposit !== "0"
         records: [
           {
             fields: {
-              User: user?.username,
+              User: user?.name,
               "Button Clicked": "Print Check Out",
               "Date & Time": formattedDateTime,
             },
@@ -1378,7 +1378,7 @@ ${CheckOutSecurityDeposit !== "0"
       // ✅ Send message to Google Chat
       const chatMessage = [
         `📥 Check-In Alert for ${guest.guestName}!`,
-        `👤 ${guest.guestName || "Guest"} has checked in to 🏠 ${guest.listingName || "Unknown Listing"} at 🕒 ${formattedDateTime} by ${user?.username || "Unknown User"}.`,
+        `👤 ${guest.guestName || "Guest"} has checked in to 🏠 ${guest.listingName || "Unknown Listing"} at 🕒 ${formattedDateTime} by ${user?.name || "Unknown User"}.`,
         "",
         `🔗 https://dashboard.hostaway.com/reservations/${guest.reservationId}`
       ].join("\n");
@@ -1408,7 +1408,7 @@ ${CheckOutSecurityDeposit !== "0"
         records: [
           {
             fields: {
-              User: user?.username,
+              User: user?.name,
               "Button Clicked": "Mark Check In",
               "Date & Time": formattedDateTime,
             },
@@ -1570,7 +1570,7 @@ ${CheckOutSecurityDeposit !== "0"
       // ✅ Send message to Google Chat
       const chatMessage = [
         `📤 Check-Out Alert for ${guest.guestName}!`,
-        `👤 ${guest.guestName || "Guest"} has checked out from 🏠 ${guest.listingName || "Unknown Listing"} at 🕒 ${formattedDateTime} by ${user?.username || "Unknown User"}.`,
+        `👤 ${guest.guestName || "Guest"} has checked out from 🏠 ${guest.listingName || "Unknown Listing"} at 🕒 ${formattedDateTime} by ${user?.name || "Unknown User"}.`,
         "",
         `🔗 https://dashboard.hostaway.com/reservations/${guest.reservationId}`
       ].join("\n");
@@ -1599,7 +1599,7 @@ ${CheckOutSecurityDeposit !== "0"
         records: [
           {
             fields: {
-              User: user?.username,
+              User: user?.name,
               "Button Clicked": "Mark Check Out",
               "Date & Time": formattedDateTime,
             },
