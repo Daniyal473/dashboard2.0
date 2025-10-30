@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "context/AuthContext";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -20,6 +21,8 @@ import MDInput from "components/MDInput";
 import MDButton from "components/MDButton";
 
 function ForgotPassword() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [step, setStep] = useState(1); // 1: username, 2: new password
   const [formData, setFormData] = useState({
     username: "",
@@ -118,13 +121,14 @@ function ForgotPassword() {
         if (result.success) {
           setMessage({
             type: "success",
-            text: "Password reset successfully! You can now login with your new password.",
+            text: "Password reset successfully! Logging out and redirecting to sign-in...",
           });
-          // Reset form after success
+          
+          // Logout and redirect to sign-in after success
           setTimeout(() => {
-            setStep(1);
-            setFormData({ username: "", newPassword: "", confirmPassword: "" });
-          }, 3000);
+            logout(); // Clear any existing session
+            navigate("/authentication/sign-in", { replace: true });
+          }, 2000);
         } else {
           setMessage({ type: "error", text: result.message });
         }

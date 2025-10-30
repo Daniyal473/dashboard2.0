@@ -20,6 +20,13 @@ import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContentText from "@mui/material/DialogContentText";
+import Button from "@mui/material/Button";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -38,6 +45,7 @@ import Footer from "examples/Footer";
 function AdminPanel() {
   const { user, isAuthenticated, loading: authLoading, isAdmin, isCustom, hasPermission } = useAuth();
   const [createUserForm, setCreateUserForm] = useState({
+    name: "",
     username: "",
     password: "",
     confirmPassword: "",
@@ -80,6 +88,9 @@ function AdminPanel() {
   const [editingUsername, setEditingUsername] = useState(null);
   const [editUsername, setEditUsername] = useState("");
   const [originalUsername, setOriginalUsername] = useState("");
+  const [editingName, setEditingName] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [originalName, setOriginalName] = useState("");
   
   // Password visibility state
   const [showPassword, setShowPassword] = useState(false);
@@ -111,6 +122,19 @@ function AdminPanel() {
     quarterlyTarget: 0,
     monthlyTarget: 0,
     workingDays: 0
+  });
+
+  // Delete confirmation dialog state
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    username: ""
+  });
+
+  // Password history delete confirmation dialog state
+  const [deletePasswordHistoryDialog, setDeletePasswordHistoryDialog] = useState({
+    open: false,
+    recordId: "",
+    username: ""
   });
 
 
@@ -427,6 +451,7 @@ function AdminPanel() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          name: createUserForm.name,
           username: createUserForm.username,
           password: createUserForm.password,
           role: createUserForm.role,
@@ -445,7 +470,7 @@ function AdminPanel() {
           type: "success",
           text: `User "${createUserForm.username}" created successfully!`,
         });
-        setCreateUserForm({ username: "", password: "", confirmPassword: "", role: "user" });
+        setCreateUserForm({ name: "", username: "", password: "", confirmPassword: "", role: "user" });
         setCustomPermissions({
           fdoPanel: { view: false, complete: false },
           rooms: { view: false, complete: false },
@@ -543,6 +568,11 @@ function AdminPanel() {
     await executeUpdateUsername(oldUsername, newUsername);
   };
 
+  // Update name
+  const handleUpdateName = async (username, newName) => {
+    await executeUpdateName(username, newName);
+  };
+
   // Execute update username without admin verification
   const executeUpdateUsername = async (oldUsername, newUsername) => {
     setLoading(true);
@@ -581,14 +611,60 @@ function AdminPanel() {
     setLoading(false);
   };
 
+  // Execute update name without admin verification
+  const executeUpdateName = async (username, newName) => {
+    setLoading(true);
+    
+    try {
+      const response = await fetch(API_ENDPOINTS.UPDATE_USER_NAME, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username,
+          name: newName,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setMessage({
+          type: "success",
+          text: `Name updated to "${newName}" successfully!`,
+        });
+        setEditingName(null);
+        setEditName("");
+        setOriginalName("");
+        fetchUsers(); // Refresh user list
+      } else {
+        setMessage({ type: "error", text: result.message });
+      }
+    } catch (error) {
+      setMessage({ type: "error", text: "Failed to update name. Please try again." });
+      console.error("Update name error:", error);
+    }
+    setLoading(false);
+  };
 
   // Delete user
-  const handleDeleteUser = async (username) => {
-    if (!window.confirm(`Are you sure you want to delete user "${username}"?`)) {
-      return;
-    }
+  const handleDeleteUser = (username) => {
+    setDeleteDialog({
+      open: true,
+      username: username
+    });
+  };
 
-    await executeDeleteUser(username);
+  // Confirm delete user
+  const confirmDeleteUser = async () => {
+    setDeleteDialog({ open: false, username: "" });
+    await executeDeleteUser(deleteDialog.username);
+  };
+
+  // Cancel delete user
+  const cancelDeleteUser = () => {
+    setDeleteDialog({ open: false, username: "" });
   };
 
   // Execute delete user
@@ -674,6 +750,58 @@ function AdminPanel() {
     }
   };
 
+  // Delete password history record
+  const handleDeletePasswordHistory = (recordId, username) => {
+    setDeletePasswordHistoryDialog({
+      open: true,
+      recordId: recordId,
+      username: username || "Unknown User"
+    });
+  };
+
+  // Confirm delete password history
+  const confirmDeletePasswordHistory = async () => {
+    setDeletePasswordHistoryDialog({ open: false, recordId: "", username: "" });
+    await executeDeletePasswordHistory(deletePasswordHistoryDialog.recordId);
+  };
+
+  // Cancel delete password history
+  const cancelDeletePasswordHistory = () => {
+    setDeletePasswordHistoryDialog({ open: false, recordId: "", username: "" });
+  };
+
+  // Execute delete password history
+  const executeDeletePasswordHistory = async (recordId) => {
+    setLoading(true);
+    try {
+      const response = await fetch(API_ENDPOINTS.DELETE_PASSWORD_HISTORY, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          recordId: recordId,
+          deletedBy: user?.username || "Unknown Admin",
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setMessage({
+          type: "success",
+          text: "Password history record deleted successfully!",
+        });
+        fetchPasswordHistory(); // Refresh the list
+      } else {
+        setMessage({ type: "error", text: result.message });
+      }
+    } catch (error) {
+      setMessage({ type: "error", text: "Failed to delete password history record. Please try again." });
+      console.error("Delete password history error:", error);
+    }
+    setLoading(false);
+  };
 
   // Load users on component mount, password history is optional
   useEffect(() => {
@@ -872,6 +1000,21 @@ function AdminPanel() {
                   </MDTypography>
 
                   <MDBox component="form" onSubmit={handleCreateUser}>
+                    <MDBox mb={3}>
+                      <MDInput
+                        type="text"
+                        label="Name"
+                        fullWidth
+                        value={createUserForm.name}
+                        onChange={handleInputChange("name")}
+                        sx={{
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: "12px",
+                          },
+                        }}
+                      />
+                    </MDBox>
+
                     <MDBox mb={3}>
                       <MDInput
                         type="text"
@@ -1384,80 +1527,192 @@ function AdminPanel() {
                           }}
                         >
                           <MDBox>
-                            <MDBox display="flex" alignItems="center" gap={1} mb={0.5}>
-                              {editingUsername === user.username ? (
-                                <MDBox display="flex" alignItems="center" gap={1}>
-                                  <MDInput
-                                    value={editUsername}
-                                    onChange={(e) => setEditUsername(e.target.value)}
-                                    size="small"
-                                    sx={{
-                                      minWidth: "150px",
-                                      "& .MuiOutlinedInput-root": {
-                                        borderRadius: "8px",
-                                        fontSize: "1rem",
-                                        fontWeight: "500",
-                                      },
-                                    }}
-                                  />
-                                  <MDButton
-                                    variant="contained"
-                                    color={editUsername !== originalUsername && editUsername.trim() ? "success" : "secondary"}
-                                    size="small"
-                                    onClick={() => handleUpdateUsername(user.username, editUsername)}
-                                    disabled={loading || !editUsername.trim() || editUsername === originalUsername}
-                                    sx={{
-                                      borderRadius: "6px",
-                                      textTransform: "none",
-                                      minWidth: "auto",
-                                      px: 1.5,
-                                    }}
-                                  >
-                                    ✓
-                                  </MDButton>
-                                  <MDButton
-                                    variant="outlined"
-                                    color="secondary"
-                                    size="small"
-                                    onClick={() => {
-                                      setEditingUsername(null);
-                                      setEditUsername("");
-                                      setOriginalUsername("");
-                                    }}
-                                    sx={{
-                                      borderRadius: "6px",
-                                      textTransform: "none",
-                                      minWidth: "auto",
-                                      px: 1.5,
-                                    }}
-                                  >
-                                    ✕
-                                  </MDButton>
+                            {/* User Header Section */}
+                            <MDBox display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                              <MDBox>
+                                {/* Username Section */}
+                                <MDBox display="flex" alignItems="center" gap={1} mb={1}>
+                                  {editingUsername === user.username ? (
+                                    <MDBox display="flex" alignItems="center" gap={1}>
+                                      <MDTypography variant="body2" color="text.secondary" sx={{ minWidth: "70px", fontSize: "0.8rem" }}>
+                                        Username:
+                                      </MDTypography>
+                                      <MDInput
+                                        value={editUsername}
+                                        onChange={(e) => setEditUsername(e.target.value)}
+                                        size="small"
+                                        sx={{
+                                          minWidth: "180px",
+                                          "& .MuiOutlinedInput-root": {
+                                            borderRadius: "8px",
+                                            fontSize: "0.9rem",
+                                            fontWeight: "500",
+                                          },
+                                        }}
+                                      />
+                                      <MDButton
+                                        variant="contained"
+                                        color={editUsername !== originalUsername && editUsername.trim() ? "success" : "secondary"}
+                                        size="small"
+                                        onClick={() => handleUpdateUsername(user.username, editUsername)}
+                                        disabled={loading || !editUsername.trim() || editUsername === originalUsername}
+                                        sx={{
+                                          borderRadius: "6px",
+                                          textTransform: "none",
+                                          minWidth: "auto",
+                                          px: 1.5,
+                                        }}
+                                      >
+                                        ✓
+                                      </MDButton>
+                                      <MDButton
+                                        variant="outlined"
+                                        color="secondary"
+                                        size="small"
+                                        onClick={() => {
+                                          setEditingUsername(null);
+                                          setEditUsername("");
+                                          setOriginalUsername("");
+                                        }}
+                                        sx={{
+                                          borderRadius: "6px",
+                                          textTransform: "none",
+                                          minWidth: "auto",
+                                          px: 1.5,
+                                        }}
+                                      >
+                                        ✕
+                                      </MDButton>
+                                    </MDBox>
+                                  ) : (
+                                    <MDBox display="flex" alignItems="center" gap={1}>
+                                      <MDTypography variant="body2" color="text.secondary" sx={{ minWidth: "70px", fontSize: "0.8rem" }}>
+                                        Username:
+                                      </MDTypography>
+                                      <MDTypography variant="h6" fontWeight="medium" sx={{ fontSize: "1rem" }}>
+                                        {user.username}
+                                      </MDTypography>
+                                      <MDButton
+                                        variant="text"
+                                        color="info"
+                                        size="small"
+                                        onClick={() => {
+                                          setEditingUsername(user.username);
+                                          setEditUsername(user.username);
+                                          setOriginalUsername(user.username);
+                                        }}
+                                        sx={{
+                                          minWidth: "auto",
+                                          padding: "4px 8px",
+                                          fontSize: "0.75rem",
+                                          borderRadius: "6px",
+                                          "&:hover": {
+                                            backgroundColor: "rgba(25, 118, 210, 0.04)",
+                                          },
+                                        }}
+                                      >
+                                        ✏️
+                                      </MDButton>
+                                    </MDBox>
+                                  )}
                                 </MDBox>
-                              ) : (
+
+                                {/* Name Section */}
                                 <MDBox display="flex" alignItems="center" gap={1}>
-                                  <MDTypography variant="h6" fontWeight="medium">
-                                    {user.username}
-                                  </MDTypography>
-                                  <MDButton
-                                    variant="text"
-                                    color="info"
-                                    size="small"
-                                    onClick={() => {
-                                      setEditingUsername(user.username);
-                                      setEditUsername(user.username);
-                                      setOriginalUsername(user.username);
-                                    }}
-                                    sx={{
-                                      minWidth: "auto",
-                                      padding: "2px 6px",
-                                      fontSize: "0.75rem",
-                                    }}
-                                  >
-                                    ✏️
-                                  </MDButton>
+                                  {editingName === user.username ? (
+                                    <MDBox display="flex" alignItems="center" gap={1}>
+                                      <MDTypography variant="body2" color="text.secondary" sx={{ minWidth: "70px", fontSize: "0.8rem" }}>
+                                        Name:
+                                      </MDTypography>
+                                      <MDInput
+                                        value={editName}
+                                        onChange={(e) => setEditName(e.target.value)}
+                                        size="small"
+                                        placeholder="Enter full name"
+                                        sx={{
+                                          minWidth: "180px",
+                                          "& .MuiOutlinedInput-root": {
+                                            borderRadius: "8px",
+                                            fontSize: "0.9rem",
+                                            fontWeight: "400",
+                                          },
+                                        }}
+                                      />
+                                      <MDButton
+                                        variant="contained"
+                                        color={editName !== originalName ? "success" : "secondary"}
+                                        size="small"
+                                        onClick={() => handleUpdateName(user.username, editName)}
+                                        disabled={loading || editName === originalName}
+                                        sx={{
+                                          borderRadius: "6px",
+                                          textTransform: "none",
+                                          minWidth: "auto",
+                                          px: 1.5,
+                                        }}
+                                      >
+                                        ✓
+                                      </MDButton>
+                                      <MDButton
+                                        variant="outlined"
+                                        color="secondary"
+                                        size="small"
+                                        onClick={() => {
+                                          setEditingName(null);
+                                          setEditName("");
+                                          setOriginalName("");
+                                        }}
+                                        sx={{
+                                          borderRadius: "6px",
+                                          textTransform: "none",
+                                          minWidth: "auto",
+                                          px: 1.5,
+                                        }}
+                                      >
+                                        ✕
+                                      </MDButton>
+                                    </MDBox>
+                                  ) : (
+                                    <MDBox display="flex" alignItems="center" gap={1}>
+                                      <MDTypography variant="body2" color="text.secondary" sx={{ minWidth: "70px", fontSize: "0.8rem" }}>
+                                        Name:
+                                      </MDTypography>
+                                      <MDTypography 
+                                        variant="body1" 
+                                        sx={{ 
+                                          fontSize: "0.9rem",
+                                          color: user.name ? "text.primary" : "text.secondary",
+                                          fontStyle: user.name ? "normal" : "italic"
+                                        }}
+                                      >
+                                        {user.name || "Not set"}
+                                      </MDTypography>
+                                      <MDButton
+                                        variant="text"
+                                        color="info"
+                                        size="small"
+                                        onClick={() => {
+                                          setEditingName(user.username);
+                                          setEditName(user.name || "");
+                                          setOriginalName(user.name || "");
+                                        }}
+                                        sx={{
+                                          minWidth: "auto",
+                                          padding: "4px 8px",
+                                          fontSize: "0.75rem",
+                                          borderRadius: "6px",
+                                          "&:hover": {
+                                            backgroundColor: "rgba(25, 118, 210, 0.04)",
+                                          },
+                                        }}
+                                      >
+                                        ✏️
+                                      </MDButton>
+                                    </MDBox>
+                                  )}
                                 </MDBox>
-                              )}
+                              </MDBox>
+                              
                               <MDBox
                                 sx={{
                                   display: "inline-flex",
@@ -1505,7 +1760,7 @@ function AdminPanel() {
                               </MDBox>
                             </MDBox>
                             <MDTypography variant="caption" color="text">
-                              Created:{" "}
+                              Created Date:{" "}
                               {user.createdDate
                                 ? new Date(user.createdDate).toLocaleDateString()
                                 : "Unknown"}
@@ -2250,7 +2505,7 @@ function AdminPanel() {
                                 </MDBox>
                               </MDBox>
                             </Grid>
-                            <Grid item xs={12} sm={4}>
+                            <Grid item xs={12} sm={3}>
                               <MDBox display="flex" flexDirection="column" alignItems="flex-end">
                                 <MDBox display="flex" alignItems="center" gap={0.5} mb={0.5}>
                                   <MDBox
@@ -2300,6 +2555,30 @@ function AdminPanel() {
                                       })
                                     : "Unknown Time"}
                                 </MDTypography>
+                                
+                              </MDBox>
+                            </Grid>
+                            
+                            {/* Actions Column */}
+                            <Grid item xs={12} sm={1}>
+                              <MDBox display="flex" justifyContent="center" alignItems="center" height="100%">
+                                <MDButton
+                                  variant="text"
+                                  color="error"
+                                  size="small"
+                                  onClick={() => handleDeletePasswordHistory(record.id, record.username)}
+                                  disabled={loading}
+                                  sx={{
+                                    minWidth: "auto",
+                                    padding: "8px",
+                                    borderRadius: "8px",
+                                    "&:hover": {
+                                      backgroundColor: "rgba(239, 68, 68, 0.04)",
+                                    },
+                                  }}
+                                >
+                                  🗑️
+                                </MDButton>
                               </MDBox>
                             </Grid>
                           </Grid>
@@ -2863,9 +3142,183 @@ function AdminPanel() {
           )}
         </Container>
       </MDBox>
+
+      {/* Delete User Confirmation Dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={cancelDeleteUser}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "16px",
+            p: 2,
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 2 }}>
+          <MDBox display="flex" alignItems="center" gap={2}>
+            <MDBox
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: "12px",
+                backgroundColor: "#fef2f2",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#dc2626",
+              }}
+            >
+              <WarningAmberIcon fontSize="large" />
+            </MDBox>
+            <MDBox>
+              <MDTypography variant="h5" fontWeight="bold" color="text.primary">
+                Delete User
+              </MDTypography>
+              <MDTypography variant="body2" color="text.secondary">
+                This action cannot be undone
+              </MDTypography>
+            </MDBox>
+          </MDBox>
+        </DialogTitle>
+        
+        <DialogContent sx={{ py: 2 }}>
+          <DialogContentText sx={{ fontSize: "1rem", color: "#374151", lineHeight: 1.6 }}>
+            Are you sure you want to delete user <strong>"{deleteDialog.username}"</strong>? 
+            This will permanently remove the user account and all associated data.
+          </DialogContentText>
+        </DialogContent>
+        
+        <DialogActions sx={{ pt: 2, gap: 1 }}>
+          <Button
+            onClick={cancelDeleteUser}
+            variant="outlined"
+            sx={{
+              borderRadius: "8px",
+              textTransform: "none",
+              fontWeight: "600",
+              px: 3,
+              py: 1,
+              borderColor: "#d1d5db",
+              color: "#6b7280",
+              "&:hover": {
+                borderColor: "#9ca3af",
+                backgroundColor: "#f9fafb",
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDeleteUser}
+            variant="contained"
+            sx={{
+              borderRadius: "8px",
+              textTransform: "none",
+              fontWeight: "600",
+              px: 3,
+              py: 1,
+              backgroundColor: "#fca5a5",
+              color: "#7f1d1d",
+              "&:hover": {
+                backgroundColor: "#f87171",
+              }
+            }}
+          >
+            Delete User
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Password History Confirmation Dialog */}
+      <Dialog
+        open={deletePasswordHistoryDialog.open}
+        onClose={cancelDeletePasswordHistory}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "16px",
+            p: 2,
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 2 }}>
+          <MDBox display="flex" alignItems="center" gap={2}>
+            <MDBox
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: "12px",
+                backgroundColor: "#fef2f2",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#dc2626",
+              }}
+            >
+              <WarningAmberIcon fontSize="large" />
+            </MDBox>
+            <MDBox>
+              <MDTypography variant="h5" fontWeight="bold" color="text.primary">
+                Delete Password History
+              </MDTypography>
+              <MDTypography variant="body2" color="text.secondary">
+                This action cannot be undone
+              </MDTypography>
+            </MDBox>
+          </MDBox>
+        </DialogTitle>
+        
+        <DialogContent sx={{ py: 2 }}>
+          <DialogContentText sx={{ fontSize: "1rem", color: "#374151", lineHeight: 1.6 }}>
+            Are you sure you want to permanently delete the password history record for <strong>"{deletePasswordHistoryDialog.username}"</strong>?
+          </DialogContentText>
+        </DialogContent>
+        
+        <DialogActions sx={{ pt: 2, gap: 1 }}>
+          <Button
+            onClick={cancelDeletePasswordHistory}
+            variant="outlined"
+            sx={{
+              borderRadius: "8px",
+              textTransform: "none",
+              fontWeight: "600",
+              px: 3,
+              py: 1,
+              borderColor: "#d1d5db",
+              color: "#6b7280",
+              "&:hover": {
+                borderColor: "#9ca3af",
+                backgroundColor: "#f9fafb",
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDeletePasswordHistory}
+            variant="contained"
+            sx={{
+              borderRadius: "8px",
+              textTransform: "none",
+              fontWeight: "600",
+              px: 3,
+              py: 1,
+              backgroundColor: "#fca5a5",
+              color: "#7f1d1d",
+              "&:hover": {
+                backgroundColor: "#f87171",
+              }
+            }}
+          >
+            Delete Record
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Footer />
-
-
     </DashboardLayout>
   );
 }

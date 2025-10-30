@@ -1,9 +1,53 @@
-// SUPPRESS ALL CONSOLE LOGS GLOBALLY
-console.log = () => {};
-console.error = () => {};
-console.warn = () => {};
-console.info = () => {};
-console.debug = () => {};
+// CONFIGURABLE LOGGING SYSTEM
+// Control logs via environment variables or command line arguments
+// Usage: 
+//   ENABLE_LOGS=true npm start (enable logs)
+//   ENABLE_LOGS=false npm start (disable logs)
+//   npm start (default: logs enabled in development, disabled in production)
+
+const ENABLE_LOGS = process.env.ENABLE_LOGS !== undefined 
+  ? process.env.ENABLE_LOGS === 'true' 
+  : false; // Default: logs disabled
+
+// Store original console methods
+const originalConsole = {
+  log: console.log,
+  error: console.error,
+  warn: console.warn,
+  info: console.info,
+  debug: console.debug
+};
+
+// Override console methods based on ENABLE_LOGS setting
+if (!ENABLE_LOGS) {
+  console.log = () => {};
+  console.error = () => {};
+  console.warn = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+} else {
+  // Add timestamp and color to logs when enabled
+  const addTimestamp = (originalMethod, prefix, color = '') => {
+    return (...args) => {
+      const timestamp = new Date().toISOString().replace('T', ' ').substr(0, 19);
+      originalMethod(`${color}[${timestamp}] ${prefix}`, ...args, '\x1b[0m');
+    };
+  };
+  
+  console.log = addTimestamp(originalConsole.log, '📝 LOG:', '\x1b[36m'); // Cyan
+  console.error = addTimestamp(originalConsole.error, '❌ ERROR:', '\x1b[31m'); // Red
+  console.warn = addTimestamp(originalConsole.warn, '⚠️  WARN:', '\x1b[33m'); // Yellow
+  console.info = addTimestamp(originalConsole.info, 'ℹ️  INFO:', '\x1b[34m'); // Blue
+  console.debug = addTimestamp(originalConsole.debug, '🐛 DEBUG:', '\x1b[35m'); // Magenta
+}
+
+// Log the current logging status
+originalConsole.log(`🔧 Backend Logging: ${ENABLE_LOGS ? '✅ ENABLED' : '❌ DISABLED'}`);
+if (ENABLE_LOGS) {
+  originalConsole.log('💡 To disable logs: ENABLE_LOGS=false npm start');
+} else {
+  originalConsole.log('💡 To enable logs: ENABLE_LOGS=true npm start');
+}
 
 const express = require("express");
 const cors = require("cors");

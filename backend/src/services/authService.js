@@ -167,7 +167,7 @@ class AuthService {
   }
 
   // Create new user (Admin only)
-  async createUser(username, password, role = 'user', permissions = null, createdBy = null) {
+  async createUser(name, username, password, role = 'user', permissions = null, createdBy = null) {
     try {
       // Check if service is properly configured
       if (!this.isConfigured) {
@@ -191,6 +191,7 @@ class AuthService {
 
       // Create user data
       const userFields = {
+        "Name ": name || "",
         "Username": username,
         "Password": hashedPassword,
         "role": role,
@@ -287,6 +288,7 @@ class AuthService {
       const userData = {
         id: user.id,
         username: user.fields.Username,
+        name: user.fields["Name "] || user.fields["Name"] || "",
         role: user.fields.role || 'user',
         createdDate: user.fields['Created Date and Time ']
       };
@@ -476,6 +478,7 @@ class AuthService {
         const userData = {
           id: record.id,
           username: record.fields.Username,
+          name: record.fields["Name "] || record.fields["Name"] || "",
           role: record.fields.role || 'user',
           createdDate: record.fields['Created Date and Time '],
           createdBy: record.fields['Created By'] || 'System'
@@ -573,7 +576,8 @@ class AuthService {
             status: record.fields.Status,
             resetDateTime: record.fields['Reset Date and Time'] || new Date().toISOString(),
             newPassword: newPassword,
-            verifiedPassword: record.fields['Verified Password'] || record.fields['New Password'] || ''
+            verifiedPassword: record.fields['Verified Password'] || record.fields['New Password'] || '',
+            deletedBy: record.fields['Deleted by '] || null
           };
         });
 
@@ -698,6 +702,80 @@ class AuthService {
       };
     } catch (error) {
       console.error('❌ Error updating username:', error.message);
+      throw error;
+    }
+  }
+
+  // Update user name
+  async updateUserName(username, newName) {
+    try {
+      // Check if service is properly configured
+      if (!this.isConfigured) {
+        console.warn('⚠️  AuthService not properly configured - name update not available');
+        throw new Error('Name update service not available');
+      }
+
+      // Find user
+      const user = await this.findUserByUsername(username);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Update user name
+      const updateData = {
+        records: [{
+          id: user.id,
+          fields: {
+            "Name ": newName || ""
+          }
+        }]
+      };
+
+      const response = await this.makeTeableRequest(this.USERS_TABLE_URL, 'PATCH', updateData);
+      console.log(`✅ User name updated successfully: ${username} -> ${newName}`);
+      console.log('📋 Update response structure:', JSON.stringify(response, null, 2));
+
+      // Handle different response structures
+      let updatedUser = null;
+      if (response && response.records && Array.isArray(response.records) && response.records.length > 0) {
+        updatedUser = response.records[0];
+      } else if (response && response.id) {
+        updatedUser = response;
+      }
+
+      return {
+        success: true,
+        message: 'Name updated successfully',
+        user: updatedUser
+      };
+    } catch (error) {
+      console.error('❌ Error updating name:', error.message);
+      throw error;
+    }
+  }
+
+  // Delete password history record
+  async deletePasswordHistory(recordId, deletedBy) {
+    try {
+      // Check if service is properly configured
+      if (!this.isConfigured) {
+        console.warn('⚠️  AuthService not properly configured - password history deletion not available');
+        throw new Error('Password history deletion service not available');
+      }
+
+      // Actually delete the record from the database
+      const deleteUrl = `${this.RESET_PASSWORD_TABLE_URL}/${recordId}`;
+      const response = await this.makeTeableRequest(deleteUrl, 'DELETE');
+      
+      console.log(`✅ Password history record permanently deleted: ${recordId} by ${deletedBy}`);
+
+      return {
+        success: true,
+        message: 'Password history record deleted successfully',
+        record: response
+      };
+    } catch (error) {
+      console.error('❌ Error deleting password history:', error.message);
       throw error;
     }
   }

@@ -5,9 +5,12 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/server.js",
-    "start:silent": "node src/server.js > nul 2>&1",
+    "start:silent": "ENABLE_LOGS=false node src/server.js",
+    "start:logs": "ENABLE_LOGS=true node src/server.js",
     "dev": "nodemon src/server.js",
-    "dev:silent": "nodemon src/server.js > nul 2>&1",
+    "dev:silent": "ENABLE_LOGS=false nodemon src/server.js",
+    "dev:logs": "ENABLE_LOGS=true nodemon src/server.js",
+    "dev:quiet": "nodemon src/server.js > nul 2>&1",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

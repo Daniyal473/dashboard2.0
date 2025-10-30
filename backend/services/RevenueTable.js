@@ -99,20 +99,71 @@ class RevenueTableService {
     }
   }
 
-  // Get all revenue records
-  async getAllRevenueRecords() {
+  // Get all revenue records with proper pagination
+  async getAllRevenueRecords(maxRecords = null) {
     try {
-      console.log('📊 Fetching all revenue records from Teable...');
+      console.log('📊 Fetching ALL revenue records from Teable with dynamic pagination...');
       
-      const response = await axios.get(this.baseUrl, {
-        headers: this.getHeaders()
+      const pageSize = 100;
+      let allRecords = [];
+      let currentPage = 0;
+      let hasMoreRecords = true;
+      
+      while (hasMoreRecords) {
+        const skip = currentPage * pageSize;
+        const take = maxRecords ? Math.min(pageSize, maxRecords - allRecords.length) : pageSize;
+        
+        console.log(`📄 Fetching page ${currentPage + 1}: skip=${skip}, take=${take}`);
+        
+        const response = await axios.get(this.baseUrl, {
+          headers: this.getHeaders(),
+          params: {
+            take: take,
+            skip: skip
+          }
+        });
+        
+        const pageRecords = response.data.records || [];
+        allRecords.push(...pageRecords);
+        
+        console.log(`   ✅ Page ${currentPage + 1}: Got ${pageRecords.length} records`);
+        
+        // Check if we should continue pagination
+        if (pageRecords.length < take) {
+          hasMoreRecords = false;
+          console.log('   🏁 Last page reached (got fewer records than requested)');
+        } else if (maxRecords && allRecords.length >= maxRecords) {
+          hasMoreRecords = false;
+          console.log('   🏁 Max records limit reached');
+        }
+        
+        currentPage++;
+        
+        // Safety check to prevent infinite loops
+        if (currentPage > 100) {
+          console.warn('⚠️ Safety limit reached (100 pages), stopping pagination');
+          hasMoreRecords = false;
+        }
+        
+        // Small delay to avoid API rate limiting
+        if (hasMoreRecords) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      }
+      
+      // Sort records by creation time (newest first)
+      allRecords.sort((a, b) => {
+        const timeA = new Date(a.createdTime || 0);
+        const timeB = new Date(b.createdTime || 0);
+        return timeB - timeA;
       });
-
-      console.log('✅ Revenue records fetched successfully:', response.data.records?.length || 0);
+      
+      console.log(`✅ Dynamic pagination complete: ${allRecords.length} total records from ${currentPage} pages`);
       return {
         success: true,
-        records: response.data.records || [],
-        total: response.data.records?.length || 0
+        records: allRecords,
+        total: allRecords.length,
+        pages: currentPage
       };
 
     } catch (error) {
@@ -486,20 +537,71 @@ class RevenueTableService {
     }
   }
 
-  // Get all listing revenue records
-  async getAllListingRevenueRecords() {
+  // Get all listing revenue records with proper pagination
+  async getAllListingRevenueRecords(maxRecords = null) {
     try {
-      console.log('🏠 Fetching all listing revenue records from Teable...');
+      console.log('🏠 Fetching ALL listing revenue records from Teable with dynamic pagination...');
       
-      const response = await axios.get(this.listingRevenueUrl, {
-        headers: this.getHeaders()
+      const pageSize = 100;
+      let allRecords = [];
+      let currentPage = 0;
+      let hasMoreRecords = true;
+      
+      while (hasMoreRecords) {
+        const skip = currentPage * pageSize;
+        const take = maxRecords ? Math.min(pageSize, maxRecords - allRecords.length) : pageSize;
+        
+        console.log(`📄 Fetching listing page ${currentPage + 1}: skip=${skip}, take=${take}`);
+        
+        const response = await axios.get(this.listingRevenueUrl, {
+          headers: this.getHeaders(),
+          params: {
+            take: take,
+            skip: skip
+          }
+        });
+        
+        const pageRecords = response.data.records || [];
+        allRecords.push(...pageRecords);
+        
+        console.log(`   ✅ Listing page ${currentPage + 1}: Got ${pageRecords.length} records`);
+        
+        // Check if we should continue pagination
+        if (pageRecords.length < take) {
+          hasMoreRecords = false;
+          console.log('   🏁 Last listing page reached (got fewer records than requested)');
+        } else if (maxRecords && allRecords.length >= maxRecords) {
+          hasMoreRecords = false;
+          console.log('   🏁 Max listing records limit reached');
+        }
+        
+        currentPage++;
+        
+        // Safety check to prevent infinite loops
+        if (currentPage > 100) {
+          console.warn('⚠️ Safety limit reached (100 listing pages), stopping pagination');
+          hasMoreRecords = false;
+        }
+        
+        // Small delay to avoid API rate limiting
+        if (hasMoreRecords) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      }
+      
+      // Sort records by creation time (newest first)
+      allRecords.sort((a, b) => {
+        const timeA = new Date(a.createdTime || 0);
+        const timeB = new Date(b.createdTime || 0);
+        return timeB - timeA;
       });
-
-      console.log('✅ Listing revenue records fetched successfully:', response.data.records?.length || 0);
+      
+      console.log(`✅ Dynamic listing pagination complete: ${allRecords.length} total records from ${currentPage} pages`);
       return {
         success: true,
-        records: response.data.records || [],
-        total: response.data.records?.length || 0
+        records: allRecords,
+        total: allRecords.length,
+        pages: currentPage
       };
 
     } catch (error) {
@@ -617,8 +719,13 @@ class RevenueTableService {
     try {
       console.log('🔍 Testing Teable connection...');
       
+      // Test with small page to verify connection
       const response = await axios.get(this.baseUrl, {
-        headers: this.getHeaders()
+        headers: this.getHeaders(),
+        params: {
+          take: 10,
+          skip: 0
+        }
       });
 
       console.log('✅ Teable connection successful');
@@ -630,6 +737,60 @@ class RevenueTableService {
 
     } catch (error) {
       console.error('❌ Teable connection failed:', error.response?.data || error.message);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  }
+
+  // Test pagination functionality
+  async testPagination() {
+    try {
+      console.log('🧪 TESTING PAGINATION FUNCTIONALITY...');
+      
+      // Test first page only
+      console.log('📄 Testing first page (take=100, skip=0)...');
+      const firstPageResponse = await axios.get(this.baseUrl, {
+        headers: this.getHeaders(),
+        params: {
+          take: 100,
+          skip: 0
+        }
+      });
+      
+      const firstPageCount = firstPageResponse.data.records?.length || 0;
+      console.log(`📄 First page: ${firstPageCount} records`);
+      
+      // Test second page
+      console.log('📄 Testing second page (take=100, skip=100)...');
+      const secondPageResponse = await axios.get(this.baseUrl, {
+        headers: this.getHeaders(),
+        params: {
+          take: 100,
+          skip: 100
+        }
+      });
+      
+      const secondPageCount = secondPageResponse.data.records?.length || 0;
+      console.log(`📄 Second page: ${secondPageCount} records`);
+      
+      // Test full pagination with limit
+      console.log('📊 Testing full pagination (first 200 records)...');
+      const allRecords = await this.getAllRevenueRecords(200);
+      console.log(`📊 TOTAL RECORDS WITH PAGINATION: ${allRecords.total} from ${allRecords.pages} pages`);
+      
+      return {
+        success: true,
+        firstPageCount,
+        secondPageCount,
+        totalRecords: allRecords.total,
+        totalPages: allRecords.pages,
+        message: `Pagination test complete. Total: ${allRecords.total} records from ${allRecords.pages} pages`
+      };
+
+    } catch (error) {
+      console.error('❌ Pagination test failed:', error.response?.data || error.message);
       return {
         success: false,
         error: error.response?.data?.message || error.message
@@ -807,10 +968,14 @@ class RevenueTableService {
         console.log('⚡ ULTRA FAST: Frontend requesting all dashboard data...');
         const startTime = Date.now();
         
+        // Get limit from query parameter (default: no limit)
+        const limit = req.query.limit ? parseInt(req.query.limit) : null;
+        console.log(`⚡ Limit requested: ${limit || 'unlimited'} records`);
+        
         // Get all data in parallel for maximum speed
         const [revenueResult, listingResult] = await Promise.all([
-          revenueService.getLatestRevenueRecord(),
-          revenueService.getTodayListingRevenueRecord()
+          limit ? revenueService.getAllRevenueRecords(limit) : revenueService.getLatestRevenueRecord(),
+          limit ? revenueService.getAllListingRevenueRecords(limit) : revenueService.getTodayListingRevenueRecord()
         ]);
         
         const responseData = {
@@ -831,20 +996,44 @@ class RevenueTableService {
         };
         
         // Format revenue data if available
-        if (revenueResult.success && revenueResult.record) {
-          responseData.data.revenue = revenueService.formatRevenueData(revenueResult.record);
-          responseData.data.summary = {
-            actualRevenue: responseData.data.revenue.actualRevenue || '0',
-            expectedRevenue: responseData.data.revenue.expectedRevenue || '0',
-            monthlyAchieved: responseData.data.revenue.monthlyTargetAchieved || '0',
-            quarterlyAchieved: responseData.data.revenue.quarterlyTargetAchieved || '0',
-            dailyAchieved: responseData.data.revenue.dailyTargetAchieved || '0'
-          };
-        }
-        
-        // Format listing revenue data if available
-        if (listingResult.success && listingResult.record) {
-          responseData.data.listingRevenue = revenueService.formatListingRevenueData(listingResult.record);
+        if (limit) {
+          // Handle limited records response
+          if (revenueResult.success && revenueResult.records && revenueResult.records.length > 0) {
+            const latestRecord = revenueResult.records[0]; // First record (newest)
+            responseData.data.revenue = revenueService.formatRevenueData(latestRecord);
+            responseData.data.summary = {
+              actualRevenue: responseData.data.revenue.actualRevenue || '0',
+              expectedRevenue: responseData.data.revenue.expectedRevenue || '0',
+              monthlyAchieved: responseData.data.revenue.monthlyTargetAchieved || '0',
+              quarterlyAchieved: responseData.data.revenue.quarterlyTargetAchieved || '0',
+              dailyAchieved: responseData.data.revenue.dailyTargetAchieved || '0'
+            };
+            responseData.data.revenueTotal = revenueResult.total;
+            responseData.data.revenueLimit = limit;
+          }
+          
+          if (listingResult.success && listingResult.records && listingResult.records.length > 0) {
+            const latestRecord = listingResult.records[0]; // First record (newest)
+            responseData.data.listingRevenue = revenueService.formatListingRevenueData(latestRecord);
+            responseData.data.listingTotal = listingResult.total;
+            responseData.data.listingLimit = limit;
+          }
+        } else {
+          // Handle single record response (original behavior)
+          if (revenueResult.success && revenueResult.record) {
+            responseData.data.revenue = revenueService.formatRevenueData(revenueResult.record);
+            responseData.data.summary = {
+              actualRevenue: responseData.data.revenue.actualRevenue || '0',
+              expectedRevenue: responseData.data.revenue.expectedRevenue || '0',
+              monthlyAchieved: responseData.data.revenue.monthlyTargetAchieved || '0',
+              quarterlyAchieved: responseData.data.revenue.quarterlyTargetAchieved || '0',
+              dailyAchieved: responseData.data.revenue.dailyTargetAchieved || '0'
+            };
+          }
+          
+          if (listingResult.success && listingResult.record) {
+            responseData.data.listingRevenue = revenueService.formatListingRevenueData(listingResult.record);
+          }
         }
         
         console.log(`⚡ ULTRA FAST: Dashboard data loaded in ${responseData.loadTime}`);
@@ -866,22 +1055,51 @@ class RevenueTableService {
       try {
         console.log('📊 Frontend requesting revenue data...');
         
-        const latestRecord = await revenueService.getLatestRevenueRecord();
+        // Get limit from query parameter (default: no limit)
+        const limit = req.query.limit ? parseInt(req.query.limit) : null;
+        console.log(`📊 Limit requested: ${limit || 'unlimited'} records`);
         
-        if (latestRecord.success && latestRecord.record) {
-          const formattedData = revenueService.formatRevenueData(latestRecord.record);
+        if (limit && limit > 0) {
+          // Get limited records using pagination
+          const allRecords = await revenueService.getAllRevenueRecords(limit);
           
-          res.json({
-            success: true,
-            data: formattedData,
-            message: 'Revenue data loaded successfully'
-          });
+          if (allRecords.success && allRecords.records.length > 0) {
+            const latestRecord = allRecords.records[0]; // First record (newest)
+            const formattedData = revenueService.formatRevenueData(latestRecord);
+            
+            res.json({
+              success: true,
+              data: formattedData,
+              total: allRecords.total,
+              limit: limit,
+              message: `Revenue data loaded successfully (${allRecords.total} records, limit: ${limit})`
+            });
+          } else {
+            res.json({
+              success: false,
+              data: null,
+              message: 'No revenue data available'
+            });
+          }
         } else {
-          res.json({
-            success: false,
-            data: null,
-            message: 'No revenue data available'
-          });
+          // Get latest record only (original behavior)
+          const latestRecord = await revenueService.getLatestRevenueRecord();
+          
+          if (latestRecord.success && latestRecord.record) {
+            const formattedData = revenueService.formatRevenueData(latestRecord.record);
+            
+            res.json({
+              success: true,
+              data: formattedData,
+              message: 'Revenue data loaded successfully'
+            });
+          } else {
+            res.json({
+              success: false,
+              data: null,
+              message: 'No revenue data available'
+            });
+          }
         }
         
       } catch (error) {
@@ -899,22 +1117,51 @@ class RevenueTableService {
       try {
         console.log('🏠 Frontend requesting listing revenue data...');
         
-        const latestRecord = await revenueService.getTodayListingRevenueRecord();
+        // Get limit from query parameter (default: no limit)
+        const limit = req.query.limit ? parseInt(req.query.limit) : null;
+        console.log(`🏠 Limit requested: ${limit || 'unlimited'} records`);
         
-        if (latestRecord.success && latestRecord.record) {
-          const formattedData = revenueService.formatListingRevenueData(latestRecord.record);
+        if (limit && limit > 0) {
+          // Get limited records using pagination
+          const allRecords = await revenueService.getAllListingRevenueRecords(limit);
           
-          res.json({
-            success: true,
-            data: formattedData,
-            message: 'Listing revenue data loaded successfully'
-          });
+          if (allRecords.success && allRecords.records.length > 0) {
+            const latestRecord = allRecords.records[0]; // First record (newest)
+            const formattedData = revenueService.formatListingRevenueData(latestRecord);
+            
+            res.json({
+              success: true,
+              data: formattedData,
+              total: allRecords.total,
+              limit: limit,
+              message: `Listing revenue data loaded successfully (${allRecords.total} records, limit: ${limit})`
+            });
+          } else {
+            res.json({
+              success: false,
+              data: null,
+              message: 'No listing revenue data available'
+            });
+          }
         } else {
-          res.json({
-            success: false,
-            data: null,
-            message: 'No listing revenue data available'
-          });
+          // Get latest record only (original behavior)
+          const latestRecord = await revenueService.getTodayListingRevenueRecord();
+          
+          if (latestRecord.success && latestRecord.record) {
+            const formattedData = revenueService.formatListingRevenueData(latestRecord.record);
+            
+            res.json({
+              success: true,
+              data: formattedData,
+              message: 'Listing revenue data loaded successfully'
+            });
+          } else {
+            res.json({
+              success: false,
+              data: null,
+              message: 'No listing revenue data available'
+            });
+          }
         }
         
       } catch (error) {
@@ -1075,6 +1322,39 @@ class RevenueTableService {
         res.status(500).json({
           success: false,
           error: error.message
+        });
+      }
+    });
+
+    // Test pagination functionality with optional limit
+    router.get('/test-pagination', async (req, res) => {
+      try {
+        console.log('🧪 API: Testing pagination functionality...');
+        
+        // Get limit from query parameter (default: 200 for testing)
+        const limit = req.query.limit ? parseInt(req.query.limit) : 200;
+        console.log(`🧪 Testing with limit: ${limit} records`);
+        
+        const result = await revenueService.testPagination();
+        
+        // Also test with custom limit
+        const limitedTest = await revenueService.getAllRevenueRecords(limit);
+        
+        res.json({
+          ...result,
+          limitTest: {
+            limit: limit,
+            totalFetched: limitedTest.total,
+            pages: limitedTest.pages,
+            message: `Limited test: ${limitedTest.total} records with limit ${limit}`
+          }
+        });
+      } catch (error) {
+        console.error('❌ API: Pagination test failed:', error.message);
+        res.status(500).json({
+          success: false,
+          error: error.message,
+          message: 'Pagination test failed'
         });
       }
     });

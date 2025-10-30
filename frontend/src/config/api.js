@@ -28,9 +28,11 @@ export const API_ENDPOINTS = {
   CREATE_USER: `${API_BASE_URL}/api/auth/admin/create-user`,
   UPDATE_USER_ROLE: `${API_BASE_URL}/api/auth/admin/update-role`,
   UPDATE_USERNAME: `${API_BASE_URL}/api/auth/admin/update-username`,
+  UPDATE_USER_NAME: `${API_BASE_URL}/api/auth/admin/update-name`,
   UPDATE_PASSWORD: `${API_BASE_URL}/api/auth/admin/update-password`,
   DELETE_USER: `${API_BASE_URL}/api/auth/admin/delete-user`,
   PASSWORD_HISTORY: `${API_BASE_URL}/api/auth/admin/password-history`,
+  DELETE_PASSWORD_HISTORY: `${API_BASE_URL}/api/auth/admin/delete-password-history`,
 
   // Revenue endpoints
   REVENUE: `${API_BASE_URL}/api/revenue`,

@@ -146,7 +146,7 @@ router.post('/admin/verify', async (req, res) => {
 // Create User Route (Admin only)
 router.post('/admin/create-user', async (req, res) => {
   try {
-    const { username, password, role, permissions, createdBy } = req.body;
+    const { name, username, password, role, permissions, createdBy } = req.body;
 
     console.log('👤 Admin creating user:', username);
 
@@ -169,7 +169,7 @@ router.post('/admin/create-user', async (req, res) => {
     console.log(`👤 Admin creating user: ${username}`);
 
     // Create user
-    const result = await authService.createUser(username, password, role || 'user', permissions, createdBy);
+    const result = await authService.createUser(name, username, password, role || 'user', permissions, createdBy);
 
     res.status(201).json(result);
   } catch (error) {
@@ -379,6 +379,62 @@ router.put('/admin/update-username', async (req, res) => {
     res.status(200).json(result);
   } catch (error) {
     console.error('❌ Update username error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Update User Name Route (Admin only)
+router.put('/admin/update-name', async (req, res) => {
+  try {
+    const { username, name } = req.body;
+
+    console.log('👤 Admin updating user name:', username, 'to:', name);
+
+    // Validate input
+    if (!username) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username is required'
+      });
+    }
+
+    // Update user name
+    const result = await authService.updateUserName(username, name || "");
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('❌ Update name error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Delete Password History Route (Admin only)
+router.delete('/admin/delete-password-history', async (req, res) => {
+  try {
+    const { recordId, deletedBy } = req.body;
+
+    console.log('🗑️ Admin deleting password history record:', recordId, 'by:', deletedBy);
+
+    // Validate input
+    if (!recordId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Record ID is required'
+      });
+    }
+
+    // Delete password history record
+    const result = await authService.deletePasswordHistory(recordId, deletedBy || "Unknown Admin");
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('❌ Delete password history error:', error.message);
     res.status(500).json({
       success: false,
       message: error.message

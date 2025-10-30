@@ -13,29 +13,22 @@ const { RevenueTableService } = require("../services/RevenueTable");
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {
-  console.log(`✅ Backend running at http://localhost:${PORT}`);
-  console.log(`📡 API Documentation: http://localhost:${PORT}/`);
-  console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`💰 Revenue API: http://localhost:${PORT}/api/revenue`);
-  console.log(`🧪 Monthly Target Test: http://localhost:${PORT}/api/revenue/test-monthly-target`);
-  console.log(`\n💡 Press Ctrl+C to stop the server`);
+  // Silent server startup
   
   // Initialize monthly target scheduler
-  // console.log('🚀 Initializing monthly target scheduler...');
   initializeMonthlyTargetScheduler();
   
   // Initialize RevenueTable automatic updates
-  console.log('🚀 Starting RevenueTable automatic updates...');
   const revenueTableService = new RevenueTableService();
   revenueTableService.startAutomaticUpdates(20); // Every 20 minutes
 });
 
 // Add error handling for server startup
 server.on('error', (error) => {
-  console.error('❌ Server startup error:', error);
+  // Silent error handling
 });
 
-console.log('🔍 Server setup complete, waiting for startup...');
+// Silent server setup
 
 // Graceful shutdown
 let isShuttingDown = false;
@@ -44,7 +37,7 @@ const gracefulShutdown = (signal) => {
   if (isShuttingDown) return;
   isShuttingDown = true;
   
-  // console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
+  // Silent shutdown
   
   // Stop scheduler first
   schedulerService.stop();

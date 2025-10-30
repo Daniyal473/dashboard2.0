@@ -770,10 +770,10 @@ function UserLayout({ children }) {
                     fontWeight: "600",
                   }}
                 >
-                  {user.username?.charAt(0)?.toUpperCase() || "U"}
+                  {(user.name || user.username)?.charAt(0)?.toUpperCase() || "U"}
                 </Avatar>
                 <Typography sx={{ color: "#1f2937", fontWeight: 600 }}>
-                  {user.username}
+                  {user.name || user.username}
                 </Typography>
               </Box>
             )}

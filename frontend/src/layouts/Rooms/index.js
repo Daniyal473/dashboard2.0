@@ -1,16 +1,7 @@
 /**
 =========================================================
-* Material Dashboard 2 React - v2.2.0
+* Apartment Management - Mobile Responsive Kanban View
 =========================================================
-
-* Product Page: https://www.creative-tim.com/product/material-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 */
 
 // React hooks
@@ -20,29 +11,41 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "context/AuthContext";
 
 // @mui material components
-import CircularProgress from "@mui/material/CircularProgress";
-import Grid from "@mui/material/Grid";
-import Card from "@mui/material/Card";
-import CardMedia from "@mui/material/CardMedia";
-import CardContent from "@mui/material/CardContent";
-import Chip from "@mui/material/Chip";
-import Alert from "@mui/material/Alert";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import Box from "@mui/material/Box";
-import TextField from '@mui/material/TextField';
-import InputAdornment from '@mui/material/InputAdornment';
-import SearchIcon from '@mui/icons-material/Search';
-import Menu from "@mui/material/Menu";
+import {
+  Box,
+  Card,
+  CardContent,
+  Chip,
+  Grid,
+  Typography,
+  TextField,
+  InputAdornment,
+  CircularProgress,
+  Alert,
+  IconButton,
+  Menu,
+  MenuItem,
+  Fab,
+  Drawer,
+  useTheme,
+  useMediaQuery,
+  Avatar,
+  Divider,
+  Badge
+} from "@mui/material";
+
+// @mui icons
+import {
+  Search as SearchIcon,
+  MoreVert as MoreVertIcon,
+  FilterList as FilterIcon,
+  Home as HomeIcon,
+  Person as PersonIcon,
+  CalendarToday as CalendarIcon,
+  CheckCircle as CheckIcon,
+  Cancel as CancelIcon,
+  Refresh as RefreshIcon
+} from "@mui/icons-material";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -108,35 +111,35 @@ function Overview() {
   const [hoveredCard, setHoveredCard] = useState(null);
   const [rippleEffect, setRippleEffect] = useState({ active: false, x: 0, y: 0 });
 
-  // Enhanced color scheme with better contrast and professional appearance
+  // UX-Optimized color scheme with better visual balance and readability
   const statusColors = {
-    // Activity Status Colors - Unique colors not used elsewhere
+    // Activity Status Colors - Warmer, less saturated colors for better UX
     activity: {
-      'Vacant': '#06B6D4',      // Cyan 500 - Available/Free (unique cyan)
-      'Occupied': '#EC4899',    // Pink 500 - Busy/Occupied (unique pink)
-      'Checkin': '#3B82F6',     // Blue 500 - Arriving (unique blue)
-      'Checkout': '#F59E0B',    // Orange 500 - Departing (unique orange)
+      'Vacant': '#22C55E',      // Green 500 - Available/Ready (positive, calming)
+      'Occupied': '#F97316',    // Orange 500 - Occupied (warmer, less aggressive than red)
+      'Checkin': '#3B82F6',     // Blue 500 - Arriving (good for active states)
+      'Checkout': '#F59E0B',    // Amber 500 - Departing (clear transition state)
       'Unknown': '#6B7280'      // Gray 500 - Unknown status
     },
-    // HA Status Colors - Professional blue and amber theme
+    // HW Status Colors - Simplified 2-color system
     hw: {
-      'Clean': '#0891B2',       // Cyan 600 - Clean/Good (high contrast)
-      'Not Clean': '#F59E0B'    // Amber 500 - Needs attention (high contrast)
+      'Clean': '#10B981',       // Emerald 500 - Clean/Ready (softer green)
+      'Not Clean': '#F97316'    // Orange 500 - Needs attention (amber/orange for better readability)
     },
-    // HK Status Colors - Professional orange and rose theme
+    // HK Status Colors - Consistent with simplified approach
     hk: {
-      'Clean': '#EA580C',       // Orange 600 - Clean/Fresh (unique color)
-      'Not Clean': '#E11D48'    // Rose 600 - Needs cleaning (high contrast)
+      'Clean': '#10B981',       // Emerald 500 - Clean/Ready (same as HW for consistency)
+      'Not Clean': '#F97316'    // Orange 500 - Needs attention (same as HW for consistency)
     },
-    // Reservation Status Colors - Professional high contrast scheme
+    // Reservation Status Colors - Reduced to essential colors only
     reservation: {
-      'Confirmed': '#2563EB',        // Blue 600 - Confirmed (high contrast)
-      'Upcoming Stay': '#7C3AED',    // Violet 600 - Future (high contrast)
-      'Current Stay': '#059669',     // Emerald 600 - Active/Current (high contrast)
-      'Staying Guest': '#6B7280',    // Gray 500 - Staying Guest (neutral)
-      'Checked In': '#059669',       // Emerald 600 - Active (high contrast)
-      'Cancelled': '#DC2626',        // Red 600 - Cancelled (high contrast)
-      'Checkout': '#D97706',         // Amber 600 - Ending (high contrast)
+      'Confirmed': '#3B82F6',        // Blue 500 - Confirmed (clear, professional)
+      'Upcoming Stay': '#3B82F6',    // Blue 500 - Future (same as confirmed for simplicity)
+      'Current Stay': '#10B981',     // Emerald 500 - Active/Current (positive green)
+      'Staying Guest': '#10B981',    // Emerald 500 - Active (same as current)
+      'Checked In': '#10B981',       // Emerald 500 - Active (consistent)
+      'Cancelled': '#EF4444',        // Red 500 - Cancelled (reserved for urgent/error states)
+      'Checkout': '#F59E0B',         // Amber 500 - Ending (transition state)
       'Pending': '#6B7280',          // Gray 500 - Waiting (neutral)
       'N/A': '#9CA3AF'               // Gray 400 - Not applicable
     }
@@ -164,7 +167,7 @@ function Overview() {
     
     const search = searchTerm.toLowerCase();
     
-    // Search in all relevant fields
+    // Search in all relevant fields including new ones
     const searchFields = [
       listing.name,                    // Apartment name
       listing.guestName,              // Guest name
@@ -176,8 +179,15 @@ function Overview() {
       listing.checkInDate,            // Check-in date
       listing.checkOutDate,           // Check-out date
       listing.address,                // Address
-      listing.location,               // Location
       listing.city,                   // City
+      listing.listingName,            // Listing name from Teable
+      listing.yGuestName,             // Yesterday's guest
+      listing.tActualCheckIn,         // Actual check-in time
+      listing.listingStatus,          // Listing status
+      listing.todaysResStay,          // Today's reservation stay
+      listing.yesterdaysResStay,      // Yesterday's reservation stay
+      listing.tReservationId,         // Today's reservation ID
+      listing.yReservationId,         // Yesterday's reservation ID
       listing.country,                // Country
       String(listing.id)              // Listing ID
     ];
@@ -365,6 +375,25 @@ function Overview() {
           id: listing.id,
           name: listing.name,
           reservationStatus: listing.reservationStatus
+        })));
+        
+        // Debug new fields - Check all possible field names
+        console.log('🔍 New Fields Debug - First 3 listings:', data.data.slice(0, 3).map(listing => ({
+          id: listing.id,
+          name: listing.name,
+          // Try different field name variations
+          listingName: listing.listingName,
+          yGuestName: listing.yGuestName,
+          tActualCheckIn: listing.tActualCheckIn,
+          listingStatus: listing.listingStatus,
+          todaysResStay: listing.todaysResStay,
+          yesterdaysResStay: listing.yesterdaysResStay,
+          todaysDate: listing.todaysDate,
+          // Also check for exact Teable field names
+          yesterdaysRes: listing.yesterdaysRes,
+          todaysRes: listing.todaysRes,
+          // Check all fields to see what's available
+          allFields: Object.keys(listing).filter(key => key.includes('y') || key.includes('Y') || key.includes('yesterday') || key.includes('Yesterday'))
         })));
       } else {
         setError(data.message || 'Failed to fetch room listings');
@@ -1003,31 +1032,61 @@ function Overview() {
         )}
       </MDBox>
 
-      {/* Apartment Grid View - Desktop */}
+      {/* Apartment Grid View - Mobile Responsive */}
       {listings.length > 0 && (
-        <MDBox px={3} mb={3}>
-          <Card sx={{ p: 3, backgroundColor: 'white', boxShadow: 3 }}>
+        <MDBox px={{ xs: 1, sm: 2, md: 3 }} mb={3}>
+          <Card sx={{ 
+            p: { xs: 2, sm: 2.5, md: 3 }, 
+            backgroundColor: 'white', 
+            boxShadow: 3,
+            borderRadius: { xs: '12px', md: '16px' }
+          }}>
+            {/* Mobile-Responsive Header Layout */}
             <MDBox display="flex" flexDirection={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} gap={{ xs: 2, md: 0 }} mb={4}>
-              <MDBox>
+              {/* Title Section - Mobile Optimized */}
+              <MDBox sx={{ textAlign: { xs: 'center', md: 'left' } }}>
                 <MDTypography variant="h4" fontWeight="bold" sx={{ 
                   background: 'linear-gradient(135deg, #4F7CFF 0%, #3B82F6 50%, #2563EB 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
-                  fontSize: '1.75rem',
+                  fontSize: { xs: '1.5rem', sm: '1.65rem', md: '1.75rem' },
                   letterSpacing: '-0.025em',
                   textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                  mb: 0.5
+                  mb: { xs: 0.3, md: 0.5 },
+                  lineHeight: 1.2
                 }}>
                   🏢 Apartment Management
                 </MDTypography>
+                
+                {/* Mobile Stats Summary */}
+                <MDBox sx={{ display: { xs: 'block', md: 'none' }, mt: 1 }}>
+                  <MDTypography variant="body2" sx={{ 
+                    color: '#64748b',
+                    fontSize: '0.85rem',
+                    fontWeight: 500
+                  }}>
+                    {listings.filter(listing => 
+                      (listing.country === 'Pakistan' || 
+                       listing.country === 'PK' ||
+                       (listing.address && listing.address.toLowerCase().includes('pakistan')) ||
+                       (listing.location && listing.location.toLowerCase().includes('pakistan')) ||
+                       (listing.city && ['karachi', 'lahore', 'islamabad', 'rawalpindi', 'faisalabad', 'multan', 'peshawar', 'quetta', 'sialkot', 'gujranwala'].includes(listing.city.toLowerCase()))) &&
+                      matchesSearch(listing, searchTerm)
+                    ).length} apartments {searchTerm && `matching "${searchTerm}"`}
+                  </MDTypography>
+                </MDBox>
               </MDBox>
               
-              {/* Enhanced Search Bar with Animation */}
-              <MDBox sx={{ minWidth: { xs: '100%', md: '320px' } }}>
+              {/* Enhanced Mobile-First Search Bar */}
+              <MDBox sx={{ 
+                minWidth: { xs: '100%', md: '320px' },
+                maxWidth: { xs: '100%', sm: '400px', md: '320px' },
+                mx: { xs: 0, sm: 'auto', md: 0 }
+              }}>
                 <TextField
                   fullWidth
-                  size="medium"
+                  size={window.innerWidth < 600 ? "small" : "medium"}
                   placeholder="Search apartments, guests, or status..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -1036,7 +1095,7 @@ function Overview() {
                       <InputAdornment position="start">
                         <SearchIcon sx={{ 
                           color: '#4F7CFF', 
-                          fontSize: '1.2rem',
+                          fontSize: { xs: '1.1rem', md: '1.2rem' },
                           animation: searchTerm ? 'pulse 2s infinite' : 'none'
                         }} />
                       </InputAdornment>
@@ -1044,49 +1103,73 @@ function Overview() {
                   }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      borderRadius: '16px',
-                      backgroundColor: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-                      fontSize: '0.9rem',
+                      borderRadius: { xs: '12px', md: '16px' },
+                      backgroundColor: '#ffffff',
+                      fontSize: { xs: '0.85rem', md: '0.9rem' },
                       fontWeight: 500,
                       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
                       border: '1px solid #e2e8f0',
-                      transition: 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                      transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                       position: 'relative',
                       overflow: 'hidden',
                       '& fieldset': {
                         border: 'none',
                       },
                       '&:hover': {
-                        boxShadow: '0 8px 25px rgba(124, 58, 237, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-                        transform: 'translateY(-2px) scale(1.02)',
-                        backgroundColor: '#ffffff',
-                        animation: 'glow 2s ease-in-out infinite alternate'
+                        boxShadow: '0 6px 20px rgba(124, 58, 237, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+                        transform: { xs: 'translateY(-1px)', md: 'translateY(-2px) scale(1.02)' },
+                        backgroundColor: '#ffffff'
                       },
                       '&.Mui-focused': {
-                        boxShadow: '0 8px 25px rgba(124, 58, 237, 0.15), inset 0 1px 0 rgba(255, 255, 255, 1)',
-                        transform: 'translateY(-2px) scale(1.02)',
+                        boxShadow: '0 8px 25px rgba(124, 58, 237, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1)',
+                        transform: { xs: 'translateY(-1px)', md: 'translateY(-2px) scale(1.02)' },
                         backgroundColor: '#ffffff',
-                        animation: 'glow 1.5s ease-in-out infinite alternate'
+                        border: '1px solid #3B82F6'
                       },
-                      '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 0,
-                        left: '-100%',
-                        width: '100%',
-                        height: '100%',
-                        background: 'linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.1), transparent)',
-                        transition: 'left 0.5s ease-in-out',
-                      },
-                      '&:hover::before': {
-                        left: '100%',
+                      // Mobile-specific touch feedback
+                      '&:active': {
+                        transform: 'translateY(0px) scale(0.98)',
+                        transition: 'all 0.1s ease'
                       }
                     },
                     '& .MuiInputBase-input': {
-                      padding: '12px 16px 12px 8px',
+                      padding: { xs: '10px 14px 10px 6px', md: '12px 16px 12px 8px' },
                     },
+                    // Clear button for mobile
+                    '& .MuiInputBase-input::-webkit-search-cancel-button': {
+                      WebkitAppearance: 'searchfield-cancel-button',
+                    }
                   }}
                 />
+                
+                {/* Mobile Search Results Counter */}
+                {searchTerm && (
+                  <MDBox sx={{ 
+                    display: { xs: 'block', md: 'none' },
+                    mt: 1,
+                    textAlign: 'center'
+                  }}>
+                    <MDTypography variant="caption" sx={{ 
+                      color: '#64748b',
+                      fontSize: '0.75rem',
+                      fontWeight: 500,
+                      backgroundColor: '#f1f5f9',
+                      px: 2,
+                      py: 0.5,
+                      borderRadius: '12px',
+                      display: 'inline-block'
+                    }}>
+                      {listings.filter(listing => 
+                        (listing.country === 'Pakistan' || 
+                         listing.country === 'PK' ||
+                         (listing.address && listing.address.toLowerCase().includes('pakistan')) ||
+                         (listing.location && listing.location.toLowerCase().includes('pakistan')) ||
+                         (listing.city && ['karachi', 'lahore', 'islamabad', 'rawalpindi', 'faisalabad', 'multan', 'peshawar', 'quetta', 'sialkot', 'gujranwala'].includes(listing.city.toLowerCase()))) &&
+                        matchesSearch(listing, searchTerm)
+                      ).length} results found
+                    </MDTypography>
+                  </MDBox>
+                )}
               </MDBox>
             </MDBox>
             
@@ -1094,19 +1177,16 @@ function Overview() {
             <style>{animationStyles}</style>
             
             <Box sx={{ width: '100%', overflow: 'hidden' }}>
-              {/* Desktop Grid View */}
-              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+              {/* Mobile Kanban View - Enhanced Card-based Layout */}
+              <Box sx={{ display: { xs: 'block', md: 'none' } }}>
                 <Box sx={{
-                  display: focusedCard ? 'flex' : 'grid',
-                  gridTemplateColumns: focusedCard ? 'none' : 'repeat(auto-fill, minmax(350px, 1fr))',
-                  justifyContent: focusedCard ? 'center' : 'initial',
-                  alignItems: focusedCard ? 'center' : 'initial',
-                  gap: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: { xs: 2, sm: 2.5 },
                   width: '100%',
-                  minHeight: focusedCard ? '60vh' : 'auto',
-                  position: 'relative'
+                  px: { xs: 0.5, sm: 1 }
                 }}>
-                  {/* Generate apartment cards */}
+                  {/* Mobile apartment cards will be rendered here */}
                   {listings
                     .filter(listing => 
                       (listing.country === 'Pakistan' || 
@@ -1114,410 +1194,459 @@ function Overview() {
                        (listing.address && listing.address.toLowerCase().includes('pakistan')) ||
                        (listing.location && listing.location.toLowerCase().includes('pakistan')) ||
                        (listing.city && ['karachi', 'lahore', 'islamabad', 'rawalpindi', 'faisalabad', 'multan', 'peshawar', 'quetta', 'sialkot', 'gujranwala'].includes(listing.city.toLowerCase()))) &&
-                      matchesSearch(listing, searchTerm) &&
-                      (!focusedCard || listing.id === focusedCard.id) // Show only focused card when in focus mode
+                      matchesSearch(listing, searchTerm)
                     )
                     .map((listing, index) => (
                       <Card
-                        key={listing.id}
-                        data-listing-id={listing.id}
-                        onClick={(e) => handleCardClickWithRipple(e, listing)}
-                        onMouseEnter={() => setHoveredCard(listing.id)}
-                        onMouseLeave={() => setHoveredCard(null)}
+                        key={`mobile-kanban-${listing.id}`}
                         sx={{
-                          // Staggered animation
-                          animation: cardsLoaded ? `slideUpFadeIn 0.6s ease-out ${index * 0.1}s both` : 'none',
-                          // Floating animation on hover
-                          '&:hover': {
-                            animation: hoveredCard === listing.id ? 'float 3s ease-in-out infinite' : 'none',
-                          },
-                          background: 'linear-gradient(145deg, #fefefe 0%, #fafafa 100%)',
-                          borderRadius: focusedCard?.id === listing.id ? '16px' : '12px',
-                          p: 0,
-                          border: focusedCard?.id === listing.id ? '1px solid #f8fafc' : '1px solid #f8fafc',
-                          boxShadow: focusedCard?.id === listing.id 
-                            ? '0 12px 24px rgba(0, 0, 0, 0.03), 0 4px 8px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 1)' 
-                            : '0 2px 8px rgba(0, 0, 0, 0.02), 0 1px 3px rgba(0, 0, 0, 0.01), inset 0 1px 0 rgba(255, 255, 255, 1)',
-                          minHeight: focusedCard?.id === listing.id ? '420px' : '100px',
-                          maxWidth: focusedCard?.id === listing.id ? '650px' : 'none',
-                          width: focusedCard?.id === listing.id ? '100%' : 'auto',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          cursor: 'pointer',
-                          transform: focusedCard?.id === listing.id ? 'scale(1.02) translateY(-8px)' : 'scale(1)',
-                          opacity: isAnimating ? 0.7 : 1,
-                          zIndex: focusedCard?.id === listing.id ? 1001 : 1,
-                          position: focusedCard?.id === listing.id ? 'relative' : 'static',
-                          transition: 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                          backgroundColor: '#ffffff',
+                          borderRadius: '12px',
+                          border: '1px solid #e2e8f0',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
                           overflow: 'hidden',
-                          backdropFilter: 'blur(10px)',
-                          // Enhanced hover effects with animations
+                          transition: 'all 0.2s ease-in-out',
+                          position: 'relative',
+                          width: '100%',
                           '&:hover': {
-                            transform: focusedCard?.id === listing.id 
-                              ? 'scale(1.01) translateY(-2px)' 
-                              : 'scale(1.005) translateY(-1px)',
-                            boxShadow: focusedCard?.id === listing.id 
-                              ? '0 8px 16px rgba(221, 214, 254, 0.15), 0 4px 8px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 1)' 
-                              : '0 4px 12px rgba(221, 214, 254, 0.1), 0 2px 6px rgba(0, 0, 0, 0.015), inset 0 1px 0 rgba(255, 255, 255, 1)',
-                            border: focusedCard?.id === listing.id ? '1px solid #f3f4f6' : '1px solid #f9fafb',
-                            filter: 'brightness(1.005) saturate(1.01)',
-                            background: 'linear-gradient(145deg, #ffffff 0%, #fcfcfc 100%)',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                            transform: 'translateY(-2px)'
                           },
-                          // Ripple effect
-                          '&::before': rippleEffect.active && hoveredCard === listing.id ? {
-                            content: '""',
-                            position: 'absolute',
-                            top: rippleEffect.y,
-                            left: rippleEffect.x,
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '50%',
-                            background: 'rgba(124, 58, 237, 0.3)',
-                            transform: 'translate(-50%, -50%)',
-                            animation: 'ripple 0.6s linear',
-                            zIndex: 1000,
-                          } : {}
+                          '&:active': {
+                            transform: 'translateY(0px) scale(0.98)',
+                            transition: 'all 0.1s ease'
+                          }
                         }}
                       >
-                        {/* Enhanced Apartment Header */}
+                        {/* Kanban Card Header - Compact */}
                         <MDBox sx={{ 
-                          background: `linear-gradient(135deg, ${
-                            listing.reservationStatus === 'Upcoming Stay' ? getStatusColor('reservation', 'Upcoming Stay') : 
-                            listing.reservationStatus === 'Checked In' ? getStatusColor('reservation', 'Checked In') : 
-                            (listing.reservationStatus === 'Current Stay' || listing.reservationStatus === 'Staying Guest') ? getStatusColor('reservation', 'Staying Guest') : 
-                            (listing.guestName === 'N/A' || !listing.guestName || listing.reservationStatus === 'N/A') ? '#E2E8F0' : 
-                            getStatusColor('activity', listing.activity)
-                          } 0%, ${
-                            listing.reservationStatus === 'Upcoming Stay' ? '#6D28D9' : 
-                            listing.reservationStatus === 'Checked In' ? '#047857' : 
-                            (listing.reservationStatus === 'Current Stay' || listing.reservationStatus === 'Staying Guest') ? '#4B5563' : 
-                            (listing.guestName === 'N/A' || !listing.guestName || listing.reservationStatus === 'N/A') ? '#CBD5E1' : 
-                            '#374151'
-                          } 100%)`,
+                          backgroundColor: getStatusColor('activity', listing.activity),
                           color: 'white',
-                          p: 1.5,
-                          textAlign: 'center',
-                          position: 'relative',
-                          borderRadius: '12px 12px 0 0',
-                          boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                          textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+                          p: { xs: 1.5, sm: 2 },
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
                         }}>
-                          <MDTypography variant="h6" fontWeight="bold" sx={{ fontSize: '0.8rem' }}>
+                          <MDTypography variant="h6" fontWeight="bold" sx={{ 
+                            fontSize: { xs: '0.9rem', sm: '1rem' },
+                            textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                          }}>
                             {listing.name || 'Unknown'}
                           </MDTypography>
                           
-                          {/* Exit Button for Focused Card */}
-                          {focusedCard?.id === listing.id && (
-                            <MDBox
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                exitFocusMode();
-                              }}
-                              sx={{
-                                position: 'absolute',
-                                top: 8,
-                                right: 8,
-                                width: 24,
-                                height: 24,
-                                borderRadius: '50%',
-                                backgroundColor: '#EF4444',
-                                color: 'white',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                fontSize: '14px',
-                                fontWeight: 'bold',
-                              }}
-                            >
-                              ×
-                            </MDBox>
-                          )}
-                        </MDBox>
-
-                      {/* Compact Apartment Details */}
-                      <MDBox sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1 }}>
-                        {/* Guest Information */}
-                        {listing.guestName && listing.guestName !== 'N/A' && (
-                          <MDBox sx={{ mb: 0.5 }}>
-                            <MDTypography variant="body2" sx={{ 
-                              color: '#6366f1', 
-                              fontSize: '0.75rem', 
-                              fontWeight: 500,
-                              mb: 0.5,
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.8px'
-                            }}>
-                              Guest
-                            </MDTypography>
-                            <MDTypography variant="body1" sx={{ 
-                              color: '#1e293b', 
-                              fontSize: '0.9rem', 
-                              fontWeight: 600,
-                              lineHeight: 1.2
-                            }}>
-                              {listing.guestName}
-                            </MDTypography>
-                          </MDBox>
-                        )}
-
-                        {/* Dates Information */}
-                        {listing.checkInDate && listing.checkInDate !== 'N/A' && listing.checkOutDate && listing.checkOutDate !== 'N/A' && (
-                          <MDBox sx={{ mb: 0.5 }}>
-                            <MDTypography variant="body2" sx={{ 
-                              color: '#6366f1', 
-                              fontSize: '0.75rem', 
-                              fontWeight: 500,
-                              mb: 0.5,
+                          {/* Status Badge */}
+                          <MDBox sx={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                            px: 1.5,
+                            py: 0.5,
+                            borderRadius: '12px',
+                            backdropFilter: 'blur(10px)'
+                          }}>
+                            <MDTypography variant="caption" sx={{ 
+                              fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                              fontWeight: 700,
                               textTransform: 'uppercase',
                               letterSpacing: '0.5px'
                             }}>
-                              Stay Period
-                            </MDTypography>
-                            <MDTypography variant="body1" sx={{ 
-                              color: '#475569', 
-                              fontSize: '0.85rem', 
-                              fontWeight: 600
-                            }}>
-                              {listing.checkInDate} - {listing.checkOutDate}
+                              {listing.activity === 'Occupied' ? '🔴 Occupied' :
+                               listing.activity === 'Checkin' ? '🔵 Check-in' :
+                               listing.activity === 'Checkout' ? '🟠 Check-out' : '✅ Available'}
                             </MDTypography>
                           </MDBox>
-                        )}
+                        </MDBox>
 
-                          {/* Reservation ID */}
-                          {listing.reservationId && listing.reservationId !== 'N/A' && (
-                            <MDBox sx={{ mb: 0.5 }}>
-                              <MDTypography variant="body2" sx={{ 
-                                color: '#64748b', 
-                                fontSize: '0.75rem', 
-                                fontWeight: 500,
-                                mb: 0.3,
+                        {/* Mobile Card Content */}
+                        <MDBox sx={{ p: { xs: 2, sm: 2.5 } }}>
+                          {/* Mobile Kanban Layout - Already exists, keeping it */}
+                          <MDBox sx={{ mb: 2 }}>
+                            {/* Today's Information Block */}
+                            <MDBox sx={{ mb: 2 }}>
+                              <MDTypography variant="h6" sx={{ 
+                                fontSize: { xs: '0.85rem', sm: '0.9rem' }, 
+                                fontWeight: 700,
+                                color: '#3B82F6',
+                                mb: 1.5,
                                 textTransform: 'uppercase',
-                                letterSpacing: '0.5px'
+                                letterSpacing: '0.5px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1
                               }}>
-                                Reservation ID
+                                <span style={{ fontSize: '1.2rem' }}>📅</span>
+                                Today
                               </MDTypography>
-                              <MDTypography variant="body1" sx={{ 
-                                color: '#475569', 
-                                fontSize: '0.85rem', 
-                                fontWeight: 600,
-                                fontFamily: 'monospace'
-                              }}>
-                                {listing.reservationId}
-                              </MDTypography>
+                              
+                              {/* Today's Guest */}
+                              <MDBox sx={{ mb: 1.2, display: 'flex', alignItems: 'center', gap: 1.5, p: 1, backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+                                <span style={{ fontSize: '1.3rem' }}>👤</span>
+                                <MDBox>
+                                  <MDTypography variant="caption" sx={{ 
+                                    color: '#64748b', 
+                                    fontSize: '0.7rem',
+                                    fontWeight: 500,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    display: 'block',
+                                    mb: 0.2
+                                  }}>
+                                    Guest
+                                  </MDTypography>
+                                  <MDTypography variant="body1" sx={{ 
+                                    color: '#1e293b', 
+                                    fontSize: { xs: '0.8rem', sm: '0.85rem' }, 
+                                    fontWeight: 700,
+                                    lineHeight: 1.2
+                                  }}>
+                                    {listing.guestName && listing.guestName !== 'N/A' ? listing.guestName : 'No Guest'}
+                                  </MDTypography>
+                                </MDBox>
+                              </MDBox>
+
+                              {/* Today's Status */}
+                              <MDBox sx={{ mb: 1.2, display: 'flex', alignItems: 'center', gap: 1.5, p: 1, backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+                                <span style={{ fontSize: '1.3rem' }}>🏠</span>
+                                <MDBox sx={{ flex: 1 }}>
+                                  <MDTypography variant="caption" sx={{ 
+                                    color: '#64748b', 
+                                    fontSize: '0.7rem',
+                                    fontWeight: 500,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                    display: 'block',
+                                    mb: 0.5
+                                  }}>
+                                    Status
+                                  </MDTypography>
+                                  <MDBox sx={{
+                                    display: 'inline-block',
+                                    px: 2,
+                                    py: 0.8,
+                                    borderRadius: '12px',
+                                    backgroundColor: listing.activity === 'Occupied' ? '#DC2626' : 
+                                                   listing.activity === 'Checkin' ? '#3B82F6' : 
+                                                   listing.activity === 'Checkout' ? '#F59E0B' : '#10B981',
+                                    color: 'white',
+                                    minWidth: '80px',
+                                    textAlign: 'center'
+                                  }}>
+                                    <MDTypography variant="body2" sx={{ 
+                                      fontSize: { xs: '0.75rem', sm: '0.8rem' }, 
+                                      fontWeight: 700,
+                                      textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                                    }}>
+                                      {listing.activity === 'Occupied' ? '🔴 Occupied' :
+                                       listing.activity === 'Checkin' ? '🔵 Check-in' :
+                                       listing.activity === 'Checkout' ? '🟠 Check-out' : '✅ Available'}
+                                    </MDTypography>
+                                  </MDBox>
+                                </MDBox>
+                              </MDBox>
+
+                              {/* Today's Dates */}
+                              {listing.checkInDate && listing.checkInDate !== 'N/A' && listing.checkOutDate && listing.checkOutDate !== 'N/A' && (
+                                <MDBox sx={{ mb: 1.2, display: 'flex', alignItems: 'flex-start', gap: 1.5, p: 1, backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+                                  <span style={{ fontSize: '1.3rem', marginTop: '2px' }}>📅</span>
+                                  <MDBox>
+                                    <MDTypography variant="caption" sx={{ 
+                                      color: '#64748b', 
+                                      fontSize: '0.7rem',
+                                      fontWeight: 500,
+                                      textTransform: 'uppercase',
+                                      letterSpacing: '0.5px',
+                                      display: 'block',
+                                      mb: 0.2
+                                    }}>
+                                      Stay Period
+                                    </MDTypography>
+                                    <MDTypography variant="body1" sx={{ 
+                                      color: '#64748b', 
+                                      fontSize: { xs: '0.75rem', sm: '0.8rem' }, 
+                                      fontWeight: 500,
+                                      lineHeight: 1.3
+                                    }}>
+                                      From {listing.checkInDate}<br />Till {listing.checkOutDate}
+                                    </MDTypography>
+                                  </MDBox>
+                                </MDBox>
+                              )}
+
+                              {/* Today's Reservation ID */}
+                              {listing.reservationId && listing.reservationId !== 'N/A' && (
+                                <MDBox sx={{ mb: 1.2, display: 'flex', alignItems: 'center', gap: 1.5, p: 1, backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+                                  <span style={{ fontSize: '1.3rem' }}>🆔</span>
+                                  <MDBox>
+                                    <MDTypography variant="caption" sx={{ 
+                                      color: '#64748b', 
+                                      fontSize: '0.7rem',
+                                      fontWeight: 500,
+                                      textTransform: 'uppercase',
+                                      letterSpacing: '0.5px',
+                                      display: 'block',
+                                      mb: 0.2
+                                    }}>
+                                      Reservation ID
+                                    </MDTypography>
+                                    <MDTypography variant="body1" sx={{ 
+                                      color: '#1e293b', 
+                                      fontSize: { xs: '0.75rem', sm: '0.8rem' }, 
+                                      fontWeight: 600,
+                                      fontFamily: 'monospace',
+                                      backgroundColor: '#e2e8f0',
+                                      px: 1,
+                                      py: 0.3,
+                                      borderRadius: '4px',
+                                      display: 'inline-block'
+                                    }}>
+                                      {listing.reservationId}
+                                    </MDTypography>
+                                  </MDBox>
+                                </MDBox>
+                              )}
+
+                              {/* Today's Reservation Status */}
+                              {listing.reservationStatus && listing.reservationStatus !== 'N/A' && (
+                                <MDBox sx={{ mb: 1.2, display: 'flex', alignItems: 'center', gap: 1.5, p: 1, backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+                                  <span style={{ fontSize: '1.3rem' }}>📋</span>
+                                  <MDBox sx={{ flex: 1 }}>
+                                    <MDTypography variant="caption" sx={{ 
+                                      color: '#64748b', 
+                                      fontSize: '0.7rem',
+                                      fontWeight: 500,
+                                      textTransform: 'uppercase',
+                                      letterSpacing: '0.5px',
+                                      display: 'block',
+                                      mb: 0.5
+                                    }}>
+                                      Reservation Status
+                                    </MDTypography>
+                                    <MDBox sx={{
+                                      display: 'inline-block',
+                                      px: 2,
+                                      py: 0.8,
+                                      borderRadius: '12px',
+                                      backgroundColor: listing.reservationStatus === 'Upcoming Stay' ? '#8B5CF6' :
+                                                     listing.reservationStatus === 'Checked In' ? '#DC2626' : '#3B82F6',
+                                      color: 'white',
+                                      minWidth: '100px',
+                                      textAlign: 'center'
+                                    }}>
+                                      <MDTypography variant="body2" sx={{ 
+                                        fontSize: { xs: '0.7rem', sm: '0.75rem' }, 
+                                        fontWeight: 700,
+                                        textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                                      }}>
+                                        {listing.reservationStatus === 'Upcoming Stay' ? '🟣 Coming Soon' :
+                                         listing.reservationStatus === 'Checked In' ? '🔴 Guest Here' :
+                                         listing.reservationStatus}
+                                      </MDTypography>
+                                    </MDBox>
+                                  </MDBox>
+                                </MDBox>
+                              )}
                             </MDBox>
-                          )}
 
-                          {/* Reservation Status */}
-                          {listing.reservationStatus && listing.reservationStatus !== 'N/A' && (
-                            <MDBox sx={{ mb: 0.5 }}>
-                              <MDTypography variant="body2" sx={{ 
-                                color: '#64748b', 
-                                fontSize: '0.75rem', 
-                                fontWeight: 500,
-                                mb: 1,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.5px'
-                              }}>
-                                Status
-                              </MDTypography>
-                              <MDBox sx={{
-                                display: 'inline-block',
-                                px: 2,
-                                py: 1,
-                                borderRadius: '8px',
-                                backgroundColor: getStatusColor('reservation', listing.reservationStatus),
-                                color: 'white'
-                              }}>
-                                <MDTypography variant="body2" sx={{ 
-                                  fontSize: '0.8rem', 
-                                  fontWeight: 600
+                            {/* Yesterday's Information Block - Mobile Enhanced */}
+                            {(listing.yGuestName && listing.yGuestName !== 'N/A') && (
+                              <MDBox sx={{ mb: 2, borderTop: '2px dashed #e2e8f0', pt: 2 }}>
+                                <MDTypography variant="h6" sx={{ 
+                                  fontSize: { xs: '0.85rem', sm: '0.9rem' }, 
+                                  fontWeight: 700,
+                                  color: '#8B5CF6',
+                                  mb: 1.5,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1
                                 }}>
-                                  {listing.reservationStatus}
+                                  <span style={{ fontSize: '1.2rem' }}>📆</span>
+                                  Yesterday
+                                </MDTypography>
+                                
+                                {/* Yesterday's Guest */}
+                                <MDBox sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1.5, p: 1, backgroundColor: '#faf5ff', borderRadius: '8px' }}>
+                                  <span style={{ fontSize: '1.2rem' }}>👤</span>
+                                  <MDBox>
+                                    <MDTypography variant="caption" sx={{ 
+                                      color: '#8B5CF6', 
+                                      fontSize: '0.7rem',
+                                      fontWeight: 500,
+                                      textTransform: 'uppercase',
+                                      letterSpacing: '0.5px',
+                                      display: 'block',
+                                      mb: 0.2
+                                    }}>
+                                      Previous Guest
+                                    </MDTypography>
+                                    <MDTypography variant="body1" sx={{ 
+                                      color: '#64748b', 
+                                      fontSize: { xs: '0.75rem', sm: '0.8rem' }, 
+                                      fontWeight: 600
+                                    }}>
+                                      {listing.yGuestName}
+                                    </MDTypography>
+                                  </MDBox>
+                                </MDBox>
+
+                                {/* Yesterday's other info - condensed for mobile */}
+                                {(listing.yReservationStatus && listing.yReservationStatus !== 'N/A') || 
+                                 (listing.yesterdaysResStay && listing.yesterdaysResStay !== 'N/A' && listing.yesterdaysResStay !== 'From N/A Till N/A') || 
+                                 (listing.yReservationId && listing.yReservationId !== 'N/A') ? (
+                                  <MDBox sx={{ p: 1, backgroundColor: '#faf5ff', borderRadius: '8px', fontSize: '0.7rem' }}>
+                                    {listing.yReservationStatus && listing.yReservationStatus !== 'N/A' && (
+                                      <MDTypography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 0.3 }}>
+                                        Status: {listing.yReservationStatus}
+                                      </MDTypography>
+                                    )}
+                                    {listing.yesterdaysResStay && listing.yesterdaysResStay !== 'N/A' && listing.yesterdaysResStay !== 'From N/A Till N/A' && (
+                                      <MDTypography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 0.3 }}>
+                                        Period: {listing.yesterdaysResStay}
+                                      </MDTypography>
+                                    )}
+                                    {listing.yReservationId && listing.yReservationId !== 'N/A' && (
+                                      <MDTypography variant="caption" sx={{ color: '#64748b', display: 'block', fontFamily: 'monospace' }}>
+                                        ID: {listing.yReservationId}
+                                      </MDTypography>
+                                    )}
+                                  </MDBox>
+                                ) : null}
+                              </MDBox>
+                            )}
+                          </MDBox>
+
+                          {/* Mobile HW/HK Status Buttons - Enhanced Touch Targets */}
+                          <MDBox sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
+                            {/* HW Status Button - Mobile Enhanced */}
+                            <MDBox 
+                              onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HA')}
+                              sx={{
+                                flex: 1,
+                                backgroundColor: listing.hwStatus === 'Clean' ? '#10B981' : '#FFFFFF',
+                                color: listing.hwStatus === 'Clean' ? 'white' : '#DC2626',
+                                border: listing.hwStatus === 'Clean' ? 'none' : '2px solid #DC2626',
+                                px: { xs: 1.5, sm: 2 },
+                                py: { xs: 1.5, sm: 2 },
+                                borderRadius: '12px',
+                                cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer',
+                                transition: 'all 0.3s ease',
+                                textAlign: 'center',
+                                position: 'relative',
+                                minHeight: { xs: '70px', sm: '80px' },
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                                '&:hover': {
+                                  transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'translateY(-3px) scale(1.02)',
+                                  boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : '0 8px 25px rgba(0,0,0,0.15)'
+                                },
+                                '&:active': {
+                                  transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'translateY(-1px) scale(1.01)',
+                                  transition: 'all 0.1s ease'
+                                }
+                              }}
+                            >
+                              {/* HW Badge */}
+                              <MDBox sx={{
+                                position: 'absolute',
+                                top: { xs: 4, sm: 6 },
+                                left: { xs: 6, sm: 8 },
+                                backgroundColor: listing.hwStatus === 'Clean' ? 'rgba(255, 255, 255, 0.9)' : '#DC2626',
+                                color: listing.hwStatus === 'Clean' ? '#10B981' : 'white',
+                                px: { xs: 0.8, sm: 1 },
+                                py: { xs: 0.3, sm: 0.4 },
+                                borderRadius: '6px',
+                                fontSize: { xs: '0.65rem', sm: '0.7rem' },
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                              }}>
+                                HW
+                              </MDBox>
+                              
+                              <MDBox sx={{ 
+                                mt: { xs: 2.5, sm: 3 },
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 0.5
+                              }}>
+                                <span style={{ fontSize: listing.hwStatus === 'Clean' ? '1.5rem' : '1.8rem' }}>
+                                  {listing.hwStatus === 'Clean' ? '✅' : '⚠️'}
+                                </span>
+                                <MDTypography variant="body2" sx={{ 
+                                  fontSize: { xs: '0.7rem', sm: '0.75rem' }, 
+                                  fontWeight: 700,
+                                  textShadow: listing.hwStatus === 'Clean' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
+                                  lineHeight: 1.2
+                                }}>
+                                  {listing.hwStatus === 'Clean' ? 'Cleaned' : 'Not Clean'}
                                 </MDTypography>
                               </MDBox>
                             </MDBox>
-                          )}
 
-                          {/* Activity Status */}
-                          <MDBox sx={{ mb: 3 }}>
-                            <MDTypography variant="body2" sx={{ 
-                              color: '#64748b', 
-                              fontSize: '0.75rem', 
-                              fontWeight: 500,
-                              mb: 1,
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.5px'
-                            }}>
-                              Activity
-                            </MDTypography>
-                            <MDBox sx={{
-                              display: 'inline-block',
-                              px: 2,
-                              py: 1,
-                              borderRadius: '8px',
-                              backgroundColor: getStatusColor('activity', listing.activity),
-                              color: 'white'
-                            }}>
-                              <MDTypography variant="body2" sx={{ 
-                                fontSize: '0.8rem', 
-                                fontWeight: 600
+                            {/* HK Status Button - Mobile Enhanced */}
+                            <MDBox 
+                              onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HK')}
+                              sx={{
+                                flex: 1,
+                                backgroundColor: listing.hkStatus === 'Clean' ? '#3B82F6' : '#FFFFFF',
+                                color: listing.hkStatus === 'Clean' ? 'white' : '#F59E0B',
+                                border: listing.hkStatus === 'Clean' ? 'none' : '2px solid #F59E0B',
+                                px: { xs: 1.5, sm: 2 },
+                                py: { xs: 1.5, sm: 2 },
+                                borderRadius: '12px',
+                                cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer',
+                                transition: 'all 0.3s ease',
+                                textAlign: 'center',
+                                position: 'relative',
+                                minHeight: { xs: '70px', sm: '80px' },
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                                '&:hover': {
+                                  transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'translateY(-3px) scale(1.02)',
+                                  boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : '0 8px 25px rgba(0,0,0,0.15)'
+                                },
+                                '&:active': {
+                                  transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'translateY(-1px) scale(1.01)',
+                                  transition: 'all 0.1s ease'
+                                }
+                              }}
+                            >
+                              {/* HK Badge */}
+                              <MDBox sx={{
+                                position: 'absolute',
+                                top: { xs: 4, sm: 6 },
+                                left: { xs: 6, sm: 8 },
+                                backgroundColor: listing.hkStatus === 'Clean' ? 'rgba(255, 255, 255, 0.9)' : '#F59E0B',
+                                color: listing.hkStatus === 'Clean' ? '#3B82F6' : 'white',
+                                px: { xs: 0.8, sm: 1 },
+                                py: { xs: 0.3, sm: 0.4 },
+                                borderRadius: '6px',
+                                fontSize: { xs: '0.65rem', sm: '0.7rem' },
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                               }}>
-                                {listing.activity || 'Unknown'}
-                              </MDTypography>
-                            </MDBox>
-                          </MDBox>
-                          
-                          {/* Clean Status Section */}
-                          <MDBox sx={{ mt: 'auto' }}>
-                            {/* Cleaning Status */}
-                            <MDBox sx={{ mb: 2 }}>
-                              <MDTypography variant="body2" sx={{ 
-                                color: '#6366f1', 
-                                fontSize: '0.7rem', 
-                                fontWeight: 700,
-                                mb: 0.8,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.8px'
+                                HK
+                              </MDBox>
+                              
+                              <MDBox sx={{ 
+                                mt: { xs: 2.5, sm: 3 },
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 0.5
                               }}>
-                                Cleaning Status
-                              </MDTypography>
-                              <MDBox sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                                {/* Enhanced HA Status Button with Animations */}
-                                <MDBox 
-                                  onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HA')}
-                                  sx={{
-                                    flex: 1,
-                                    background: `linear-gradient(135deg, ${getStatusColor('hw', listing.hwStatus)} 0%, ${
-                                      listing.hwStatus === 'Clean' ? '#0E7490' : '#EA580C'
-                                    } 100%)`,
-                                    color: 'white',
-                                    px: 1.5,
-                                    py: 0.5,
-                                    minHeight: '35px',
-                                    borderRadius: '8px',
-                                    cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer',
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    textAlign: 'center',
-                                    boxShadow: `0 4px 15px ${getStatusColor('hw', listing.hwStatus)}40, inset 0 1px 0 rgba(255, 255, 255, 0.2)`,
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
-                                    position: 'relative',
-                                    overflow: 'hidden',
-                                    // Pulse animation for interactive buttons
-                                    animation: !(isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) ? 'heartbeat 3s ease-in-out infinite' : 'none',
-                                    '&:hover': {
-                                      transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'translateY(-1px) scale(1.02)',
-                                      boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : `0 4px 12px ${getStatusColor('hw', listing.hwStatus)}40, inset 0 1px 0 rgba(255, 255, 255, 0.3)`,
-                                      filter: 'brightness(1.08) saturate(1.1)',
-                                    },
-                                    // Shimmer effect
-                                    '&::before': {
-                                      content: '""',
-                                      position: 'absolute',
-                                      top: 0,
-                                      left: '-100%',
-                                      width: '100%',
-                                      height: '100%',
-                                      background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
-                                      transition: 'left 0.5s ease-in-out',
-                                    },
-                                    '&:hover::before': {
-                                      left: '100%',
-                                    }
-                                  }}
-                                >
-                                  <MDTypography variant="body2" sx={{ 
-                                    fontSize: '1rem', 
-                                    fontWeight: 600,
-                                    color: 'white',
-                                    textAlign: 'center',
-                                    lineHeight: 1.3,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 0.5,
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden'
-                                  }}>
-                                    <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>HA</span>
-                                    <span style={{ fontSize: '1rem' }}>
-                                      {listing.hwStatus === 'Clean' ? '✓' : '⚠'}
-                                    </span>
-                                    <span style={{ fontSize: '1rem' }}>{listing.hwStatus === 'Clean' ? 'Clean' : 'Not Clean'}</span>
-                                  </MDTypography>
-                                </MDBox>
-
-                                {/* Enhanced HK Status Button with Animations */}
-                                <MDBox 
-                                  onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HK')}
-                                  sx={{
-                                    flex: 1,
-                                    background: `linear-gradient(135deg, ${getStatusColor('hk', listing.hkStatus)} 0%, ${
-                                      listing.hkStatus === 'Clean' ? '#C2410C' : '#BE185D'
-                                    } 100%)`,
-                                    color: 'white',
-                                    px: 1.5,
-                                    py: 0.5,
-                                    minHeight: '35px',
-                                    borderRadius: '8px',
-                                    cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer',
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    textAlign: 'center',
-                                    boxShadow: `0 4px 15px ${getStatusColor('hk', listing.hkStatus)}40, inset 0 1px 0 rgba(255, 255, 255, 0.2)`,
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
-                                    position: 'relative',
-                                    overflow: 'hidden',
-                                    // Pulse animation for interactive buttons (delayed)
-                                    animation: !(isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) ? 'heartbeat 3s ease-in-out infinite 1.5s' : 'none',
-                                    '&:hover': {
-                                      transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'translateY(-1px) scale(1.02)',
-                                      boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : `0 4px 12px ${getStatusColor('hk', listing.hkStatus)}40, inset 0 1px 0 rgba(255, 255, 255, 0.3)`,
-                                      filter: 'brightness(1.08) saturate(1.1)',
-                                    },
-                                    // Shimmer effect
-                                    '&::before': {
-                                      content: '""',
-                                      position: 'absolute',
-                                      top: 0,
-                                      left: '-100%',
-                                      width: '100%',
-                                      height: '100%',
-                                      background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)',
-                                      transition: 'left 0.5s ease-in-out',
-                                    },
-                                    '&:hover::before': {
-                                      left: '100%',
-                                    }
-                                  }}
-                                >
-                                  <MDTypography variant="body2" sx={{ 
-                                    fontSize: '1rem', 
-                                    fontWeight: 600,
-                                    color: 'white',
-                                    textAlign: 'center',
-                                    lineHeight: 1.3,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 0.5,
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden'
-                                  }}>
-                                    <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>HK</span>
-                                    <span style={{ fontSize: '1rem' }}>
-                                      {listing.hkStatus === 'Clean' ? '✓' : '⚠'}
-                                    </span>
-                                    <span style={{ fontSize: '1rem' }}>{listing.hkStatus === 'Clean' ? 'Clean' : 'Not Clean'}</span>
-                                  </MDTypography>
-                                </MDBox>
+                                <span style={{ fontSize: listing.hkStatus === 'Clean' ? '1.5rem' : '1.8rem' }}>
+                                  {listing.hkStatus === 'Clean' ? '✅' : '⚠️'}
+                                </span>
+                                <MDTypography variant="body2" sx={{ 
+                                  fontSize: { xs: '0.7rem', sm: '0.75rem' }, 
+                                  fontWeight: 700,
+                                  textShadow: listing.hkStatus === 'Clean' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none',
+                                  lineHeight: 1.2
+                                }}>
+                                  {listing.hkStatus === 'Clean' ? 'Cleaned' : 'Not Clean'}
+                                </MDTypography>
                               </MDBox>
                             </MDBox>
                           </MDBox>
@@ -1527,201 +1656,644 @@ function Overview() {
                 </Box>
               </Box>
 
-              {/* Mobile Card View - Previous Layout Restored */}
-              <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-                {listings
-                  .filter(listing => 
-                    (listing.country === 'Pakistan' || 
-                     listing.country === 'PK' ||
-                     (listing.address && listing.address.toLowerCase().includes('pakistan')) ||
-                     (listing.location && listing.location.toLowerCase().includes('pakistan')) ||
-                     (listing.city && ['karachi', 'lahore', 'islamabad', 'rawalpindi', 'faisalabad', 'multan', 'peshawar', 'quetta', 'sialkot', 'gujranwala'].includes(listing.city.toLowerCase()))) &&
-                    matchesSearch(listing, searchTerm)
-                  )
-                  .map((listing, index) => (
-                    <Card 
-                      key={listing.id}
-                      sx={{ 
-                        mb: 2, 
-                        p: 3, 
-                        backgroundColor: 'white',
-                        boxShadow: 2,
-                        borderRadius: 3,
-                        border: '1px solid #e0e0e0',
-                        // Mobile card animations
-                        animation: cardsLoaded ? `slideUpFadeIn 0.5s ease-out ${index * 0.08}s both` : 'none',
-                        transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                        '&:hover': {
-                          transform: 'translateY(-2px) scale(1.02)',
-                          boxShadow: '0 8px 25px rgba(124, 58, 237, 0.12), 0 3px 10px rgba(0, 0, 0, 0.08)',
-                          border: '1px solid #7C3AED'
-                        }
-                      }}
-                    >
-                      {/* Header with Listing Name and Status */}
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                        <MDTypography variant="h6" fontWeight="bold" color="text.primary" sx={{ fontSize: '1.1rem' }}>
-                          {listing.name || 'No Name Available'}
-                        </MDTypography>
-                        {/* Mobile HA and HK Status */}
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Chip
-                            label={`HA: ${listing.hwStatus || 'Not Clean'}`}
-                            size="small"
-                            onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HA')}
-                            sx={{ 
-                              fontSize: '0.7rem', 
-                              height: '24px',
-                              fontWeight: 'bold',
-                              backgroundColor: getStatusColor('hw', listing.hwStatus),
-                              color: '#000000',
-                              border: '1px solid #e2e8f0',
-                              cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer',
-                              transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                              animation: !(isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) ? 'pulse 4s ease-in-out infinite' : 'none',
-                              '&:hover': {
-                                transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'scale(1.1) translateY(-1px)',
-                                boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : `0 4px 12px ${getStatusColor('hw', listing.hwStatus)}40`
-                              }
-                            }}
-                          />
-                          <Chip
-                            label={`HK: ${listing.hkStatus || 'Not Clean'}`}
-                            size="small"
-                            onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HK')}
-                            sx={{ 
-                              fontSize: '0.7rem', 
-                              height: '24px',
-                              fontWeight: 'bold',
-                              backgroundColor: getStatusColor('hk', listing.hkStatus),
-                              color: '#000000',
-                              border: '1px solid #e2e8f0',
-                              cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer',
-                              transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-                              animation: !(isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete'))) ? 'pulse 4s ease-in-out infinite 2s' : 'none',
-                              '&:hover': {
-                                transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'scale(1.1) translateY(-1px)',
-                                boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : `0 4px 12px ${getStatusColor('hk', listing.hkStatus)}40`
-                              }
-                            }}
-                          />
-                        </Box>
-                      </Box>
+              {/* Desktop Grid View - New Clean Design */}
+              <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                <Box sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gap: 3,
+                  width: '100%'
+                }}>
+                  {/* Generate apartment cards with new clean design */}
+                  {listings
+                    .filter(listing => 
+                      (listing.country === 'Pakistan' || 
+                       listing.country === 'PK' ||
+                       (listing.address && listing.address.toLowerCase().includes('pakistan')) ||
+                       (listing.location && listing.location.toLowerCase().includes('pakistan')) ||
+                       (listing.city && ['karachi', 'lahore', 'islamabad', 'rawalpindi', 'faisalabad', 'multan', 'peshawar', 'quetta', 'sialkot', 'gujranwala'].includes(listing.city.toLowerCase()))) &&
+                      matchesSearch(listing, searchTerm)
+                    )
+                    .map((listing, index) => (
+                      <Card
+                        key={listing.id}
+                        sx={{
+                          backgroundColor: '#ffffff',
+                          borderRadius: '12px',
+                          border: '1px solid #e2e8f0',
+                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                          overflow: 'hidden',
+                          transition: 'all 0.2s ease-in-out',
+                          position: 'relative',
+                          '&:hover': {
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                            transform: 'translateY(-2px)'
+                          }
+                        }}
+                      >
 
-                      {/* Data Fields */}
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <MDTypography variant="body1" fontWeight="bold" color="text.primary" sx={{ minWidth: '120px', flexShrink: 0 }}>
-                            Reservation ID
-                          </MDTypography>
-                          <MDTypography variant="body1" color="text.primary" sx={{ textAlign: 'right' }}>
-                            {listing.reservationId || 'N/A'}
-                          </MDTypography>
-                        </Box>
-                        
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <MDTypography variant="body1" fontWeight="bold" color="text.primary" sx={{ minWidth: '120px', flexShrink: 0 }}>
-                            Check-In Date
-                          </MDTypography>
-                          <MDTypography variant="body1" color="text.primary" sx={{ textAlign: 'right' }}>
-                            {listing.checkInDate || 'N/A'}
-                          </MDTypography>
-                        </Box>
-                        
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <MDTypography variant="body1" fontWeight="bold" color="text.primary" sx={{ minWidth: '120px', flexShrink: 0 }}>
-                            Check-out Date
-                          </MDTypography>
-                          <MDTypography variant="body1" color="text.primary" sx={{ textAlign: 'right' }}>
-                            {listing.checkOutDate || 'N/A'}
-                          </MDTypography>
-                        </Box>
-                        
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <MDTypography variant="body1" fontWeight="bold" color="text.primary" sx={{ minWidth: '120px', flexShrink: 0 }}>
-                            Guest Name
-                          </MDTypography>
-                          <MDTypography variant="body2" color="text.primary" sx={{ textAlign: 'right', wordBreak: 'break-word', maxWidth: '60%', fontSize: '0.85rem' }}>
-                            {listing.guestName || 'N/A'}
-                          </MDTypography>
-                        </Box>
-                        
-                        <Box sx={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between', 
-                          alignItems: 'center',
-                          minHeight: '32px'
+                        {/* Apartment Header */}
+                        <MDBox sx={{ 
+                          backgroundColor: '#f8fafc',
+                          borderBottom: '1px solid #e2e8f0',
+                          p: 2,
+                          textAlign: 'left'
                         }}>
-                          <MDTypography variant="body1" fontWeight="bold" color="text.primary" sx={{ flex: 1, pr: 2 }}>
-                            Status
+                          <MDTypography variant="h6" fontWeight="bold" sx={{ 
+                            fontSize: '0.9rem',
+                            color: '#1e293b'
+                          }}>
+                            {listing.name || 'Unknown'}
                           </MDTypography>
-                          <Chip
-                            label={listing.reservationStatus || 'N/A'}
-                            size="small"
-                            sx={{ 
-                              fontSize: '0.75rem', 
-                              height: '24px',
-                              fontWeight: 'bold',
-                              flexShrink: 0,
-                              backgroundColor: getStatusColor('reservation', listing.reservationStatus),
-                              color: '#FFFFFF',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              '&:hover': {
-                                opacity: 0.8
-                              }
-                            }}
-                          />
-                        </Box>
-                        
-                        <Box sx={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between', 
-                          alignItems: 'center',
-                          minHeight: '32px'
-                        }}>
-                          <MDTypography variant="body1" fontWeight="bold" color="text.primary" sx={{ minWidth: '120px', flexShrink: 0 }}>
-                            Activity
-                          </MDTypography>
-                          <Chip
-                            label={listing.activity || 'Unknown'}
-                            size="small"
-                            sx={{ 
-                              fontSize: '0.75rem', 
-                              height: '24px',
-                              fontWeight: 'bold',
-                              backgroundColor: listing.reservationStatus === 'Upcoming Stay' ? '#8B5CF6' : 
-                                               listing.reservationStatus === 'Checked In' ? '#22C55E' : 
-                                               (listing.reservationStatus === 'Current Stay' || listing.reservationStatus === 'Staying Guest') ? '#6B7280' : 
-                                               (listing.guestName === 'N/A' || !listing.guestName || listing.reservationStatus === 'N/A') ? '#F8BBD0' : 
-                                               getStatusColor('activity', listing.activity),
-                              color: '#000000',
-                              border: '1px solid #e2e8f0',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                          />
-                        </Box>
-                      </Box>
+                        </MDBox>
+
+                        {/* Card Content - Universal Design */}
+                        <MDBox sx={{ p: 2 }}>
+
+                          {/* Desktop: Row-by-Row Layout | Mobile: Kanban Layout */}
+                          <MDBox sx={{ mb: 1.5 }}>
+                            
+                            {/* Desktop View - Two Column Layout */}
+                            <MDBox sx={{ 
+                              display: { xs: 'none', md: 'block' }
+                            }}>
+                            
+                            {/* Row 1: Guest Names */}
+                            <MDBox sx={{ mb: 1, display: 'flex', position: 'relative' }}>
+                              {/* Continuous Center Line */}
+                              <MDBox sx={{ 
+                                position: 'absolute',
+                                left: '50%',
+                                top: 0,
+                                bottom: 0,
+                                width: '1px', 
+                                backgroundColor: '#E5E7EB',
+                                transform: 'translateX(-50%)'
+                              }} />
+                              
+                              {/* Today's Guest */}
+                              <MDBox sx={{ flex: 1, pr: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <span style={{ fontSize: '1rem' }}>👤</span>
+                                <MDTypography variant="body1" sx={{ 
+                                  color: '#1e293b', 
+                                  fontSize: '0.75rem', 
+                                  fontWeight: 700
+                                }}>
+                                  {listing.guestName && listing.guestName !== 'N/A' ? listing.guestName : 'No Guest'}
+                                </MDTypography>
+                              </MDBox>
+                              
+                              {/* Yesterday's Guest */}
+                              <MDBox sx={{ flex: 1, pl: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <span style={{ fontSize: '1rem' }}>👤</span>
+                                <MDTypography variant="body1" sx={{ 
+                                  color: '#64748b', 
+                                  fontSize: '0.75rem', 
+                                  fontWeight: 500
+                                }}>
+                                  {listing.yGuestName && listing.yGuestName !== 'N/A' ? listing.yGuestName : 'No Guest'}
+                                </MDTypography>
+                              </MDBox>
+                            </MDBox>
+
+                            {/* Row 2: Status */}
+                            <MDBox sx={{ mb: 1, display: 'flex', position: 'relative' }}>
+                              {/* Continuous Center Line */}
+                              <MDBox sx={{ 
+                                position: 'absolute',
+                                left: '50%',
+                                top: 0,
+                                bottom: 0,
+                                width: '1px', 
+                                backgroundColor: '#E5E7EB',
+                                transform: 'translateX(-50%)'
+                              }} />
+                              
+                              {/* Today's Status */}
+                              <MDBox sx={{ flex: 1, pr: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <span style={{ fontSize: '1rem' }}>🏠</span>
+                                <MDBox sx={{
+                                  display: 'inline-block',
+                                  px: 1.5,
+                                  py: 0.5,
+                                  borderRadius: '6px',
+                                  backgroundColor: listing.activity === 'Occupied' ? '#DC2626' : 
+                                                 listing.activity === 'Checkin' ? '#3B82F6' : 
+                                                 listing.activity === 'Checkout' ? '#F59E0B' : '#10B981',
+                                  color: 'white'
+                                }}>
+                                  <MDTypography variant="body2" sx={{ 
+                                    fontSize: '0.7rem', 
+                                    fontWeight: 700
+                                  }}>
+                                    {listing.activity === 'Occupied' ? '🔴 Occupied' :
+                                     listing.activity === 'Checkin' ? '🔵 Checkin' :
+                                     listing.activity === 'Checkout' ? '🟠 Checkout' : '✅ Available'}
+                                  </MDTypography>
+                                </MDBox>
+                              </MDBox>
+                              
+                              {/* Yesterday's Status */}
+                              <MDBox sx={{ flex: 1, pl: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <span style={{ fontSize: '1rem' }}>📋</span>
+                                {listing.yReservationStatus && listing.yReservationStatus !== 'N/A' ? (
+                                  <MDBox sx={{
+                                    display: 'inline-block',
+                                    px: 1.5,
+                                    py: 0.5,
+                                    borderRadius: '6px',
+                                    backgroundColor: '#DC2626',
+                                    color: 'white'
+                                  }}>
+                                    <MDTypography variant="body2" sx={{ 
+                                      fontSize: '0.7rem', 
+                                      fontWeight: 700
+                                    }}>
+                                      🔴 {listing.yReservationStatus}
+                                    </MDTypography>
+                                  </MDBox>
+                                ) : (
+                                  <MDTypography variant="body2" sx={{ 
+                                    color: '#9CA3AF', 
+                                    fontSize: '0.7rem', 
+                                    fontWeight: 400,
+                                    fontStyle: 'italic'
+                                  }}>
+                                    No Status
+                                  </MDTypography>
+                                )}
+                              </MDBox>
+                            </MDBox>
+
+                            {/* Row 3: Dates */}
+                            <MDBox sx={{ mb: 1, display: 'flex', position: 'relative' }}>
+                              {/* Continuous Center Line */}
+                              <MDBox sx={{ 
+                                position: 'absolute',
+                                left: '50%',
+                                top: 0,
+                                bottom: 0,
+                                width: '1px', 
+                                backgroundColor: '#E5E7EB',
+                                transform: 'translateX(-50%)'
+                              }} />
+                              
+                              {/* Today's Dates */}
+                              <MDBox sx={{ flex: 1, pr: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <span style={{ fontSize: '1rem' }}>📅</span>
+                                <MDTypography variant="body1" sx={{ 
+                                  color: '#64748b', 
+                                  fontSize: '0.75rem', 
+                                  fontWeight: 500
+                                }}>
+                                  {listing.checkInDate && listing.checkInDate !== 'N/A' && listing.checkOutDate && listing.checkOutDate !== 'N/A'
+                                    ? `From ${listing.checkInDate} Till ${listing.checkOutDate}`
+                                    : 'No dates'
+                                  }
+                                </MDTypography>
+                              </MDBox>
+                              
+                              {/* Yesterday's Dates */}
+                              <MDBox sx={{ flex: 1, pl: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <span style={{ fontSize: '1rem' }}>📅</span>
+                                <MDTypography variant="body1" sx={{ 
+                                  color: '#64748b', 
+                                  fontSize: '0.7rem', 
+                                  fontWeight: 500
+                                }}>
+                                  {listing.yesterdaysResStay && listing.yesterdaysResStay !== 'N/A' && listing.yesterdaysResStay !== 'From N/A Till N/A'
+                                    ? listing.yesterdaysResStay
+                                    : 'No dates'
+                                  }
+                                </MDTypography>
+                              </MDBox>
+                            </MDBox>
+
+                            {/* Row 4: Reservation IDs */}
+                            <MDBox sx={{ mb: 1, display: 'flex', position: 'relative' }}>
+                              {/* Continuous Center Line */}
+                              <MDBox sx={{ 
+                                position: 'absolute',
+                                left: '50%',
+                                top: 0,
+                                bottom: 0,
+                                width: '1px', 
+                                backgroundColor: '#E5E7EB',
+                                transform: 'translateX(-50%)'
+                              }} />
+                              
+                              {/* Today's ID */}
+                              <MDBox sx={{ flex: 1, pr: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <span style={{ fontSize: '1rem' }}>🆔</span>
+                                <MDTypography variant="body1" sx={{ 
+                                  color: '#1e293b', 
+                                  fontSize: '0.75rem', 
+                                  fontWeight: 500,
+                                  fontFamily: 'monospace'
+                                }}>
+                                  {listing.reservationId && listing.reservationId !== 'N/A' ? listing.reservationId : 'No ID'}
+                                </MDTypography>
+                              </MDBox>
+                              
+                              {/* Yesterday's ID */}
+                              <MDBox sx={{ flex: 1, pl: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <span style={{ fontSize: '1rem' }}>🆔</span>
+                                <MDTypography variant="body1" sx={{ 
+                                  color: '#1e293b', 
+                                  fontSize: '0.75rem', 
+                                  fontWeight: 500,
+                                  fontFamily: 'monospace'
+                                }}>
+                                  {listing.yReservationId && listing.yReservationId !== 'N/A' ? listing.yReservationId : 'No ID'}
+                                </MDTypography>
+                              </MDBox>
+                            </MDBox>
+
+                            {/* Row 5: Reservation Status */}
+                            <MDBox sx={{ mb: 1, display: 'flex', position: 'relative' }}>
+                              {/* Continuous Center Line */}
+                              <MDBox sx={{ 
+                                position: 'absolute',
+                                left: '50%',
+                                top: 0,
+                                bottom: 0,
+                                width: '1px', 
+                                backgroundColor: '#E5E7EB',
+                                transform: 'translateX(-50%)'
+                              }} />
+                              
+                              {/* Today's Reservation Status */}
+                              <MDBox sx={{ flex: 1, pr: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <span style={{ fontSize: '1rem' }}>📋</span>
+                                {listing.reservationStatus && listing.reservationStatus !== 'N/A' ? (
+                                  <MDBox sx={{
+                                    display: 'inline-block',
+                                    px: 1.5,
+                                    py: 0.5,
+                                    borderRadius: '6px',
+                                    backgroundColor: listing.reservationStatus === 'Upcoming Stay' ? '#8B5CF6' :
+                                                   listing.reservationStatus === 'Checked In' ? '#DC2626' : '#3B82F6',
+                                    color: 'white'
+                                  }}>
+                                    <MDTypography variant="body2" sx={{ 
+                                      fontSize: '0.7rem', 
+                                      fontWeight: 700
+                                    }}>
+                                      {listing.reservationStatus === 'Upcoming Stay' ? '🟣 Coming Soon' :
+                                       listing.reservationStatus === 'Checked In' ? '🔴 Guest Here' :
+                                       listing.reservationStatus}
+                                    </MDTypography>
+                                  </MDBox>
+                                ) : (
+                                  <MDTypography variant="body2" sx={{ 
+                                    color: '#9CA3AF', 
+                                    fontSize: '0.7rem', 
+                                    fontWeight: 400,
+                                    fontStyle: 'italic'
+                                  }}>
+                                    No Status
+                                  </MDTypography>
+                                )}
+                              </MDBox>
+                              
+                              {/* Yesterday's Reservation Status (Empty for alignment) */}
+                              <MDBox sx={{ flex: 1, pl: 2 }}>
+                              </MDBox>
+                            </MDBox>
+
+                            {/* Mobile View - Kanban Style Layout */}
+                            <MDBox sx={{ 
+                              display: { xs: 'block', md: 'none' }
+                            }}>
+                              
+                              {/* Today's Information Block */}
+                              <MDBox sx={{ mb: 2 }}>
+                                <MDTypography variant="h6" sx={{ 
+                                  fontSize: '0.8rem', 
+                                  fontWeight: 700,
+                                  color: '#3B82F6',
+                                  mb: 1,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px'
+                                }}>
+                                  Today
+                                </MDTypography>
+                                
+                                {/* Today's Guest */}
+                                <MDBox sx={{ mb: 0.8, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <span style={{ fontSize: '1rem' }}>👤</span>
+                                  <MDTypography variant="body1" sx={{ 
+                                    color: '#1e293b', 
+                                    fontSize: '0.75rem', 
+                                    fontWeight: 700
+                                  }}>
+                                    {listing.guestName && listing.guestName !== 'N/A' ? listing.guestName : 'No Guest'}
+                                  </MDTypography>
+                                </MDBox>
+
+                                {/* Today's Status */}
+                                <MDBox sx={{ mb: 0.8, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <span style={{ fontSize: '1rem' }}>🏠</span>
+                                  <MDBox sx={{
+                                    display: 'inline-block',
+                                    px: 1.5,
+                                    py: 0.5,
+                                    borderRadius: '6px',
+                                    backgroundColor: listing.activity === 'Occupied' ? '#DC2626' : 
+                                                   listing.activity === 'Checkin' ? '#3B82F6' : 
+                                                   listing.activity === 'Checkout' ? '#F59E0B' : '#10B981',
+                                    color: 'white'
+                                  }}>
+                                    <MDTypography variant="body2" sx={{ 
+                                      fontSize: '0.7rem', 
+                                      fontWeight: 700
+                                    }}>
+                                      {listing.activity === 'Occupied' ? '🔴 Occupied' :
+                                       listing.activity === 'Checkin' ? '🔵 Checkin' :
+                                       listing.activity === 'Checkout' ? '🟠 Checkout' : '✅ Available'}
+                                    </MDTypography>
+                                  </MDBox>
+                                </MDBox>
+
+                                {/* Today's Dates */}
+                                <MDBox sx={{ mb: 0.8, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <span style={{ fontSize: '1rem' }}>📅</span>
+                                  <MDTypography variant="body1" sx={{ 
+                                    color: '#64748b', 
+                                    fontSize: '0.7rem', 
+                                    fontWeight: 500
+                                  }}>
+                                    {listing.checkInDate && listing.checkInDate !== 'N/A' && listing.checkOutDate && listing.checkOutDate !== 'N/A'
+                                      ? `From ${listing.checkInDate} Till ${listing.checkOutDate}`
+                                      : 'No dates'
+                                    }
+                                  </MDTypography>
+                                </MDBox>
+
+                                {/* Today's ID */}
+                                <MDBox sx={{ mb: 0.8, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <span style={{ fontSize: '1rem' }}>🆔</span>
+                                  <MDTypography variant="body1" sx={{ 
+                                    color: '#1e293b', 
+                                    fontSize: '0.7rem', 
+                                    fontWeight: 500,
+                                    fontFamily: 'monospace'
+                                  }}>
+                                    {listing.reservationId && listing.reservationId !== 'N/A' ? listing.reservationId : 'No ID'}
+                                  </MDTypography>
+                                </MDBox>
+
+                                {/* Today's Status */}
+                                {listing.reservationStatus && listing.reservationStatus !== 'N/A' && (
+                                  <MDBox sx={{ mb: 0.8, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <span style={{ fontSize: '1rem' }}>📋</span>
+                                    <MDBox sx={{
+                                      display: 'inline-block',
+                                      px: 1.5,
+                                      py: 0.5,
+                                      borderRadius: '6px',
+                                      backgroundColor: listing.reservationStatus === 'Upcoming Stay' ? '#8B5CF6' :
+                                                     listing.reservationStatus === 'Checked In' ? '#DC2626' : '#3B82F6',
+                                      color: 'white'
+                                    }}>
+                                      <MDTypography variant="body2" sx={{ 
+                                        fontSize: '0.7rem', 
+                                        fontWeight: 700
+                                      }}>
+                                        {listing.reservationStatus === 'Upcoming Stay' ? '🟣 Coming Soon' :
+                                         listing.reservationStatus === 'Checked In' ? '🔴 Guest Here' :
+                                         listing.reservationStatus}
+                                      </MDTypography>
+                                    </MDBox>
+                                  </MDBox>
+                                )}
+                              </MDBox>
+
+                              {/* Yesterday's Information Block */}
+                              {(listing.yGuestName && listing.yGuestName !== 'N/A') && (
+                                <MDBox sx={{ mb: 2 }}>
+                                  <MDTypography variant="h6" sx={{ 
+                                    fontSize: '0.8rem', 
+                                    fontWeight: 700,
+                                    color: '#8B5CF6',
+                                    mb: 1,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px'
+                                  }}>
+                                    Yesterday
+                                  </MDTypography>
+                                  
+                                  {/* Yesterday's Guest */}
+                                  <MDBox sx={{ mb: 0.8, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <span style={{ fontSize: '1rem' }}>👤</span>
+                                    <MDTypography variant="body1" sx={{ 
+                                      color: '#64748b', 
+                                      fontSize: '0.75rem', 
+                                      fontWeight: 500
+                                    }}>
+                                      {listing.yGuestName}
+                                    </MDTypography>
+                                  </MDBox>
+
+                                  {/* Yesterday's Status */}
+                                  {listing.yReservationStatus && listing.yReservationStatus !== 'N/A' && (
+                                    <MDBox sx={{ mb: 0.8, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <span style={{ fontSize: '1rem' }}>📋</span>
+                                      <MDBox sx={{
+                                        display: 'inline-block',
+                                        px: 1.5,
+                                        py: 0.5,
+                                        borderRadius: '6px',
+                                        backgroundColor: '#DC2626',
+                                        color: 'white'
+                                      }}>
+                                        <MDTypography variant="body2" sx={{ 
+                                          fontSize: '0.7rem', 
+                                          fontWeight: 700
+                                        }}>
+                                          🔴 {listing.yReservationStatus}
+                                        </MDTypography>
+                                      </MDBox>
+                                    </MDBox>
+                                  )}
+
+                                  {/* Yesterday's Dates */}
+                                  {listing.yesterdaysResStay && listing.yesterdaysResStay !== 'N/A' && listing.yesterdaysResStay !== 'From N/A Till N/A' && (
+                                    <MDBox sx={{ mb: 0.8, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <span style={{ fontSize: '1rem' }}>📅</span>
+                                      <MDTypography variant="body1" sx={{ 
+                                        color: '#64748b', 
+                                        fontSize: '0.7rem', 
+                                        fontWeight: 500
+                                      }}>
+                                        {listing.yesterdaysResStay}
+                                      </MDTypography>
+                                    </MDBox>
+                                  )}
+
+                                  {/* Yesterday's ID */}
+                                  {listing.yReservationId && listing.yReservationId !== 'N/A' && (
+                                    <MDBox sx={{ mb: 0.8, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <span style={{ fontSize: '1rem' }}>🆔</span>
+                                      <MDTypography variant="body1" sx={{ 
+                                        color: '#1e293b', 
+                                        fontSize: '0.7rem', 
+                                        fontWeight: 500,
+                                        fontFamily: 'monospace'
+                                      }}>
+                                        {listing.yReservationId}
+                                      </MDTypography>
+                                    </MDBox>
+                                  )}
+                                </MDBox>
+                              )}
+                            </MDBox>
+
+                          </MDBox>
+
+
+                          {/* HW/HK Status Buttons - High Contrast Design */}
+                          <MDBox sx={{ display: 'flex', gap: 0.5 }}>
+                            {/* HW Status Button */}
+                            <MDBox 
+                              onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HA')}
+                              sx={{
+                                flex: 1,
+                                backgroundColor: listing.hwStatus === 'Clean' ? '#10B981' : '#FFFFFF',
+                                color: listing.hwStatus === 'Clean' ? 'white' : '#DC2626',
+                                border: listing.hwStatus === 'Clean' ? 'none' : '2px solid #DC2626',
+                                px: 0.8,
+                                py: 0.8,
+                                borderRadius: '6px',
+                                cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer',
+                                transition: 'all 0.2s ease',
+                                textAlign: 'center',
+                                position: 'relative',
+                                minHeight: '50px',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                '&:hover': {
+                                  transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'translateY(-2px)',
+                                  boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : '0 4px 12px rgba(0,0,0,0.2)'
+                                }
+                              }}
+                            >
+                              {/* HW Badge */}
+                              <MDBox sx={{
+                                position: 'absolute',
+                                top: 3,
+                                left: 6,
+                                backgroundColor: listing.hwStatus === 'Clean' ? 'rgba(255, 255, 255, 0.9)' : '#DC2626',
+                                color: listing.hwStatus === 'Clean' ? '#10B981' : 'white',
+                                px: 0.5,
+                                py: 0.2,
+                                borderRadius: '3px',
+                                fontSize: '0.6rem',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}>
+                                HW
+                              </MDBox>
+                              
+                              <MDBox sx={{ 
+                                mt: 1.8,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 0.5
+                              }}>
+                                <span style={{ fontSize: listing.hwStatus === 'Clean' ? '0.9rem' : '1.2rem' }}>
+                                  {listing.hwStatus === 'Clean' ? '✅' : '⚠️'}
+                                </span>
+                                <MDTypography variant="body2" sx={{ 
+                                  fontSize: '0.7rem', 
+                                  fontWeight: 700,
+                                  textShadow: listing.hwStatus === 'Clean' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none'
+                                }}>
+                                  {listing.hwStatus === 'Clean' ? 'Cleaned' : 'Not Clean'}
+                                </MDTypography>
+                              </MDBox>
+                            </MDBox>
+
+                            {/* HK Status Button */}
+                            <MDBox 
+                              onClick={isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? undefined : (e) => handleStatusClick(e, listing, 'HK')}
+                              sx={{
+                                flex: 1,
+                                backgroundColor: listing.hkStatus === 'Clean' ? '#3B82F6' : '#FFFFFF',
+                                color: listing.hkStatus === 'Clean' ? 'white' : '#F59E0B',
+                                border: listing.hkStatus === 'Clean' ? 'none' : '2px solid #F59E0B',
+                                px: 0.8,
+                                py: 0.8,
+                                borderRadius: '6px',
+                                cursor: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'default' : 'pointer',
+                                transition: 'all 0.2s ease',
+                                textAlign: 'center',
+                                position: 'relative',
+                                minHeight: '50px',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                '&:hover': {
+                                  transform: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : 'translateY(-2px)',
+                                  boxShadow: isViewOnly() || (isCustom() && !hasPermission('rooms', 'complete')) ? 'none' : '0 4px 12px rgba(0,0,0,0.2)'
+                                }
+                              }}
+                            >
+                              {/* HK Badge */}
+                              <MDBox sx={{
+                                position: 'absolute',
+                                top: 3,
+                                left: 6,
+                                backgroundColor: listing.hkStatus === 'Clean' ? 'rgba(255, 255, 255, 0.9)' : '#F59E0B',
+                                color: listing.hkStatus === 'Clean' ? '#3B82F6' : 'white',
+                                px: 0.5,
+                                py: 0.2,
+                                borderRadius: '3px',
+                                fontSize: '0.6rem',
+                                fontWeight: 'bold',
+                                letterSpacing: '0.5px'
+                              }}>
+                                HK
+                              </MDBox>
+                              
+                              <MDBox sx={{ 
+                                mt: 1.8,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 0.5
+                              }}>
+                                <span style={{ fontSize: listing.hkStatus === 'Clean' ? '0.9rem' : '1.2rem' }}>
+                                  {listing.hkStatus === 'Clean' ? '✅' : '⚠️'}
+                                </span>
+                                <MDTypography variant="body2" sx={{ 
+                                  fontSize: '0.7rem', 
+                                  fontWeight: 700,
+                                  textShadow: listing.hkStatus === 'Clean' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none'
+                                }}>
+                                  {listing.hkStatus === 'Clean' ? 'Cleaned' : 'Not Clean'}
+                                </MDTypography>
+                              </MDBox>
+                            </MDBox>
+                          </MDBox>
+                        </MDBox>
+                      </MDBox>
                     </Card>
                   ))}
               </Box>
             </Box>
+          </Box>
           </Card>
         </MDBox>
       )}
 
-      {/* Daily Occupancy & Revenue Report - Redesigned Layout */}
+      {/* Daily Occupancy & Revenue Report - Mobile Responsive Layout */}
       {occupancyData && !loading && !occupancyLoading && (
-        <MDBox px={3} mb={3}>
+        <MDBox px={{ xs: 1, sm: 2, md: 3 }} mb={3}>
           <Card sx={{ 
-            p: 4, 
+            p: { xs: 2, sm: 3, md: 4 }, 
             mb: 3, 
             backgroundColor: '#ffffff', 
             boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            borderRadius: 3,
+            borderRadius: { xs: '12px', md: '16px' },
             border: '1px solid #f1f5f9'
           }}>
             {/* Header */}
@@ -2411,18 +2983,13 @@ function Overview() {
             py: 1.5,
             px: 2,
             fontSize: '0.9rem',
-            fontWeight: 600,
-            color: '#059669',
+            fontWeight: 'bold',
+            color: '#3B82F6',
             transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
             '&:hover': {
-              backgroundColor: 'rgba(5, 150, 105, 0.1)',
+              backgroundColor: '#EBF8FF',
               transform: 'translateX(4px)',
-              boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)'
-            },
-            color: '#3B82F6',
-            fontWeight: 'bold',
-            '&:hover': {
-              backgroundColor: '#EBF8FF'
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)'
             }
           }}
         >
@@ -2460,8 +3027,8 @@ function Overview() {
         </MenuItem>
       </Menu>
 
-      <Footer />
-    </DashboardLayout>
+    <Footer />
+  </DashboardLayout>
   );
 }
 

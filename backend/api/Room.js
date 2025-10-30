@@ -210,42 +210,94 @@ async function fetchCleaningStatusFromTeable() {
       data.records.forEach((record, index) => {
         const fields = record.fields;
         console.log(`🔍 Record ${index + 1}:`, {
-          'Listing IDs': fields['Listing IDs'],
-          'HW - Status': fields['HW - Status'],
-          'HK - Status': fields['HK - Status'],
           'Listing Name': fields['Listing Name'],
+          'Todays Date': fields['Todays Date'],
+          'HK - Status': fields['HK - Status'],
+          'Listing IDs': fields['Listing IDs'],
           'Activity': fields['Activity'],
-          '(T) Reservation ID': fields['(T) Reservation ID'],
           '(T) Check-In Date': fields['(T) Check-In Date'],
           '(T) Check-out Date': fields['(T) Check-out Date'],
-          '(T) Reservation Status': fields['(T) Reservation Status'],
+          '(T) Actual Check-in': fields['(T) Actual Check-in'],
+          '(T) Actual Check-out': fields['(T) Actual Check-out'],
           '(T) Guest Name': fields['(T) Guest Name'],
-          'Reservation Status': fields['Reservation Status'],
-          'Status': fields['Status'],
-          'Booking Status': fields['Booking Status']
+          '(T) Reservation ID': fields['(T) Reservation ID'],
+          '(Y) Guest Name': fields['(Y) Guest Name'],
+          'Today\'s Res': fields['Today\'s Res'],
+          'Listing Status': fields['Listing Status'],
+          '(Y) Check-In Date': fields['(Y) Check-In Date'],
+          '(Y) Check-out Date': fields['(Y) Check-out Date'],
+          '(Y) Actual Check-in': fields['(Y) Actual Check-in'],
+          '(Y) Actual Check-out': fields['(Y) Actual Check-out'],
+          '(T) Reservation Status': fields['(T) Reservation Status'],
+          '(Y) Reservation Status': fields['(Y) Reservation Status'],
+          'HW - Status': fields['HW - Status'],
+          '(Y) Reservation ID': fields['(Y) Reservation ID'],
+          'Yesterday\'s Res': fields['Yesterday\'s Res'],
+          'Today\'s Res Stay': fields['Today\'s Res Stay'],
+          'Yesterday\'s Res Stay': fields['Yesterday\'s Res Stay']
         });
         
         if (fields['Listing IDs']) {
           const listingId = String(fields['Listing IDs']); // Convert to string for consistent mapping
-          const hwStatusRaw = fields['HW - Status'] || '';
+          
+          // Extract all fields as requested
+          const listingName = fields['Listing Name'] || '';
+          const todaysDate = fields['Todays Date'] || '';
           const hkStatusRaw = fields['HK - Status'] || '';
           const activity = fields['Activity'] || 'Unknown';
-          const reservationId = fields['(T) Reservation ID'] || '';
-          const checkInDate = fields['(T) Check-In Date'] || '';
-          const checkOutDate = fields['(T) Check-out Date'] || '';
-          const guestName = fields['(T) Guest Name'] || '';
-          // Get the actual reservation status from Teable
-          const reservationStatus = fields['(T) Reservation Status'] || fields['Reservation Status'] || fields['Status'] || fields['Booking Status'] || '';
+          const tCheckInDate = fields['(T) Check-In Date'] || '';
+          const tCheckOutDate = fields['(T) Check-out Date'] || '';
+          const tActualCheckIn = fields['(T) Actual Check-in'] || '';
+          const tActualCheckOut = fields['(T) Actual Check-out'] || '';
+          const tGuestName = fields['(T) Guest Name'] || '';
+          const tReservationId = fields['(T) Reservation ID'] || '';
+          const yGuestName = fields['(Y) Guest Name'] || '';
+          const todaysRes = fields['Today\'s Res'] || '';
+          const listingStatus = fields['Listing Status'] || '';
+          const yCheckInDate = fields['(Y) Check-In Date'] || '';
+          const yCheckOutDate = fields['(Y) Check-out Date'] || '';
+          const yActualCheckIn = fields['(Y) Actual Check-in'] || '';
+          const yActualCheckOut = fields['(Y) Actual Check-out'] || '';
+          const tReservationStatus = fields['(T) Reservation Status'] || '';
+          const yReservationStatus = fields['(Y) Reservation Status'] || '';
+          const hwStatusRaw = fields['HW - Status'] || '';
+          const yReservationId = fields['(Y) Reservation ID'] || '';
+          const yesterdaysRes = fields['Yesterday\'s Res'] || '';
+          const todaysResStay = fields['Today\'s Res Stay'] || '';
+          const yesterdaysResStay = fields['Yesterday\'s Res Stay'] || '';
+          
+          // Keep backward compatibility fields
+          const reservationId = tReservationId;
+          const checkInDate = tCheckInDate;
+          const checkOutDate = tCheckOutDate;
+          const guestName = tGuestName;
+          const reservationStatus = tReservationStatus;
           
           console.log(`🔍 Processing Listing ${listingId}:`);
-          console.log(`   - HW Status Raw: "${hwStatusRaw}"`);
+          console.log(`   - Listing Name: "${listingName}"`);
+          console.log(`   - Todays Date: "${todaysDate}"`);
           console.log(`   - HK Status Raw: "${hkStatusRaw}"`);
           console.log(`   - Activity: "${activity}"`);
-          console.log(`   - Reservation ID: "${reservationId}"`);
-          console.log(`   - Check-In Date: "${checkInDate}"`);
-          console.log(`   - Check-out Date: "${checkOutDate}"`);
-          console.log(`   - Guest Name: "${guestName}"`);
-          console.log(`   - Reservation Status: "${reservationStatus}"`);
+          console.log(`   - (T) Check-In Date: "${tCheckInDate}"`);
+          console.log(`   - (T) Check-out Date: "${tCheckOutDate}"`);
+          console.log(`   - (T) Actual Check-in: "${tActualCheckIn}"`);
+          console.log(`   - (T) Actual Check-out: "${tActualCheckOut}"`);
+          console.log(`   - (T) Guest Name: "${tGuestName}"`);
+          console.log(`   - (T) Reservation ID: "${tReservationId}"`);
+          console.log(`   - (Y) Guest Name: "${yGuestName}"`);
+          console.log(`   - Today's Res: "${todaysRes}"`);
+          console.log(`   - Listing Status: "${listingStatus}"`);
+          console.log(`   - (Y) Check-In Date: "${yCheckInDate}"`);
+          console.log(`   - (Y) Check-out Date: "${yCheckOutDate}"`);
+          console.log(`   - (Y) Actual Check-in: "${yActualCheckIn}"`);
+          console.log(`   - (Y) Actual Check-out: "${yActualCheckOut}"`);
+          console.log(`   - (T) Reservation Status: "${tReservationStatus}"`);
+          console.log(`   - (Y) Reservation Status: "${yReservationStatus}"`);
+          console.log(`   - HW Status Raw: "${hwStatusRaw}"`);
+          console.log(`   - (Y) Reservation ID: "${yReservationId}"`);
+          console.log(`   - Yesterday's Res: "${yesterdaysRes}"`);
+          console.log(`   - Today's Res Stay: "${todaysResStay}"`);
+          console.log(`   - Yesterday's Res Stay: "${yesterdaysResStay}"`);
           
           // Convert Teable status to our format for both HW and HK
           let hwStatus = 'Not Clean';
@@ -274,7 +326,8 @@ async function fetchCleaningStatusFromTeable() {
           console.log(`   - Legacy: "${legacyCleanStatus}"`);
           
           cleaningStatusMap[listingId] = {
-            cleaningStatus: legacyCleanStatus, // Keep for backward compatibility
+            // Backward compatibility fields
+            cleaningStatus: legacyCleanStatus,
             hwStatus: hwStatus,
             hkStatus: hkStatus,
             hwStatusRaw: hwStatusRaw,
@@ -284,7 +337,30 @@ async function fetchCleaningStatusFromTeable() {
             checkInDate: checkInDate,
             checkOutDate: checkOutDate,
             guestName: guestName,
-            reservationStatus: reservationStatus
+            reservationStatus: reservationStatus,
+            
+            // All new fields as requested
+            listingName: listingName,
+            todaysDate: todaysDate,
+            tCheckInDate: tCheckInDate,
+            tCheckOutDate: tCheckOutDate,
+            tActualCheckIn: tActualCheckIn,
+            tActualCheckOut: tActualCheckOut,
+            tGuestName: tGuestName,
+            tReservationId: tReservationId,
+            yGuestName: yGuestName,
+            todaysRes: todaysRes,
+            listingStatus: listingStatus,
+            yCheckInDate: yCheckInDate,
+            yCheckOutDate: yCheckOutDate,
+            yActualCheckIn: yActualCheckIn,
+            yActualCheckOut: yActualCheckOut,
+            tReservationStatus: tReservationStatus,
+            yReservationStatus: yReservationStatus,
+            yReservationId: yReservationId,
+            yesterdaysRes: yesterdaysRes,
+            todaysResStay: todaysResStay,
+            yesterdaysResStay: yesterdaysResStay
           };
         } else {
           console.log(`⚠️ Record ${index + 1} missing required fields`);
@@ -577,7 +653,93 @@ async function fetchHostawayListings(listingId = null) {
             const teableData = cleaningStatusMap[String(listing.id)];
             return teableData?.hkStatusRaw || '';
           })(),
-          actuallyOccupied: checkedInListingIds.has(String(listing.id))
+          actuallyOccupied: checkedInListingIds.has(String(listing.id)),
+          
+          // All new fields from Teable
+          listingName: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.listingName || '';
+          })(),
+          todaysDate: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.todaysDate || '';
+          })(),
+          tCheckInDate: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.tCheckInDate || '';
+          })(),
+          tCheckOutDate: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.tCheckOutDate || '';
+          })(),
+          tActualCheckIn: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.tActualCheckIn || '';
+          })(),
+          tActualCheckOut: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.tActualCheckOut || '';
+          })(),
+          tGuestName: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.tGuestName || '';
+          })(),
+          tReservationId: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.tReservationId || '';
+          })(),
+          yGuestName: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.yGuestName || '';
+          })(),
+          todaysRes: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.todaysRes || '';
+          })(),
+          listingStatus: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.listingStatus || '';
+          })(),
+          yCheckInDate: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.yCheckInDate || '';
+          })(),
+          yCheckOutDate: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.yCheckOutDate || '';
+          })(),
+          yActualCheckIn: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.yActualCheckIn || '';
+          })(),
+          yActualCheckOut: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.yActualCheckOut || '';
+          })(),
+          tReservationStatus: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.tReservationStatus || '';
+          })(),
+          yReservationStatus: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.yReservationStatus || '';
+          })(),
+          yReservationId: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.yReservationId || '';
+          })(),
+          yesterdaysRes: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.yesterdaysRes || '';
+          })(),
+          todaysResStay: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.todaysResStay || '';
+          })(),
+          yesterdaysResStay: (() => {
+            const teableData = cleaningStatusMap[String(listing.id)];
+            return teableData?.yesterdaysResStay || '';
+          })()
         }];
       }
     } else {
@@ -661,7 +823,93 @@ async function fetchHostawayListings(listingId = null) {
           const teableData = cleaningStatusMap[String(listing.id)];
           return teableData?.hkStatusRaw || '';
         })(),
-        actuallyOccupied: checkedInListingIds.has(String(listing.id))
+        actuallyOccupied: checkedInListingIds.has(String(listing.id)),
+        
+        // All new fields from Teable
+        listingName: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.listingName || '';
+        })(),
+        todaysDate: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.todaysDate || '';
+        })(),
+        tCheckInDate: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.tCheckInDate || '';
+        })(),
+        tCheckOutDate: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.tCheckOutDate || '';
+        })(),
+        tActualCheckIn: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.tActualCheckIn || '';
+        })(),
+        tActualCheckOut: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.tActualCheckOut || '';
+        })(),
+        tGuestName: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.tGuestName || '';
+        })(),
+        tReservationId: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.tReservationId || '';
+        })(),
+        yGuestName: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.yGuestName || '';
+        })(),
+        todaysRes: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.todaysRes || '';
+        })(),
+        listingStatus: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.listingStatus || '';
+        })(),
+        yCheckInDate: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.yCheckInDate || '';
+        })(),
+        yCheckOutDate: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.yCheckOutDate || '';
+        })(),
+        yActualCheckIn: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.yActualCheckIn || '';
+        })(),
+        yActualCheckOut: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.yActualCheckOut || '';
+        })(),
+        tReservationStatus: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.tReservationStatus || '';
+        })(),
+        yReservationStatus: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.yReservationStatus || '';
+        })(),
+        yReservationId: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.yReservationId || '';
+        })(),
+        yesterdaysRes: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.yesterdaysRes || '';
+        })(),
+        todaysResStay: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.todaysResStay || '';
+        })(),
+        yesterdaysResStay: (() => {
+          const teableData = cleaningStatusMap[String(listing.id)];
+          return teableData?.yesterdaysResStay || '';
+        })()
       })) || [];
     }
 
