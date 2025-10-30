@@ -56,44 +56,217 @@ function UserLayout({ children }) {
 
   }, [activeTab]);
 
-  function downloadPDF(data, filename, title) {
-    if (!data || data.length === 0) {
-      alert("No data to download!");
+  function downloadPDF() {
+    if (loadingCheck) {
+      alert("Please wait... Data is still loading.");
+      return;
+    }
+    if (todayCheckIn.length === 0 && todayCheckOut.length === 0) {
+      alert("No data available to download.");
       return;
     }
 
-    const doc = new jsPDF({ orientation: "landscape" });
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 10;
+    const cellHeight = 8;
+    let y = 10;
 
-    // Title
-    doc.setFontSize(16);
-    doc.text(title, 14, 15);
-
-    // Define table headers
-    const headers = [
-      "Guest Name",
-      "Vehicle Number",
-      "Apartment",
-      title.includes("Check-In") ? "Arrival Date" : "Departure Date",
+    // === COLUMN WIDTHS (Left: 7 cols, Right: 6 cols => total 13) ===
+    const colWidths = [
+      10, 18, 40, 28, 30, 20, 20,   // Left table (7)
+      10, 18, 40, 28, 30, 20        // Right table (6)
     ];
+    const totalColWidth = colWidths.reduce((a, b) => a + b, 0);
+    const availableWidth = pageWidth - 2 * margin;
+    const gap = 2;
+    const scale = (availableWidth - gap) / totalColWidth;
+    const scaledWidths = colWidths.map(w => w * scale);
 
-    // Map and sanitize data
-    const rows = data.map((row) => [
-      row.guest || "-",
-      row.vehicle || "-", // ✅ use 'vehicle' to match your existing object
-      row.apartment || "-",
-      title.includes("Check-In") ? row.arrival || "-" : row.departure || "-",
-    ]);
+    // === Helper: Auto-fit text ===
+    const fitText = (text, maxWidth, baseSize = 8.5) => {
+      let size = baseSize;
+      doc.setFontSize(size);
+      while (doc.getTextWidth(text) > maxWidth && size > 5) {
+        size -= 0.3;
+        doc.setFontSize(size);
+      }
+      return size;
+    };
 
-    // Generate the table
-    autoTable(doc, {
-      head: [headers],
-      body: rows,
-      startY: 25,
-      styles: { fontSize: 10, cellPadding: 4 },
-      headStyles: { fillColor: [23, 98, 27] }, // green header
-    });
+    // === Helper: New Page Header ===
+    const drawHeader = () => {
+      const dateStr = new Date().toLocaleDateString("en-GB");
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.text(dateStr, margin + 2, y + 5.5);
 
-    doc.save(filename);
+      // ✅ Center the title across the full page width
+      const titleX = pageWidth / 2;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      doc.text("Upcoming Reservation", titleX, y + 5.5, { align: "center" });
+
+      y += cellHeight + 2;
+
+      // === SECTION TITLES ===
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0);
+
+      const leftStartX = margin;
+      const leftWidth = scaledWidths.slice(0, 7).reduce((a, b) => a + b, 0);
+      const rightStartX = leftStartX + leftWidth + gap;
+      const rightWidth = scaledWidths.slice(7).reduce((a, b) => a + b, 0);
+
+      // LEFT
+      doc.setFillColor(220, 220, 220);
+      doc.rect(leftStartX, y, leftWidth, cellHeight, "F");
+      doc.text("Today Upcoming Arrivals", leftStartX + leftWidth / 2, y + 5.5, { align: "center" });
+
+      // RIGHT
+      doc.setFillColor(220, 220, 220);
+      doc.rect(rightStartX, y, rightWidth, cellHeight, "F");
+      doc.text("Today Upcoming Departures", rightStartX + rightWidth / 2, y + 5.5, { align: "center" });
+
+      // Divider line between the two sections
+      doc.setDrawColor(200, 200, 200);
+      doc.line(rightStartX, y, rightStartX, y + cellHeight);
+
+      y += cellHeight + 1;
+
+      // === HEADERS (7 left + 6 right = 13) ===
+      const headers = [
+        "Sr#", "Apt#", "Name", "Phone#", "Reservation Status", "Remarks", "Payment", // left 7
+        "Sr#", "Apt#", "Name", "Phone#", "Remarks", "Payment"                        // right 6
+      ];
+
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(255);
+
+      let x = margin;
+      headers.forEach((header, i) => {
+        if (i === 7) x += gap; // add small gap before right table
+        const width = scaledWidths[i];
+        doc.setFillColor(23, 98, 27);
+        doc.rect(x, y, width, cellHeight, "F");
+
+        const maxWidth = width - 3;
+        const fittedSize = fitText(header, maxWidth, 8.5);
+        doc.setFontSize(fittedSize);
+        doc.text(header, x + width / 2, y + 5.3, { align: "center" });
+
+        x += width;
+      });
+
+      y += cellHeight;
+
+      // ✅ Reset text color & font for data rows
+      doc.setTextColor(0);
+      doc.setFont("helvetica", "normal");
+
+      // Return computed start X for right table to use elsewhere
+      return { leftStartX, leftWidth, rightStartX, rightWidth };
+    };
+
+    // Draw header for first page and get rightStartX
+    const { rightStartX } = drawHeader();
+
+    // === DATA ROWS ===
+    const checkInData = todayCheckIn;
+    const checkOutData = todayCheckOut;
+    const rowHeight = 7;
+    const maxLength = Math.max(checkInData.length, checkOutData.length);
+
+    doc.setTextColor(0);
+    doc.setDrawColor(200, 200, 200);
+    doc.setFont("helvetica", "normal");
+
+    for (let i = 0; i < maxLength; i++) {
+      // Handle page break
+      if (y + rowHeight > pageHeight - 10) {
+        doc.addPage();
+        y = 10;
+        // reset colors and font before drawing header
+        doc.setTextColor(0);
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(200, 200, 200);
+        // draw header on the new page (also re-computes rightStartX internally but we reuse the same layout)
+        drawHeader();
+      }
+
+      const isEven = i % 2 === 0;
+      const bg = isEven ? [245, 247, 245] : [255, 255, 255];
+      const checkIn = checkInData[i] || {};
+      const checkOut = checkOutData[i] || {};
+
+      // LEFT (7 cols)
+      let x = margin;
+      const leftData = [
+        checkInData[i] ? (i + 1).toString() : "",
+        checkIn.apartment || "",
+        checkIn.guest || "",
+        checkIn.phone || "",
+        checkIn.reservationStatus || "",
+        "", // remarks intentionally empty
+        checkInData[i]
+          ? (checkIn.paymentStatus &&
+            checkIn.paymentStatus.toLowerCase() !== "unknown"
+            ? checkIn.paymentStatus
+            : "Due")
+          : ""
+      ];
+
+      leftData.forEach((cell, j) => {
+        const width = scaledWidths[j];
+        doc.setFillColor(...bg);
+        doc.rect(x, y, width, rowHeight, "F");
+        doc.rect(x, y, width, rowHeight, "S");
+        if (cell) {
+          const maxWidth = width - 4;
+          const fittedSize = fitText(String(cell), maxWidth, 8.2);
+          doc.setFontSize(fittedSize);
+          doc.text(String(cell), x + width / 2, y + 4.5, { align: "center" });
+        }
+        x += width;
+      });
+
+      // RIGHT (6 cols) — start X = margin + sum(left 7 widths) + gap
+      let rightX = margin + scaledWidths.slice(0, 7).reduce((a, b) => a + b, 0) + gap;
+      const rightData = [
+        checkOutData[i] ? (i + 1).toString() : "",
+        checkOut.apartment || "",
+        checkOut.guest || "",
+        checkOut.phone || "",
+        "", // remarks intentionally empty
+        checkOutData[i]
+          ? (checkOut.paymentStatus &&
+            checkOut.paymentStatus.toLowerCase() !== "unknown"
+            ? checkOut.paymentStatus
+            : "Due")
+          : ""
+      ];
+
+      rightData.forEach((cell, j) => {
+        const width = scaledWidths[j + 7];
+        doc.setFillColor(...bg);
+        doc.rect(rightX, y, width, rowHeight, "F");
+        doc.rect(rightX, y, width, rowHeight, "S");
+        if (cell) {
+          const maxWidth = width - 4;
+          const fittedSize = fitText(String(cell), maxWidth, 8.2);
+          doc.setFontSize(fittedSize);
+          doc.text(String(cell), rightX + width / 2, y + 4.5, { align: "center" });
+        }
+        rightX += width;
+      });
+
+      y += rowHeight;
+    }
+
+    const dateStr = new Date().toLocaleDateString("en-GB");
+    doc.save(`Upcoming_Reservation_${dateStr.replace(/\//g, "-")}.pdf`);
   }
 
   useEffect(() => {
@@ -182,8 +355,17 @@ function UserLayout({ children }) {
                         (field) => field.customField?.name === "Vehicle Number"
                       )?.value || "-";
 
+                    // ✅ Get Phone Number (safe fallbacks)
+                    const phone =
+                      reservation?.phone ||
+                      "-";
+
+                    const paymentStatus = reservation?.paymentStatus;
+
                     const guestObj = {
                       guest: reservation.guestName,
+                      phone,
+                      paymentStatus,
                       vehicle: vehicleNumber,
                       apartment:
                         listing.internalListingName || listing.name || "N/A",
@@ -223,8 +405,6 @@ function UserLayout({ children }) {
     };
 
   }, [activeTab]);
-
-
 
   const LISTINGS_DATA = {
     "2BR Premium": [305055, 309909, 323227, 288688],
@@ -346,7 +526,7 @@ function UserLayout({ children }) {
       case 0:
         return (
           <Box sx={{ p: 1 }}>
-            <Typography variant="h5" sx={{ mb: 0, fontWeight: "700", color: "#1f2937" }}>
+            <Typography variant="h5" sx={{ fontWeight: "700", color: "#1f2937" }}>
               🏠 Home
             </Typography>
             {loading ? (
@@ -503,9 +683,42 @@ function UserLayout({ children }) {
       case 2:
         return (
           <Box sx={{ p: 4 }}>
-            <Typography variant="h5" sx={{ mb: 3, fontWeight: "700", color: "#1f2937" }}>
-              📅 Todays Check-In / Check-Out
-            </Typography>
+            {/* Header with title and Download button */}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 3,
+              }}
+            >
+              <Typography variant="h5" sx={{ mb: 3, fontWeight: "700", color: "#1f2937" }}>
+                📅 Todays Check-In / Check-Out
+              </Typography>
+
+              {!loadingCheck && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={downloadPDF}
+                  sx={{
+                    borderRadius: "12px",
+                    textTransform: "none",
+                    fontWeight: "bold",
+                    boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
+                    color: "#17621B",
+                    border: "2px solid #17621B",
+                    "&:hover": {
+                      backgroundColor: "#1e7a20",
+                      borderColor: "#145517",
+                      color: "#fff",
+                    },
+                  }}
+                >
+                  Download PDF
+                </Button>
+              )}
+            </Box>
 
             {loadingCheck && (
               <Box
@@ -543,38 +756,6 @@ function UserLayout({ children }) {
                         Today Check-In &nbsp; <Typography component="span" variant="body2" sx={{ color: "#6b7280" }}>Total: {todayCheckIn.length}</Typography>
                       </Typography>
 
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={() => {
-                          const today = new Date().toISOString().split("T")[0]; // e.g. 2025-10-25
-                          downloadPDF(todayCheckIn, `Checkin_${today}.pdf`, "Today Check-In");
-                        }}
-                        sx={{
-                          borderRadius: "12px",
-                          textTransform: "none",
-                          fontWeight: "bold",
-                          boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                          color: "#17621B",
-                          border: "2px solid #17621B",
-                          transition: "all 0.2s ease",
-                          "&:hover": {
-                            backgroundColor: "#1e7a20",
-                            borderColor: "#145517",
-                            color: "#fff",
-                          },
-                          "&:focus": {
-                            backgroundColor: "#145517",
-                            color: "#fff",
-                          },
-                          "&:active": {
-                            backgroundColor: "#145517",
-                            color: "#fff",
-                          },
-                        }}
-                      >
-                        Download PDF
-                      </Button>
                     </Box>
 
                     <Table striped bordered hover responsive style={{ marginBottom: 0 }}>
@@ -620,38 +801,6 @@ function UserLayout({ children }) {
                         Today Check-Out &nbsp; <Typography component="span" variant="body2" sx={{ color: "#6b7280" }}>Total: {todayCheckOut.length}</Typography>
                       </Typography>
 
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={() => {
-                          const today = new Date().toISOString().split("T")[0];
-                          downloadPDF(todayCheckOut, `Checkout_${today}.pdf`, "Today Check-Out");
-                        }}
-                        sx={{
-                          borderRadius: "12px",
-                          textTransform: "none",
-                          fontWeight: "bold",
-                          boxShadow: "0 3px 6px rgba(0,0,0,0.1)",
-                          color: "#17621B",
-                          border: "2px solid #17621B",
-                          transition: "all 0.2s ease",
-                          "&:hover": {
-                            backgroundColor: "#1e7a20",
-                            borderColor: "#145517",
-                            color: "#fff",
-                          },
-                          "&:focus": {
-                            backgroundColor: "#145517",
-                            color: "#fff",
-                          },
-                          "&:active": {
-                            backgroundColor: "#145517",
-                            color: "#fff",
-                          },
-                        }}
-                      >
-                        Download PDF
-                      </Button>
                     </Box>
 
                     <Table striped bordered hover responsive style={{ marginBottom: 0 }}>
