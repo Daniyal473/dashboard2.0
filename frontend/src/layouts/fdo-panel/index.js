@@ -2549,10 +2549,14 @@ ${CheckOutSecurityDeposit !== "0"
                         <td>
                           {reservationDetails ? (
                             `${reservationDetails.remainingBalance !== undefined && reservationDetails.remainingBalance !== null
-                              ? Number(reservationDetails.remainingBalance).toFixed(2)
+                              ? reservationDetails.currency === "USD"
+                                ? Number(reservationDetails.remainingBalance).toFixed(2)
+                                : reservationDetails.remainingBalance
                               : "N/A"
                             } ${reservationDetails.currency || ""} / ${reservationDetails.totalPaid !== undefined && reservationDetails.totalPaid !== null
-                              ? Number(reservationDetails.totalPaid).toFixed(2)
+                              ? reservationDetails.currency === "USD"
+                                ? Number(reservationDetails.totalPaid).toFixed(2)
+                                : reservationDetails.totalPaid
                               : "N/A"
                             } ${reservationDetails.currency || ""}`
                           ) : (
