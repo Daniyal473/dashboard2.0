@@ -2547,11 +2547,17 @@ ${CheckOutSecurityDeposit !== "0"
                           <strong>Remaining / Paid </strong>
                         </td>
                         <td>
-                          {reservationDetails
-                            ? `${reservationDetails.remainingBalance ?? "N/A"} ${reservationDetails.currency || ""
-                            } / ${reservationDetails.totalPaid ?? "N/A"} ${reservationDetails.currency || ""
-                            }`
-                            : "N/A"}
+                          {reservationDetails ? (
+                            `${reservationDetails.remainingBalance !== undefined && reservationDetails.remainingBalance !== null
+                              ? Number(reservationDetails.remainingBalance).toFixed(2)
+                              : "N/A"
+                            } ${reservationDetails.currency || ""} / ${reservationDetails.totalPaid !== undefined && reservationDetails.totalPaid !== null
+                              ? Number(reservationDetails.totalPaid).toFixed(2)
+                              : "N/A"
+                            } ${reservationDetails.currency || ""}`
+                          ) : (
+                            "N/A"
+                          )}
                         </td>
                       </tr>
                       <tr>
