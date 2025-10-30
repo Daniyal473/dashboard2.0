@@ -384,7 +384,7 @@ ul li {
               />
             </div>
             <div class="heading-text" style="margin: 20px 0px 0px 40px !important">
-              <h3 style="margin: 0; font-size: 20px; font-weight: bold; "> ${guestName}'s Check-in Form <span style="font-size: 12px; color: #666;">(${guest.reservationId
+              <h3 style="margin: 0; font-size: 20px; font-weight: bold; font-family: sans-serif; "> ${guestName}'s Check-in Form <span style="font-size: 12px; color: #666;">(${guest.reservationId
         })</span></h3>
               <p style="margin: 4px 0 0 0; font-size: 14px; color: #555; font-family: Arial;">Actual Check-in Date / Time: ${actualCheckInTime}</p>
             </div>
